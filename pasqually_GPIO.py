@@ -11,7 +11,7 @@ class GPIO:
         self.outputPins = []
         
     def setup(self,pin,direction):
-        cmd = "echo " + str(pin) + " > /sys/class/gpio/export"
+        cmd = "sudo sh -c 'echo " + str(pin) + " > /sys/class/gpio/export'"
         subprocess.call(cmd,shell=True, stdout=subprocess.PIPE)
         cmd = "echo \"" + direction + "\" > /sys/class/gpio/gpio" + str(pin) + "/direction" 
         subprocess.Popen(cmd,shell=True, stdout=subprocess.PIPE)
@@ -48,11 +48,11 @@ class GPIO:
             for pinObject in self.outputPins:
                 if(pinObject[0]==pin and pinObject[1]!=val):
                     pinObject[1]=val
-                    cmd = "echo " + str(val) + " > /sys/class/gpio/gpio" + str(pinObject[0]) + "/value"
+                    cmd = "sudo sh -c 'echo " + str(val) + " > /sys/class/gpio/gpio" + str(pinObject[0]) + "/value'"
                     subprocess.Popen(cmd,shell=True, stdout=subprocess.PIPE)
         
     def cleanup(self):
         for pinObject in self.pins:
-            cmd = "echo " + str(pinObject[0]) + " > /sys/class/gpio/unexport"
+            cmd = "sudo sh -c 'echo " + str(pinObject[0]) + " > /sys/class/gpio/unexport'"
             subprocess.Popen(cmd,shell=True, stdout=subprocess.PIPE)
             self.pins = None
