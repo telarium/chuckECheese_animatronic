@@ -12,7 +12,9 @@ class Struct():
 class Movement:
     all = []
 
-    def __init__(self):
+    def __init__(self, gpio):
+       self.gpio = gpio
+
        self.rightShoulderIn = Struct()
        self.rightShoulderIn.key = 'y'
        self.rightShoulderIn.outputPin1 = 36

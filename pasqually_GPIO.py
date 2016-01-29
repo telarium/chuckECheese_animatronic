@@ -5,11 +5,10 @@ import os
 import subprocess
 
 class GPIO:
-    def __init__(self,gpio):
+    def __init__(self):
         self.pins = []
         self.inputPins = []
         self.outputPins = []
-        self.gpio = gpio
         
     def setup(self,pin,direction):
         cmd = "echo " + str(pin) + " > /sys/class/gpio/export"
