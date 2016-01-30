@@ -17,13 +17,13 @@ class Movement:
 
        self.rightShoulderIn = Struct()
        self.rightShoulderIn.key = 'y'
-       self.rightShoulderIn.outputPin1 = 128 # CSI-D0
+       self.rightShoulderIn.outputPin1 = 132 # CSI-D0
        self.rightShoulderIn.midiNote = 129
        self.all.append( self.rightShoulderIn )
        
        self.rightShoulderOut = Struct()
        self.rightShoulderOut.key = 'u'
-       self.rightShoulderOut.outputPin1 = 129 #CSI-D1
+       self.rightShoulderOut.outputPin1 = 133 #CSI-D1
        self.rightShoulderOut.midiNote = 51
        self.rightShoulderOut.linkKey = 'r'
        self.rightShoulderOut.linkedMovement = self.rightShoulderIn
@@ -31,20 +31,20 @@ class Movement:
        
        self.rightArm = Struct()
        self.rightArm.key = 'j'
-       self.rightArm.outputPin1 = 130 #CSI-D2
-       self.rightArm.outputPin2 = 131 #CSI-D3
+       self.rightArm.outputPin1 = 134 #CSI-D2
+       self.rightArm.outputPin2 = 135 #CSI-D3
        self.rightArm.midiNote = 52
        self.all.append( self.rightArm )
        
        self.leftShoulderOut = Struct()
        self.leftShoulderOut.key = 'i'
-       self.leftShoulderOut.outputPin1  = 132 #CSI-D4
+       self.leftShoulderOut.outputPin1  = 136 #CSI-D4
        self.leftShoulderOut.midiNote = 53
        self.all.append( self.leftShoulderOut )
        
        self.leftShoulderIn = Struct()
        self.leftShoulderIn.key = 'o'
-       self.leftShoulderIn.outputPin1 = 133 #CSI-D5
+       self.leftShoulderIn.outputPin1 = 137 #CSI-D5
        self.leftShoulderIn.midiNote = 54
        self.leftShoulderIn.linkKey = 't'
        self.leftShoulderIn.linkedMovement = self.leftShoulderOut
@@ -52,8 +52,8 @@ class Movement:
        
        self.leftArm = Struct()
        self.leftArm.key = 'h'
-       self.leftArm.outputPin1 = 134 #CSI-D6
-       self.leftArm.outputPin2 = 135 #CSI-D7
+       self.leftArm.outputPin1 = 138 #CSI-D6
+       self.leftArm.outputPin2 = 139 #CSI-D7
        self.leftArm.midiNote = 55
        self.all.append( self.leftArm )
 
