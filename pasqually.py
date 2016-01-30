@@ -27,6 +27,7 @@ clock = pygame.time.Clock()
 width, height = 320,240
 gpio = GPIO()
 movements = Movement(gpio)
+webServer = WebServer()
 
 def sendWebKey( key, val ):
     if len(key) == 1:
