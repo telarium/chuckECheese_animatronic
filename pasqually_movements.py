@@ -117,6 +117,8 @@ class Movement:
        self.headUpDown.midiNote = 64
        self.all.append( self.headUpDown )
 
+       #LCD-D20,21,22?
+
        for i in self.all:
           gpio.setup( i.outputPin1 , "out" )
           gpio.set( i.outputPin1, 1 )

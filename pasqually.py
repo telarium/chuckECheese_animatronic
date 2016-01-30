@@ -5,7 +5,7 @@ import platform
 from threading import Thread
 from pasqually_movements import Movement
 from pasqually_GPIO import GPIO
-#from pasqually_webIO import WebServer
+from pasqually_webIO import WebServer
 
 try:
     import pygame
