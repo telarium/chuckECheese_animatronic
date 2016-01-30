@@ -38,7 +38,7 @@ class Movement:
        
        self.leftShoulderOut = Struct()
        self.leftShoulderOut.key = 'i'
-       self.leftShoulderOut.outputPin1 132 = #CSI-D4
+       self.leftShoulderOut.outputPin1  = 132 #CSI-D4
        self.leftShoulderOut.midiNote = 53
        self.all.append( self.leftShoulderOut )
        
