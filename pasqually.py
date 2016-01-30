@@ -56,5 +56,6 @@ while isRunning:
             sendWebKey( pygame.key.name(event.key), val )
             
 gpio.cleanup()
+webServer.shutdown()
 pygame.quit()
 sys.exit()

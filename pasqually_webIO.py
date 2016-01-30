@@ -11,7 +11,6 @@ except:
 app = Flask(__name__)
 
 class WebServer:
-    app = Flask(__name__)
     @app.route("/")
     def hello():
         return "Hello World!"
@@ -27,4 +26,7 @@ class WebServer:
 
     def shutdown(self):
         os.system('kill -9 `pidof mjpg_streamer`')
-        self.webio.stop()
+        func = request.environ.get('werkzeug.server.shutdown')
+        if func is None:
+            raise RuntimeError('Not running with the Werkzeug Server')
+        func()
