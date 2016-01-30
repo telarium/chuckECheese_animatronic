@@ -17,13 +17,13 @@ class Movement:
 
        self.rightShoulderIn = Struct()
        self.rightShoulderIn.key = 'y'
-       self.rightShoulderIn.outputPin1 = 36
-       self.rightShoulderIn.midiNote = 50
+       self.rightShoulderIn.outputPin1 = 128 # CSI-D0
+       self.rightShoulderIn.midiNote = 129
        self.all.append( self.rightShoulderIn )
        
        self.rightShoulderOut = Struct()
        self.rightShoulderOut.key = 'u'
-       self.rightShoulderOut.outputPin1 = 42
+       self.rightShoulderOut.outputPin1 = 129 #CSI-D1
        self.rightShoulderOut.midiNote = 51
        self.rightShoulderOut.linkKey = 'r'
        self.rightShoulderOut.linkedMovement = self.rightShoulderIn
@@ -31,20 +31,20 @@ class Movement:
        
        self.rightArm = Struct()
        self.rightArm.key = 'j'
-       self.rightArm.outputPin1 = 32
-       self.rightArm.outputPin2 = 30
+       self.rightArm.outputPin1 = 130 #CSI-D2
+       self.rightArm.outputPin2 = 131 #CSI-D3
        self.rightArm.midiNote = 52
        self.all.append( self.rightArm )
        
        self.leftShoulderOut = Struct()
        self.leftShoulderOut.key = 'i'
-       self.leftShoulderOut.outputPin1 = 22
+       self.leftShoulderOut.outputPin1 132 = #CSI-D4
        self.leftShoulderOut.midiNote = 53
        self.all.append( self.leftShoulderOut )
        
        self.leftShoulderIn = Struct()
        self.leftShoulderIn.key = 'o'
-       self.leftShoulderIn.outputPin1 = 10
+       self.leftShoulderIn.outputPin1 = 133 #CSI-D5
        self.leftShoulderIn.midiNote = 54
        self.leftShoulderIn.linkKey = 't'
        self.leftShoulderIn.linkedMovement = self.leftShoulderOut
@@ -52,21 +52,21 @@ class Movement:
        
        self.leftArm = Struct()
        self.leftArm.key = 'h'
-       self.leftArm.outputPin1 = 52
-       self.leftArm.outputPin2 = 11
+       self.leftArm.outputPin1 = 134 #CSI-D6
+       self.leftArm.outputPin2 = 135 #CSI-D7
        self.leftArm.midiNote = 55
        self.all.append( self.leftArm )
 
        self.mouth = Struct()
        self.mouth.key = 'x'
-       self.mouth.outputPin1 = 6
-       self.mouth.outputPin2 = 28
+       self.mouth.outputPin1 = 99 #LCD-D3
+       self.mouth.outputPin2 = 100 #LCD-D4
        self.mouth.midiNote = 56
        self.all.append( self.mouth )
        
        self.mustache = Struct()
        self.mustache.key = 'c'
-       self.mustache.outputPin1 = 26
+       self.mustache.outputPin1 = 101 #LCD-D5
        self.mustache.midiNote = 57
        self.mustache.linkKey = 'z'
        self.mustache.linkedMovement = self.mouth
@@ -74,46 +74,46 @@ class Movement:
        
        self.eyesLeft = Struct()
        self.eyesLeft.key = 'q'
-       self.eyesLeft.outputPin1 = 9
+       self.eyesLeft.outputPin1 = 102 #LCD-D6
        self.eyesLeft.midiNote = 58
        self.all.append( self.eyesLeft )
        
        self.eyesRight = Struct()
        self.eyesRight.key = 'e'
-       self.eyesRight.outputPin1 = 24
+       self.eyesRight.outputPin1 = 103 #LCD-D7
        self.eyesRight.midiNote = 59
        self.all.append( self.eyesRight )
        
        self.eyesBlink = Struct()
        self.eyesBlink.key = 'v'
-       self.eyesBlink.outputPin1 = 34
-       self.eyesBlink.outputPin2 = 40
+       self.eyesBlink.outputPin1 = 106 #LCD-D10
+       self.eyesBlink.outputPin2 = 107 #LCD-D11
        self.eyesBlink.midiNote = 60
        self.all.append( self.eyesBlink )
        
        self.bodyLeanUpDown = Struct()
        self.bodyLeanUpDown.key = 's'
-       self.bodyLeanUpDown.outputPin1 = 50
-       self.bodyLeanUpDown.outputPin2 = 12
+       self.bodyLeanUpDown.outputPin1 = 108 #LCD-D12
+       self.bodyLeanUpDown.outputPin2 = 109 #LCD-D13
        self.bodyLeanUpDown.midiNote = 61
        self.all.append( self.bodyLeanUpDown )
        
        self.neckLeft = Struct()
        self.neckLeft.key = 'a'
-       self.neckLeft.outputPin1 = 46
+       self.neckLeft.outputPin1 = 110 #LCD-D14
        self.neckLeft.midiNote = 62
        self.all.append( self.neckLeft )
        
        self.neckRight = Struct()
        self.neckRight.key = 'd'
-       self.neckRight.outputPin1 = 38
+       self.neckRight.outputPin1 = 111 #LCD-D15
        self.neckRight.midiNote = 63
        self.all.append( self.neckRight )
        
        self.headUpDown = Struct()
        self.headUpDown.key = 'w'
-       self.headUpDown.outputPin1 = 48
-       self.headUpDown.outputPin2 = 8
+       self.headUpDown.outputPin1 = 114 #LCD-D18
+       self.headUpDown.outputPin2 = 115 #LCD-D19
        self.headUpDown.midiNote = 64
        self.all.append( self.headUpDown )
 
