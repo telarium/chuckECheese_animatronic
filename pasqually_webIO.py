@@ -1,12 +1,20 @@
 import os
 import socket
+import sys
+
 try:
     from flask import Flask
 except:
-    os.system( "sudo apt-get mjpgstreamer -y ")
     os.system( "sudo apt-get install python-pip -y")
     os.system( "sudo pip install flask")
     from flask import Flask
+
+if( not os.path.isdir( os.path.dirname(os.path.realpath(sys.argv[0])) + "/mjpg-streamer" ) ):
+    path = os.path.dirname(os.path.realpath(sys.argv[0]))
+    os.system( "wget http://lilnetwork.com/download/raspberrypi/mjpg-streamer.tar.gz -P " + path )
+    os.system( "tar xvzf " + path + "/mjpg-streamer.tar.gz && sudo rm " + path + "/mjpg-streamer.tar.gz" )
+    os.system( "sudo apt-get install libjpeg62-turbo-dev imagemagick -y" )
+    os.system( "cd " + path + "/mjpg-streamer/mjpg-streamer && make" )
 
 app = Flask(__name__)
 
