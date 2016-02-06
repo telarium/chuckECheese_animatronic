@@ -5,7 +5,7 @@ try:
 except:
     os.system( "sudo apt-get mjpgstreamer -y ")
     os.system( "sudo apt-get install python-pip -y")
-    os.system( "from pip install Flask")
+    os.system( "sudo pip install flask")
     from flask import Flask
 
 app = Flask(__name__)
