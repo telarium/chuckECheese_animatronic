@@ -9,6 +9,10 @@ class Setup:
     def __init__(self):
         self.settingsFile = os.path.dirname(os.path.realpath(sys.argv[0])) + "/settings.txt"
         if( not os.path.isfile( self.settingsFile ) ):
+            f = open( self.settingsFile, "w" )
+            f.write( "hi" )
+            f.close()
+
             hostname = raw_input("Enter hostname for Pasqually so you can easily identify him on your network?\nif unsure, just press enter: ")
             if( len(hostname)>0 and hostname != " " ):
                 self.setHostname(hostname)
@@ -80,3 +84,4 @@ class Setup:
         os.system( "sudo systemctl enable hostapd-systemd" )
         os.system( "sudo systemctl start hostapd-systemd" )
         os.system( "systemctl status hostapd-systemd" )
+        os.system( "sudo rm temp" )
