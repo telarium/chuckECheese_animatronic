@@ -34,7 +34,11 @@ class WebServer:
 
     def shutdown(self):
         os.system('kill -9 `pidof mjpg_streamer`')
-        func = request.environ.get('werkzeug.server.shutdown')
-        if func is None:
-            raise RuntimeError('Not running with the Werkzeug Server')
-        func()
+        try:
+            func = request.environ.get('werkzeug.server.shutdown')
+            if func is None:
+                raise RuntimeError('Not running with the Werkzeug Server')
+            else:
+                func()
+        except:
+            print( "Shutdown" )
