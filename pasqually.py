@@ -60,4 +60,4 @@ while isRunning:
 gpio.cleanup()
 webServer.shutdown()
 pygame.quit()
-sys.exit()
+quit()

@@ -1,7 +1,7 @@
 import os
 import socket
 import sys
-import threading
+from multiprocessing import Process
 
 try:
     from flask import Flask
@@ -25,10 +25,11 @@ class WebServer:
         return "Hello World!"
 
     def __init__(self ):
-        def start(self):
+        def run_server():
             app.run(host='0.0.0.0')
 
-        t = threading.Thread(name='start', target=start)
+        self.server = Process(target=run_server)
+        self.server.start()
             
         # Enable webcam
         res = "480x360"
@@ -38,11 +39,5 @@ class WebServer:
 
     def shutdown(self):
         os.system('kill -9 `pidof mjpg_streamer`')
-        try:
-            func = request.environ.get('werkzeug.server.shutdown')
-            if func is None:
-                raise RuntimeError('Not running with the Werkzeug Server')
-            else:
-                func()
-        except:
-            print( "Shutdown" )
+        self.server.terminate()
+        self.server.join()
