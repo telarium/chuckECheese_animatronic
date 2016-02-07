@@ -1,6 +1,7 @@
 import os
 import socket
 import sys
+import threading
 
 try:
     from flask import Flask
@@ -24,7 +25,10 @@ class WebServer:
         return "Hello World!"
 
     def __init__(self ):
-        app.run(host='0.0.0.0')
+        def start(self):
+            app.run(host='0.0.0.0')
+
+        t = threading.Thread(name='start', target=start)
             
         # Enable webcam
         res = "480x360"

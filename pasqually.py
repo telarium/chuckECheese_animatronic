@@ -40,8 +40,8 @@ pygame.display.set_caption('Pasqually')
 pygame.mixer.init(44100,-16,300, 1024) # Initialize audio mixer for Pygame
 
 while isRunning:
-    val = None
     try:
+        val = None
         clock.tick(60)
         pygame.display.update()
     except:
