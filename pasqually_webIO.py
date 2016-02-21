@@ -38,6 +38,6 @@ class WebServer:
         os.system(cmd)
 
     def shutdown(self):
-        os.system('kill -9 `pidof mjpg_streamer`')
+        os.system('kill -9 `pidof mjpg_streamer` > /dev/null 2>&1')
         self.server.terminate()
         self.server.join()

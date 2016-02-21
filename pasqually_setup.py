@@ -31,14 +31,15 @@ class Setup:
 
         f = open( "/etc/hosts" )
         contents = f.read()
-        newContents = string.replace( contents, currentHostName, hostname )
+        newContents = string.replace( contents, currentHostName, hostname + " " )
         
         f = open( "temp","w" )
         f.write( newContents )
         f.close()
 
         os.system( "sudo rm /etc/hosts" )
-        os.system( "sudo mv temp /etc/hosts" )	
+        os.system( "sudo mv temp /etc/hosts" )
+	os.system( "sudo hostname " + hostname )
 
     def setAccessPoint(self,name):
         if( not os.path.isfile( "/etc/dnsmasq.d/access_point.conf" ) ):
@@ -77,6 +78,7 @@ class Setup:
 
         f = open( "temp", "w" )
         f.write( "[Unit]\nDescription=hostapd service\nWants=network-manager.service\nAfter=network-manager.service\nWants=module-init-tools.service\nAfter=module-init-tools.service\nConditionPathExists=/etc/hostapd.conf\n\n[Service]\nExecStart=/usr/sbin/hostapd /etc/hostapd.conf\n\n[Install]\nWantedBy=multi-user.target" )
+	f.close()
         
         os.system( "sudo mv temp /lib/systemd/system/hostapd-systemd.service" )
         os.system( "sudo update-rc.d hostapd disable" )
@@ -84,4 +86,3 @@ class Setup:
         os.system( "sudo systemctl enable hostapd-systemd" )
         os.system( "sudo systemctl start hostapd-systemd" )
         os.system( "systemctl status hostapd-systemd" )
-        os.system( "sudo rm temp" )
