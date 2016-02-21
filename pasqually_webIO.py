@@ -4,11 +4,11 @@ import sys
 from multiprocessing import Process
 
 try:
-    from flask import Flask, render_template
+    from flask import Flask, render_template, url_for
 except:
     os.system( "sudo apt-get install python-pip -y")
     os.system( "sudo pip install flask")
-    from flask import Flask, render_template
+    from flask import Flask, render_template, url_for
 
 if( not os.path.isdir( os.path.dirname(os.path.realpath(sys.argv[0])) + "/mjpg-streamer" ) ):
     path = os.path.dirname(os.path.realpath(sys.argv[0]))
@@ -21,8 +21,9 @@ app = Flask(__name__)
 
 class WebServer:
     @app.route("/")
-    def hello():
-        return render_template('index.html',name="Pasqually")
+    def index():
+	url_for('static', filename='pasqually.js')
+        return render_template('index.html')
 
     def __init__(self ):
         def run_server():
