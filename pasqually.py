@@ -26,19 +26,18 @@ rebootHour = 2 # The hour of the day to reboot CHIP to reset everything. Change 
 pygame.init()
 isRunning = True
 clock = pygame.time.Clock()
-width, height = 480,320
 gpio = GPIO()
 movements = Movement(gpio)
 webServer = WebServer()
 
+pygame.display.init()
+size = (pygame.display.Info().current_w, pygame.display.Info().current_h)
+pygame.screen = pygame.display.set_mode(size, pygame.FULLSCREEN)
+pygame.mixer.init(44100,-16,300, 1024)
+
 def sendWebKey( key, val ):
     if len(key) == 1:
         movements.executeMovement( key, val )
-
-os.putenv('SDL_VIDEODRIVER', 'directfb')
-pygame.display.set_mode((width, height), 0, 8)
-pygame.display.set_caption('Pasqually')
-pygame.mixer.init(44100,-16,300, 1024) # Initialize audio mixer for Pygame
 
 while isRunning:
     try:
@@ -62,3 +61,4 @@ gpio.cleanup()
 webServer.shutdown()
 pygame.quit()
 quit()
+vv

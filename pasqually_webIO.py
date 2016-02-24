@@ -27,7 +27,7 @@ class WebServer:
 
     def __init__(self ):
         def run_server():
-            app.run(host='0.0.0.0',debug=True)
+            app.run(host='0.0.0.0',debug=False)
 
         self.server = Process(target=run_server)
         self.server.start()
