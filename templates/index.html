@@ -2,18 +2,31 @@
 
    <head>
 	<script src="static/pasqually.js"></script>   
-      <script type="text/javascript">
-         <!--
-            function sayHello() {
-               alert("Hello World")
+	<script type=text/javascript src="{{url_for('static', filename='jquery.js') }}"></script>
+        <script type="text/javascript">
+	  var $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+	</script>   
+	<script type="text/javascript">
+  $(function() {
+    $("#submitBtn").click(function() {
+         $.ajax({
+            type: "GET",
+            url: $SCRIPT_ROOT + "/echo/",
+            contentType: "application/json; charset=utf-8",
+            data: { echoValue: $('input[name="echoText"]').val() },
+            success: function(data) {
+                $('#echoResult').text(data.value);
             }
-         //-->
-      </script>
+        });     
+    });
+  });
+</script>
       
    </head>
    
-   <body>
-      <input type="button" onclick="sayHello()" value="Say Hello" />
-   </body>
-   
+   <h1>jQuery Example</h1>
+<strong>Enter a value to echo back:</strong>
+<input type="text" size="10" id="echoText" name="echoText">
+<button type="button" id="submitBtn" name="submitBtn">Submit via AJAX</button><br><br>
+<strong><div id="echoResult"></div></strong>   
 </html>

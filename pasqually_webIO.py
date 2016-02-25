@@ -4,11 +4,11 @@ import sys
 from multiprocessing import Process
 
 try:
-    from flask import Flask, render_template, url_for
+    from flask import Flask, render_template, url_for, request, jsonify
 except:
     os.system( "sudo apt-get install python-pip -y")
     os.system( "sudo pip install flask")
-    from flask import Flask, render_template, url_for
+    from flask import Flask, render_template, url_for, request, jsonify
 
 if( not os.path.isdir( os.path.dirname(os.path.realpath(sys.argv[0])) + "/mjpg-streamer" ) ):
     path = os.path.dirname(os.path.realpath(sys.argv[0]))
@@ -23,7 +23,13 @@ class WebServer:
     @app.route("/")
     def index():
 	url_for('static', filename='pasqually.js')
+	url_for('static', filename='jquery.js')
         return render_template('index.html')
+
+    @app.route('/echo/', methods=['GET'])
+    def echo():
+        ret_data = {"value": request.args.get('echoValue')}
+        return jsonify(ret_data)
 
     def __init__(self ):
         def run_server():
