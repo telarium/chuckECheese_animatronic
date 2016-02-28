@@ -1,25 +1,8 @@
 <html>
 
-   <head>
-	<script src="static/pasqually.js"></script>   
+   <head>   
 	<script type=text/javascript src="{{url_for('static', filename='jquery.js') }}"></script>
-        <script type="text/javascript">
-	  var $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
-	</script>   
-	<script type="text/javascript">
-  $(function() {
-    $("#submitBtn").click(function() {
-         $.ajax({
-            type: "GET",
-            url: $SCRIPT_ROOT + "/echo/",
-            contentType: "application/json; charset=utf-8",
-            data: { echoValue: $('input[name="echoText"]').val() },
-            success: function(data) {
-                $('#echoResult').text(data.value);
-            }
-        });     
-    });
-  });
+	<script type="text/javascript" src="{{ url_for('static', filename='pasqually.js') }}"></script>
 </script>
       
    </head>

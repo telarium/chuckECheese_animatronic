@@ -1,5 +1,3 @@
-
-
 function popup() {
 	alert("Hello World")
 }
@@ -10,7 +8,12 @@ function init() {
 }
 
 function sendKey(key, num){
-	webiopi().callMacro("sendWebKey", [String.fromCharCode( key ).toLowerCase(),num] );
+	$.ajax({
+            type: "GET",
+            url: "/onKeyPress/",
+            contentType: "application/json; charset=utf-8",
+            data: { keyVal: key, val: num }
+        });
 }
     
 var down = {}; // store down keys to prevent repeated keypresses

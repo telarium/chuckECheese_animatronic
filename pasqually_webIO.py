@@ -1,3 +1,4 @@
+
 import os
 import socket
 import sys
@@ -23,15 +24,16 @@ class WebServer:
     @app.route("/")
     def index():
 	url_for('static', filename='pasqually.js')
-	url_for('static', filename='jquery.js')
+        url_for('static', filename='jquery.js')
         return render_template('index.html')
 
-    @app.route('/echo/', methods=['GET'])
-    def echo():
-        ret_data = {"value": request.args.get('echoValue')}
-        return jsonify(ret_data)
+    @app.route('/onKeyPress/', methods=['GET'])
+    def onKeyPress():
+        ret_data = {"value": request.args.get('keyVal')}
+        #server.keyFunc( request.args.get('keyVal'), request.args.get('val' ) )
+        return request.args.get('keyVal')
 
-    def __init__(self ):
+    def __init__(self):
         def run_server():
             app.run(host='0.0.0.0',debug=False)
 
@@ -45,6 +47,7 @@ class WebServer:
         os.system(cmd)
 
     def shutdown(self):
+	print onKeyFunc
         os.system('kill -9 `pidof mjpg_streamer` > /dev/null 2>&1')
         self.server.terminate()
         self.server.join()
