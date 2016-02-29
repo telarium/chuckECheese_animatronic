@@ -1,15 +1,14 @@
-
 import os
 import socket
 import sys
 from multiprocessing import Process
 
 try:
-    from flask import Flask, render_template, url_for, request, jsonify
+    from flask import Flask, render_template, url_for, request, jsonify, g
 except:
     os.system( "sudo apt-get install python-pip -y")
     os.system( "sudo pip install flask")
-    from flask import Flask, render_template, url_for, request, jsonify
+    from flask import Flask, render_template, url_for, request, jsonify, g
 
 if( not os.path.isdir( os.path.dirname(os.path.realpath(sys.argv[0])) + "/mjpg-streamer" ) ):
     path = os.path.dirname(os.path.realpath(sys.argv[0]))
@@ -19,27 +18,36 @@ if( not os.path.isdir( os.path.dirname(os.path.realpath(sys.argv[0])) + "/mjpg-s
     os.system( "cd " + path + "/mjpg-streamer/mjpg-streamer && make" )
 
 app = Flask(__name__)
+keyFunc = None
 
 class WebServer:
     @app.route("/")
     def index():
 	url_for('static', filename='pasqually.js')
-        url_for('static', filename='jquery.js')
+        url_for('static', filename='jquery.js' )
         return render_template('index.html')
 
     @app.route('/onKeyPress/', methods=['GET'])
     def onKeyPress():
         ret_data = {"value": request.args.get('keyVal')}
-        #server.keyFunc( request.args.get('keyVal'), request.args.get('val' ) )
+        global keyFunc
+        keyFunc( request.args.get('keyVal'), request.args.get('val' ) )
         return request.args.get('keyVal')
 
-    def __init__(self):
+    def __init__(self, func1):
+
         def run_server():
-            app.run(host='0.0.0.0',debug=False)
+	    global keyFunc
+	    keyFunc = func1
+            app.run(host='0.0.0.0',debug=True)
+	    test = "PASQ!"
 
         self.server = Process(target=run_server)
         self.server.start()
-            
+
+	app.config["keyFunc" ] = "HI!"
+	print app.config["keyFunc"]
+
         # Enable webcam
         res = "480x360"
         framerate = 24
@@ -47,7 +55,6 @@ class WebServer:
         os.system(cmd)
 
     def shutdown(self):
-	print onKeyFunc
         os.system('kill -9 `pidof mjpg_streamer` > /dev/null 2>&1')
         self.server.terminate()
         self.server.join()

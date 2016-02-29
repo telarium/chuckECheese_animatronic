@@ -126,13 +126,13 @@ class Movement:
             gpio.setup( i.outputPin2 , "out" )
             gpio.set( i.outputPin1, 0 )
     
-    def executeMovement( self, key, val, serialFunc ):
-        print( "Exec" )
-	#for i in self.all:
-        #    if( i.key == key and key and val ):
-                # Stuff should go here
-        #        break
-        #    elif( i.linkKey and i.linkKey == key and key and val ):
-        #        serialFunc( i.key + str(val) )
-        #        serialFunc( i.linkedMovement.key + str(val) )
-        #        break
+    def executeMovement( self, key, val ):
+	print key
+	for i in self.all:
+            if( i.key == key and key and val ):
+                print( key )
+                break
+            elif( i.linkKey and i.linkKey == key and key and val ):
+                print( i.key + str(val) )
+                print( i.linkedMovement.key + str(val) )
+                break
