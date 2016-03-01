@@ -127,7 +127,6 @@ class Movement:
             gpio.set( i.outputPin1, 0 )
     
     def executeMovement( self, key, val ):
-	print key
 	for i in self.all:
             if( i.key == key and key and val ):
                 print( key )

@@ -13,7 +13,7 @@ document.onkeydown = doKeyDown;
 function doKeyDown(event){
 	var charCode = (typeof event.which == "number") ? event.which : event.keyCode
 	if (down[charCode] == null) { // first press
-		sendKey( charCode, 1 )
+		sendKey( String.fromCharCode(charCode), 1 )
 		down[charCode] = true; // record that the key's down
 	}
 }
@@ -22,7 +22,7 @@ document.onkeyup = doKeyUp;
 function doKeyUp(event){
 	var charCode = (typeof event.which == "number") ? event.which : event.keyCode
 	down[charCode] = null;
-	sendKey( charCode, 0 )
+	sendKey( String.fromCharCode(chatCode), 0 )
 }
 
 // request MIDI access

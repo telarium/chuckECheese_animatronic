@@ -39,7 +39,7 @@ class WebServer:
         def run_server():
 	    global keyFunc
 	    keyFunc = func1
-            app.run(host='0.0.0.0',debug=True)
+            app.run(host='0.0.0.0',debug=False)
 	    test = "PASQ!"
 
         self.server = Process(target=run_server)

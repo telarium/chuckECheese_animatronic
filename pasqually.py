@@ -23,6 +23,7 @@ airCompressorOffHourStart = 1 # The hour of the day to switch off the air compre
 airCompressorOffHourEnd = 7 # The hour of the day to turn the air compressor back on after a restful evening. Change to None to disable.
 rebootHour = 2 # The hour of the day to reboot CHIP to reset everything. Change to None to disable.
 def sendWebKey( key, val ):
+	key = key.lower()
         movements.executeMovement( key, val )
 
 pygame.init()
