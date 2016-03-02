@@ -40,7 +40,6 @@ class WebServer:
 	    global keyFunc
 	    keyFunc = func1
             app.run(host='0.0.0.0',debug=False)
-	    test = "PASQ!"
 
         self.server = Process(target=run_server)
         self.server.start()

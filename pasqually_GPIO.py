@@ -3,6 +3,7 @@
 
 import os
 import subprocess
+from threading import Thread
 
 class GPIO:
     def __init__(self):
@@ -44,12 +45,17 @@ class GPIO:
         return( int(result) )
         
     def set(self,pin, val):
-        if ( self.pins != None ):
-            for pinObject in self.outputPins:
-                if(pinObject[0]==pin and pinObject[1]!=val):
-                    pinObject[1]=val
-                    cmd = "sudo sh -c 'echo " + str(val) + " > /sys/class/gpio/gpio" + str(pinObject[0]) + "/value'"
-                    subprocess.Popen(cmd,shell=True, stdout=subprocess.PIPE)
+	def doSet():
+	    print( str(pin) + ", " + str(val) )
+            if ( self.pins != None ):
+           	for pinObject in self.outputPins:
+                	if(pinObject[0]==pin and pinObject[1]!=val):
+                    		pinObject[1]=val
+                    		cmd = "sudo sh -c 'echo " + str(val) + " > /sys/class/gpio/gpio" + str(pinObject[0]) + "/value'"
+                    		subprocess.Popen(cmd,shell=True, stdout=subprocess.PIPE)
+
+	thread = Thread(target=doSet)
+	thread.start()
         
     def cleanup(self):
         for pinObject in self.pins:
