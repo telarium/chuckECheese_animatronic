@@ -21,8 +21,8 @@ function doKeyDown(event){
 document.onkeyup = doKeyUp;
 function doKeyUp(event){
 	var charCode = (typeof event.which == "number") ? event.which : event.keyCode
-	down[charCode] = null;
-	sendKey( String.fromCharCode(chatCode), 0 )
+	down[charCode] = null
+	sendKey( String.fromCharCode(charCode), 0 )
 }
 
 // request MIDI access
