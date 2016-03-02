@@ -126,12 +126,16 @@ class Movement:
             gpio.setup( i.outputPin2 , "out" )
             gpio.set( i.outputPin1, 0 )
     
-    def executeMovement( self, key, val ):
+    def executeMovement( self, key, val, func ):
 	for i in self.all:
-            if( i.key == key and key and val ):
+            if( i.key == key and key ):
                 print( key )
+		func( i.outputPin1, val );
+		if( i.outputPin2 ):
+			func( i.outputPin2, not val )
                 break
-            elif( i.linkKey and i.linkKey == key and key and val ):
+            elif( i.linkKey and i.linkKey == key and key ):
                 print( i.key + str(val) )
-                print( i.linkedMovement.key + str(val) )
+                print( i.linkedMovement.key + str(val) ) 
                 break
+
