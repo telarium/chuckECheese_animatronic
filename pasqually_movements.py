@@ -131,12 +131,9 @@ class Movement:
     def executeMovement( self, key, val ):
 	for i in self.all:
             if( i.key == key and key ):
-                print( key )
 		if( val == 1 ):
-			print( "ON!" )
 			i.outputPin1.set_high()
 		else:
-			print( "OFF!" )
 			i.outputPin1.set_low()
 
 		if( i.outputPin2 ):
@@ -146,7 +143,6 @@ class Movement:
 				i.outputPin1.set_low()				
                 break
             elif( i.linkKey and i.linkKey == key and key ):
-                print( i.key + str(val) )
-                print( i.linkedMovement.key + str(val) ) 
+	        self.executeMovement( i.linkedMovement.key, val )
                 break
 
