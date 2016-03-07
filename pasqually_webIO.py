@@ -19,6 +19,7 @@ if( not os.path.isdir( os.path.dirname(os.path.realpath(sys.argv[0])) + "/mjpg-s
 
 app = Flask(__name__)
 keyFunc = None
+midiFunc = None
 
 class WebServer:
     @app.route("/")
@@ -34,13 +35,19 @@ class WebServer:
         keyFunc( request.args.get('keyVal'), request.args.get('val' ) )
         return request.args.get('keyVal')
 
-    def __init__(self, func1):
+    @app.route('/getMidiNotes/', methods=['GET'])
+    def getMidiNotes():
+	global midiFunc
+	return midiFunc()
+
+    def __init__(self, func1, func2):
 
         def run_server():
 	    global keyFunc
 	    keyFunc = func1
+	    global midiFunc
+	    midiFunc = func2
             app.run(host='0.0.0.0',debug=False)
-	    test = "PASQ!"
 
         self.server = Process(target=run_server)
         self.server.start()

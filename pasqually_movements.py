@@ -125,6 +125,9 @@ class Movement:
           if( i.outputPin2 ):
             gpio.setup( i.outputPin2 , "out" )
             gpio.set( i.outputPin1, 0 )
+
+    def getMidiNotes( self ):
+	return "I GOTS THE MIDI!" 
     
     def executeMovement( self, key, val ):
 	for i in self.all:

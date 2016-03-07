@@ -22,8 +22,22 @@ document.onkeyup = doKeyUp;
 function doKeyUp(event){
 	var charCode = (typeof event.which == "number") ? event.which : event.keyCode
 	down[charCode] = null;
-	sendKey( String.fromCharCode(chatCode), 0 )
+	sendKey( String.fromCharCode(charCode), 0 )
+	getMidiNotes()
 }
+
+function getMidiNotes(){
+        $.ajax({
+            url: '/getMidiNotes',
+            data: $('form').serialize(),
+            type: 'POST',
+            success: function(response) {
+                console.log(response);
+            },
+        });
+}
+
+getMidiNotes()
 
 // request MIDI access
 if (navigator.requestMIDIAccess) {

@@ -17,6 +17,7 @@ except:
 import pygame.locals as pgl
 from pygame.locals import *
 
+os.system( "axp209 --no_limit" ) # Turn off current limiting for the CHIP AXP209 power management
 Setup()
 
 airCompressorOffHourStart = 1 # The hour of the day to switch off the air compressor. Change to None to disable.
@@ -26,12 +27,15 @@ def sendWebKey( key, val ):
 	key = key.lower()
         movements.executeMovement( key, val )
 
+def getMidiNotes():
+	return "Oh hello. I got MIDI"
+
 pygame.init()
 isRunning = True
 clock = pygame.time.Clock()
 gpio = GPIO()
 movements = Movement(gpio)
-webServer = WebServer(sendWebKey)
+webServer = WebServer(sendWebKey,getMidiNotes)
 
 pygame.display.init()
 size = (pygame.display.Info().current_w, pygame.display.Info().current_h)
