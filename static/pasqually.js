@@ -21,9 +21,14 @@ function doKeyDown(event){
 document.onkeyup = doKeyUp;
 function doKeyUp(event){
 	var charCode = (typeof event.which == "number") ? event.which : event.keyCode
+<<<<<<< HEAD
 	down[charCode] = null;
 	sendKey( String.fromCharCode(charCode), 0 )
 	getMidiNotes()
+=======
+	down[charCode] = null
+	sendKey( String.fromCharCode(charCode), 0 )
+>>>>>>> 6a60615c5fd634d95689134daaf642c9567abbc4
 }
 
 function getMidiNotes(){

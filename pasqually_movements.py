@@ -12,8 +12,8 @@ class Struct():
 class Movement:
     all = []
 
-    def __init__(self, gpio):
-       self.gpio = gpio
+    def __init__(self, GPIO, DIRECTION_OUTPUT):
+       self.gpio = GPIO
 
        self.rightShoulderIn = Struct()
        self.rightShoulderIn.key = 'y'
@@ -120,21 +120,37 @@ class Movement:
        #LCD-D20,21,22?
 
        for i in self.all:
-          gpio.setup( i.outputPin1 , "out" )
-          gpio.set( i.outputPin1, 1 )
+	  i.outputPin1 = GPIO(i.outputPin1,DIRECTION_OUTPUT)
+	  i.outputPin1.open()
+	  i.outputPin1.set_high()
           if( i.outputPin2 ):
+<<<<<<< HEAD
             gpio.setup( i.outputPin2 , "out" )
             gpio.set( i.outputPin1, 0 )
 
     def getMidiNotes( self ):
 	return "I GOTS THE MIDI!" 
+=======
+            i.outputPin2 = GPIO(i.outputPin2,DIRECTION_OUTPUT)
+	    i.outputPin2.open()
+            i.outputPin2.set_high()
+>>>>>>> 6a60615c5fd634d95689134daaf642c9567abbc4
     
     def executeMovement( self, key, val ):
 	for i in self.all:
-            if( i.key == key and key and val ):
-                print( key )
+            if( i.key == key and key ):
+		if( val == 1 ):
+			i.outputPin1.set_high()
+		else:
+			i.outputPin1.set_low()
+
+		if( i.outputPin2 ):
+			if( val == 1 ):
+				i.outputPin2.set_high()
+			else:
+				i.outputPin1.set_low()				
                 break
-            elif( i.linkKey and i.linkKey == key and key and val ):
-                print( i.key + str(val) )
-                print( i.linkedMovement.key + str(val) )
+            elif( i.linkKey and i.linkKey == key and key ):
+	        self.executeMovement( i.linkedMovement.key, val )
                 break
+
