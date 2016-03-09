@@ -1,7 +1,7 @@
 function sendKey(key, num){
 	$.ajax({
             type: "GET",
-            url: "/onKeyPress/",
+            url: "/onKeyPress",
             contentType: "application/json; charset=utf-8",
             data: { keyVal: key, val: num }
         });
@@ -23,7 +23,6 @@ function doKeyUp(event){
 	var charCode = (typeof event.which == "number") ? event.which : event.keyCode
 	down[charCode] = null;
 	sendKey( String.fromCharCode(charCode), 0 )
-	getMidiNotes()
 	down[charCode] = null
 	sendKey( String.fromCharCode(charCode), 0 )
 }
@@ -31,7 +30,6 @@ function doKeyUp(event){
 function getMidiNotes(){
         $.ajax({
             url: '/getMidiNotes',
-            data: $('form').serialize(),
             type: 'POST',
             success: function(response) {
                 console.log(response);

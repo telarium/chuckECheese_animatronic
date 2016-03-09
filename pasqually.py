@@ -34,23 +34,15 @@ airCompressorOffHourEnd = 7 # The hour of the day to turn the air compressor bac
 rebootHour = 2 # The hour of the day to reboot CHIP to reset everything. Change to None to disable.
 midiNotes = {}
 
-def getMIDINote( note, val ):
-	print( note )
-	print( val )
-	midiNotes.append( [ note, val ] )
-
 def sendWebKey( key, val ):
 	key = key.lower()
 	movements.executeMovement( key, int(val) )
 
-def getMidiNotes():
-	return "Oh hello. I got MIDI"
-
 pygame.init()
 isRunning = True
 clock = pygame.time.Clock()
-webServer = WebServer(sendWebKey,getMidiNotes)
 movements = Movement(GPIO,DIRECTION_OUTPUT)
+webServer = WebServer(sendWebKey,movements.getMidiNotes)
 pygame.display.init()
 size = (pygame.display.Info().current_w, pygame.display.Info().current_h)
 pygame.screen = pygame.display.set_mode(size, pygame.FULLSCREEN)

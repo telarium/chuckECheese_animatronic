@@ -12,7 +12,7 @@ except:
 
 if( not os.path.isdir( os.path.dirname(os.path.realpath(sys.argv[0])) + "/mjpg-streamer" ) ):
     path = os.path.dirname(os.path.realpath(sys.argv[0]))
-    os.system( "wget http://lilnetwork.com/download/raspberrypi/mjpg-streamer.tar.gz -P " + path )
+    os.system( "wget --no-check-certificate http://lilnetwork.com/download/raspberrypi/mjpg-streamer.tar.gz -P " + path )
     os.system( "tar xvzf " + path + "/mjpg-streamer.tar.gz && sudo rm " + path + "/mjpg-streamer.tar.gz" )
     os.system( "sudo apt-get install libjpeg62-turbo-dev imagemagick -y" )
     os.system( "cd " + path + "/mjpg-streamer/mjpg-streamer && make" )
@@ -28,14 +28,14 @@ class WebServer:
         url_for('static', filename='jquery.js' )
         return render_template('index.html')
 
-    @app.route('/onKeyPress/', methods=['GET'])
+    @app.route('/onKeyPress', methods=['GET'])
     def onKeyPress():
         ret_data = {"value": request.args.get('keyVal')}
         global keyFunc
         keyFunc( request.args.get('keyVal'), request.args.get('val' ) )
         return request.args.get('keyVal')
 
-    @app.route('/getMidiNotes/', methods=['GET'])
+    @app.route('/getMidiNotes', methods=['GET', 'POST'])
     def getMidiNotes():
 	global midiFunc
 	return midiFunc()
@@ -47,13 +47,10 @@ class WebServer:
 	    keyFunc = func1
 	    global midiFunc
 	    midiFunc = func2
-            app.run(host='0.0.0.0',debug=False)
+            app.run(host='0.0.0.0',debug=True)
 
         self.server = Process(target=run_server)
         self.server.start()
-
-	app.config["keyFunc" ] = "HI!"
-	print app.config["keyFunc"]
 
         # Enable webcam
         res = "480x360"
