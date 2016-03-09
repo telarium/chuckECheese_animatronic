@@ -1,3 +1,5 @@
+var midiNotes = []
+
 function sendKey(key, num){
 	$.ajax({
             type: "GET",
@@ -15,6 +17,7 @@ function doKeyDown(event){
 	if (down[charCode] == null) { // first press
 		sendKey( String.fromCharCode(charCode), 1 )
 		down[charCode] = true; // record that the key's down
+		findMidiNote(String.fromCharCode(charCode),1)
 	}
 }
     
@@ -25,6 +28,7 @@ function doKeyUp(event){
 	sendKey( String.fromCharCode(charCode), 0 )
 	down[charCode] = null
 	sendKey( String.fromCharCode(charCode), 0 )
+	findMidiNote(String.fromCharCode(charCode),0)
 }
 
 function getMidiNotes(){
@@ -32,12 +36,31 @@ function getMidiNotes(){
             url: '/getMidiNotes',
             type: 'POST',
             success: function(response) {
-                console.log(response);
+		response = response.split(/,/);
+		for (i = 0; i < response.length; i++) {
+			if( response[i][1] ) {
+				event = []
+				event.key = response[i][0]
+				event.midiNote1 = parseInt(response[i][1]+response[i][2])
+				event.midiNote2 = parseInt(response[i][3]+response[i][4])
+				midiNotes.push(event)
+			}
+		} 
+		console.log(midiNotes);
             },
         });
 }
 
 getMidiNotes()
+
+function findMidiNote( key, val ) {
+	key = key.toLowerCase();
+	for (i = 0; i < midiNotes.length; i++) {
+		if( midiNotes[i].key == key ) {
+			console.log("MATCH!!!!" )
+		}
+	}	
+}
 
 // request MIDI access
 if (navigator.requestMIDIAccess) {

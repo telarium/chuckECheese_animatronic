@@ -18,7 +18,7 @@ class Movement:
        self.rightShoulderIn = Struct()
        self.rightShoulderIn.key = 'y'
        self.rightShoulderIn.outputPin1 = 132 # CSI-D0
-       self.rightShoulderIn.midiNote = 129
+       self.rightShoulderIn.midiNote = 50
        self.all.append( self.rightShoulderIn )
        
        self.rightShoulderOut = Struct()
@@ -129,8 +129,32 @@ class Movement:
 		i.outputPin2.set_high()
 
 
+    # Fromat MIDI notes into a string to pass to the HTML front end
+    # This way, javascript key presses can control MIDI events directly
     def getMidiNotes( self ):
-	return "I GOTS THE MIDI!" 
+	fullString = ""
+	midiNote1 = None
+	midiNote2 = None
+
+	for i in self.all:
+		fullString += i.key
+		midiNote1 = str(i.midiNote)
+		if( len(midiNote1 ) < 2 ):
+			midiNote1 = "0" + midiNote1
+		
+		fullString+=midiNote1+"00"
+
+		if( i.linkKey ):
+			fullString+=","+i.linkKey+midiNote1
+			midiNote2 = str(i.linkedMovement.midiNote)
+			if( len(midiNote2) < 2 ):
+				midiNote2 = "0" + midiNote2
+
+			fullString+=midiNote2
+
+		fullString+=","
+			
+	return fullString
 
     def executeMovement( self, key, val ):
 	for i in self.all:
