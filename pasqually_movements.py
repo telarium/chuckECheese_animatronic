@@ -124,18 +124,14 @@ class Movement:
 	  i.outputPin1.open()
 	  i.outputPin1.set_high()
           if( i.outputPin2 ):
-<<<<<<< HEAD
-            gpio.setup( i.outputPin2 , "out" )
-            gpio.set( i.outputPin1, 0 )
+		i.outputPin2 = GPIO(i.outputPin2,DIRECTION_OUTPUT)
+		i.outputPin2.open()
+		i.outputPin2.set_high()
+
 
     def getMidiNotes( self ):
 	return "I GOTS THE MIDI!" 
-=======
-            i.outputPin2 = GPIO(i.outputPin2,DIRECTION_OUTPUT)
-	    i.outputPin2.open()
-            i.outputPin2.set_high()
->>>>>>> 6a60615c5fd634d95689134daaf642c9567abbc4
-    
+
     def executeMovement( self, key, val ):
 	for i in self.all:
             if( i.key == key and key ):
