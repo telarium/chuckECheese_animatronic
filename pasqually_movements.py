@@ -1,6 +1,33 @@
 import time
 from threading import Thread
 
+# Valve1  -> LCD_D22 -> 118
+# Valve2  -> LCD_D13 -> 109
+# Valve3  -> LCD_D20 -> 116
+# Valve4  -> LCD_D15 -> 111
+# Valve5  -> LCD_D18 -> 114
+# Valve6  -> NONE
+# Valve7  -> LCD_D14 -> 110
+# Valve8  -> LCD_D19 -> 115
+# Valve9  -> LCD_D12 -> 108
+# Valve10 -> LCD_D21 -> 117
+# Valve11 -> LCD_D10 -> 106
+# Valve12 -> CSI_D6  -> 138
+# Valve13 -> LCD_D6  -> 102
+# Valve14 -> CSI_D4  -> 136
+# Valve15 -> LCD_D4  -> 100
+# Valve16 -> CSI_D2  -> 134
+# Valve17 -> LCD_D3  -> 99
+# Valve18 -> CSI_D0  -> 132
+# Valve19 -> LCD_D5  -> 101
+# Valve20 -> CSI_D7  -> 139
+# Valve21 -> LCD_D7  -> 103
+# Valve22 -> CSI_D5  -> 137
+# Valve23 -> LCD_D11 -> 107
+# Valve24 -> CSI_D3  -> 135
+# Valve25 -> NONE (24v)
+# Valve26 -> CSI_D1  -> 133
+
 class Struct():
     key = '' # A keyboard key press assigned to this movement
     outputPin1 = None # First IO pin on the Arduino
@@ -157,6 +184,12 @@ class Movement:
 	return fullString
 
     def executeMovement( self, key, val ):
+	if val == 1:
+		print("ON!" )
+	else:
+		print("OFF!" )
+
+	'''
 	for i in self.all:
             if( i.key == key and key ):
 		if( val == 1 ):
@@ -173,4 +206,4 @@ class Movement:
             elif( i.linkKey and i.linkKey == key and key ):
 	        self.executeMovement( i.linkedMovement.key, val )
                 break
-
+	'''
