@@ -55,9 +55,17 @@ getMidiNotes()
 
 function findMidiNote( key, val ) {
 	key = key.toLowerCase();
+	noteMessage1 = null;
+	noteMessage2 = null;
 	for (i = 0; i < midiNotes.length; i++) {
 		if( midiNotes[i].key == key ) {
-			console.log("MATCH!!!!" )
+			if( val == 1 ) {
+				val = 0x90;
+			} else {
+				val = 0x80;
+			}
+			noteMessage1 = [val, midiNotes[i].midiNote1, 0x7f];
+			console.log(noteMessage1 )
 		}
 	}	
 }

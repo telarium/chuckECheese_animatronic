@@ -16,8 +16,6 @@ except:
 import pygame.locals as pgl
 from pygame.locals import *
 
-os.system( "axp209 --no_limit" ) # Turn off current limiting for the CHIP AXP209 power management
-
 try:
     from libsoc import GPIO
 except:
@@ -46,6 +44,7 @@ webServer = WebServer(sendWebKey,movements.getMidiNotes)
 pygame.display.init()
 size = (pygame.display.Info().current_w, pygame.display.Info().current_h)
 pygame.screen = pygame.display.set_mode(size, pygame.FULLSCREEN)
+pygame.mixer.quit()
 pygame.mixer.init(44100,-16,300, 1024)
 
 while isRunning:
