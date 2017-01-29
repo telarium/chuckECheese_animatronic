@@ -17,13 +17,15 @@ import pygame.locals as pgl
 from pygame.locals import *
 
 try:
-    from libsoc import GPIO
+    import CHIP_IO.GPIO as GPIO
 except:
     path = os.path.dirname(os.path.realpath(sys.argv[0]))
-    os.system( "sudo apt-get -y install libsoc2" )
-    os.system( "sudo dpkg -i sudo dpkg -i " + path + "/libsoc2_0.6.5-python-1_armhf.deb " + path + "/python-libsoc2_0.6.5-python-1_armhf.deb" )
-
-from libsoc import DIRECTION_OUTPUT
+    os.system('sudo apt-get install git build-essential python-dev python-pip flex bison chip-dt-overlays -y')
+    os.system('git clone https://github.com/atenart/dtc.git ' + path + '/dtc')
+    os.system('cd ' + path + '/dtc && sudo make && sudo make install PREFIX=/usr')
+    os.system('git clone git://github.com/xtacocorex/CHIP_IO.git ' + path + '/CHIP_IO')
+    os.system('cd ' + path + '/CHIP_IO && sudo python setup.py install')
+    os.system('cd ' + path + ' && sudo rm -rf ' + path + '/CHIP_IO')
 
 Setup()
 
@@ -39,7 +41,7 @@ def sendWebKey( key, val ):
 pygame.init()
 isRunning = True
 clock = pygame.time.Clock()
-movements = Movement(GPIO,DIRECTION_OUTPUT)
+movements = Movement(GPIO)
 webServer = WebServer(sendWebKey,movements.getMidiNotes)
 pygame.display.init()
 size = (pygame.display.Info().current_w, pygame.display.Info().current_h)
