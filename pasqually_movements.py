@@ -140,7 +140,7 @@ class Movement:
 		self.headUpDown = Struct()
 		self.headUpDown.key = 'w'
 		self.headUpDown.outputPin1 = 'LCD-D18'
-		self.headUpDown.outputPin2 = 'LCD-D19'
+		self.headUpDown.outputPin2 = 'LCD-D22'
 		self.headUpDown.midiNote = 64
 		self.all.append( self.headUpDown )
 
@@ -184,11 +184,20 @@ class Movement:
 		return fullString
 
 	def executeMovement( self, key, val ):
+<<<<<<< HEAD
+		name1 = "LCD-D13"
+		name2 = "LCD-D22"
+		GPIO.output(name1, 0)
+		GPIO.output(name2, 0)
+=======
 		name = "CSID0"
+>>>>>>> 49a498642c8fcad72efea45be543ee23a0fdb28f
 		if val == 1:
+			GPIO.output(name1,1)
 			print("ON!" )
 			GPIO.output(name, 1)
 		else:
+			GPIO.output(name2,1)
 			print("OFF!" )
 			GPIO.output(name, 0)
 

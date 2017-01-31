@@ -36,6 +36,18 @@ class Pasqually():
 		self.clock = pygame.time.Clock()
 		self.movements = Movement()
 
+<<<<<<< HEAD
+pygame.init()
+isRunning = True
+clock = pygame.time.Clock()
+movements = Movement()
+webServer = WebServer(sendWebKey,movements.getMidiNotes)
+pygame.display.init()
+size = (pygame.display.Info().current_w, pygame.display.Info().current_h)
+pygame.screen = pygame.display.set_mode(size, pygame.FULLSCREEN)
+pygame.mixer.quit()
+pygame.mixer.init(44100,-16,300, 1024)
+=======
 		self.webServer = WebServer(self.sendWebKey,self.movements.getMidiNotes)
 		pygame.display.init()
 		size = (pygame.display.Info().current_w, pygame.display.Info().current_h)
@@ -43,6 +55,7 @@ class Pasqually():
 		pygame.mixer.quit()
 		pygame.mixer.init(44100,-16,300, 1024)
 		self.pygame = pygame
+>>>>>>> 49a498642c8fcad72efea45be543ee23a0fdb28f
 
 		while self.isRunning:
     			try:
