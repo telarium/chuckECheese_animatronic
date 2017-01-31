@@ -47,10 +47,11 @@ class WebServer:
 	    keyFunc = func1
 	    global midiFunc
 	    midiFunc = func2
-            app.run(host='0.0.0.0',port=80,debug=True)
+            app.run(host='0.0.0.0',port=80,debug=False)
 
         self.server = Process(target=run_server)
         self.server.start()
+	print( "HERE WE GO!" )
 
         # Enable webcam
         res = "480x360"

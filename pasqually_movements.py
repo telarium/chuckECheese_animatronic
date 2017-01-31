@@ -1,4 +1,5 @@
 import time
+import CHIP_IO.GPIO as GPIO
 from threading import Thread
 
 # Valve1  -> LCD_D22 -> 118
@@ -39,18 +40,17 @@ class Struct():
 class Movement:
 	all = []
 
-	def __init__(self, GPIO):
-		self.gpio = GPIO
+	def __init__(self):
 
 		self.rightShoulderIn = Struct()
 		self.rightShoulderIn.key = 'y'
-		self.rightShoulderIn.outputPin1 = "CSID0"
+		self.rightShoulderIn.outputPin1 = 'CSID0'
 		self.rightShoulderIn.midiNote = 50
 		self.all.append( self.rightShoulderIn )
        
 		self.rightShoulderOut = Struct()
 		self.rightShoulderOut.key = 'u'
-		self.rightShoulderOut.outputPin1 = "CSID1"
+		self.rightShoulderOut.outputPin1 = 'CSID1'
 		self.rightShoulderOut.midiNote = 51
 		self.rightShoulderOut.linkKey = 'r'
 		self.rightShoulderOut.linkedMovement = self.rightShoulderIn
@@ -145,13 +145,16 @@ class Movement:
 		self.all.append( self.headUpDown )
 
 		#LCD-D20,21,22?
+		GPIO.cleanup()
 
 		for i in self.all:
+			GPIO.cleanup(i.outputPin1)
 			GPIO.setup(i.outputPin1,GPIO.OUT)
-			GPIO.output(i.outputPin1, 0)
+			GPIO.output(i.outputPin1, GPIO.LOW)
 			if( i.outputPin2 ):
+				GPIO.cleanup(i.outputPin2)
 				GPIO.setup(i.outputPin2,GPIO.OUT)
-				GPIO.output(i.outputPin2, 0)
+				GPIO.output(i.outputPin2, GPIO.LOW)
 
 	# Fromat MIDI notes into a string to pass to the HTML front end
 	# This way, javascript key presses can control MIDI events directly
@@ -181,24 +184,27 @@ class Movement:
 		return fullString
 
 	def executeMovement( self, key, val ):
+		name = "CSID0"
 		if val == 1:
 			print("ON!" )
+			GPIO.output(name, 1)
 		else:
 			print("OFF!" )
+			GPIO.output(name, 0)
 
 		'''
 		for i in self.all:
             	if( i.key == key and key ):
 			if( val == 1 ):
-				self.gpio.output(i.outputPin1, 1)
+				GPIO.output(i.outputPin1, 1)
 			else:
-				self.gpio.output(i.outputPin1, 0)
+				GPIO.output(i.outputPin1, 0)
 
 			if( i.outputPin2 ):
 				if( val == 1 ):
-					self.gpio.output(i.outputPin2, 1)
+					GPIO.output(i.outputPin2, 1)
 				else:
-					self.gpio.output(i.outputPin2, 0)
+					GPIO.output(i.outputPin2, 0)
 			break
 		elif( i.linkKey and i.linkKey == key and key ):
 		        self.executeMovement( i.linkedMovement.key, val )
