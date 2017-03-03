@@ -2,32 +2,32 @@ import time
 import CHIP_IO.GPIO as GPIO
 from threading import Thread
 
-# Valve1  -> LCD_D22 -> 118
-# Valve2  -> LCD_D13 -> 109
-# Valve3  -> LCD_D20 -> 116
-# Valve4  -> LCD_D15 -> 111
-# Valve5  -> LCD_D18 -> 114
+# Valve1  -> LCD_D22 -> Eye right
+# Valve2  -> LCD_D13 -> Eye left
+# Valve3  -> LCD_D20 -> Eyelid Up
+# Valve4  -> LCD_D15 -> Eyelid down
+# Valve5  -> LCD_D18 -> Mustache
 # Valve6  -> NONE
-# Valve7  -> LCD_D14 -> 110
-# Valve8  -> LCD_D19 -> 115
-# Valve9  -> LCD_D12 -> 108
-# Valve10 -> LCD_D21 -> 117
-# Valve11 -> LCD_D10 -> 106
-# Valve12 -> CSI_D6  -> 138
-# Valve13 -> LCD_D6  -> 102
-# Valve14 -> CSI_D4  -> 136
-# Valve15 -> LCD_D4  -> 100
-# Valve16 -> CSI_D2  -> 134
-# Valve17 -> LCD_D3  -> 99
-# Valve18 -> CSI_D0  -> 132
-# Valve19 -> LCD_D5  -> 101
-# Valve20 -> CSI_D7  -> 139
-# Valve21 -> LCD_D7  -> 103
-# Valve22 -> CSI_D5  -> 137
-# Valve23 -> LCD_D11 -> 107
-# Valve24 -> CSI_D3  -> 135
+# Valve7  -> LCD_D14 -> Neck down
+# Valve8  -> LCD_D19 -> Neck up
+# Valve9  -> LCD_D12 -> Left shoulder out
+# Valve10 -> LCD_D21 -> Left shoulder in
+# Valve11 -> LCD_D10 -> 
+# Valve12 -> CSI_D6  -> 
+# Valve13 -> LCD_D6  -> Left arm down
+# Valve14 -> CSI_D4  -> Left arm up
+# Valve15 -> LCD_D4  -> Mouth open
+# Valve16 -> CSI_D2  -> Mouth closed
+# Valve17 -> LCD_D3  -> Torso left
+# Valve18 -> CSI_D0  -> Torso right
+# Valve19 -> LCD_D5  -> Lean forward
+# Valve20 -> CSI_D7  -> Lean Backward
+# Valve21 -> LCD_D7  -> Right arm down
+# Valve22 -> CSI_D5  -> Right arm up
+# Valve23 -> LCD_D11 -> Right shoulder in
+# Valve24 -> CSI_D3  -> Right shoulder out
 # Valve25 -> NONE (24v)
-# Valve26 -> CSI_D1  -> 133
+# Valve26 -> CSI_D1  -> 
 
 class Struct():
 	key = '' # A keyboard key press assigned to this movement
@@ -184,8 +184,10 @@ class Movement:
 		return fullString
 
 	def executeMovement( self, key, val ):
-		name1 = "LCD-D13"
-		name2 = "LCD-D22"
+		name1 = "LCD-D20"
+		name2 = "LCD-D15"
+		GPIO.setup(name1,GPIO.OUT)
+		GPIO.setup(name2,GPIO.OUT)
 		GPIO.output(name1, 0)
 		GPIO.output(name2, 0)
 		if val == 1:
@@ -213,3 +215,4 @@ class Movement:
 		        self.executeMovement( i.linkedMovement.key, val )
 			break
 		'''
+
