@@ -118,30 +118,35 @@ class Movement:
 		self.eyesBlink.midiNote = 60
 		self.all.append( self.eyesBlink )
        
-		self.bodyLeanUpDown = Struct()
-		self.bodyLeanUpDown.key = 's'
-		self.bodyLeanUpDown.outputPin1 = 'LCD-D5'
-		self.bodyLeanUpDown.outputPin2 = 'CSID7'
-		self.bodyLeanUpDown.midiNote = 61
-		self.all.append( self.bodyLeanUpDown )
+		self.bodyLeanUp = Struct()
+		self.bodyLeanUp.key = 's'
+		self.bodyLeanUp.outputPin1 = 'LCD-D5'
+		self.bodyLeanUp.midiNote = 61
+		self.all.append( self.bodyLeanUp ) 
+
+		self.bodyLeanDown = Struct()
+                self.bodyLeanDown.key = 'x'
+                self.bodyLeanDown.outputPin1 = 'CSID7'
+                self.bodyLeanDown.midiNote = 62
+                self.all.append( self.bodyLeanDown )
        
 		self.neckLeft = Struct()
 		self.neckLeft.key = 'a'
 		self.neckLeft.outputPin1 = 'LCD-D3'
-		self.neckLeft.midiNote = 62
+		self.neckLeft.midiNote = 63
 		self.all.append( self.neckLeft )
        
 		self.neckRight = Struct()
 		self.neckRight.key = 'd'
 		self.neckRight.outputPin1 = 'CSID0'
-		self.neckRight.midiNote = 63
+		self.neckRight.midiNote = 64
 		self.all.append( self.neckRight )
        
 		self.headUpDown = Struct()
 		self.headUpDown.key = 'w'
 		self.headUpDown.outputPin1 = 'LCD-D14'
 		self.headUpDown.outputPin2 = 'LCD-D19'
-		self.headUpDown.midiNote = 64
+		self.headUpDown.midiNote = 65
 		self.all.append( self.headUpDown )
 
 		#LCD-D20,21,22?
@@ -198,5 +203,6 @@ class Movement:
 						GPIO.output(i.outputPin2, 1)
 				break
 			elif( i.linkKey and i.linkKey == key and key ):
+				self.executeMovement( i.key, val )
 			        self.executeMovement( i.linkedMovement.key, val )
 				break
