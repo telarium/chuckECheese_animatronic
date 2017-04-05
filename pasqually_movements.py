@@ -1,6 +1,6 @@
 import time
 import CHIP_IO.GPIO as GPIO
-from threading import Thread
+import threading
 
 # Valve1  -> LCD-D22 -> Eye right
 # Valve2  -> LCD-D13 -> Eye left
@@ -34,6 +34,9 @@ class Struct():
 	outputPin1 = None # First IO pin on the Arduino
 	outputPin2 = None # Optional second IO pin (the inverse state of pin 1)
 	midiNote = 0 # A MIDI note assigned to this movement to be recorded in a sequencer
+	outputPin1MaxTime = -1 # How much time is pin 1 allowed to be pulled high? (optional, -1 means infinite)
+	outputPin2MaxTime = -1 # See above (optional, -1 means infinite)
+	outputInverted = False # Invert high/low for this movement (optional)
 	linkKey = None # A keyboard key that binds this movement to another (optional)
 	linkedMovement = None # The movement we want to bind to this link (optional)
 
@@ -41,46 +44,40 @@ class Movement:
 	all = []
 
 	def __init__(self):
-
-		self.rightShoulderIn = Struct()
-		self.rightShoulderIn.key = 'y'
-		self.rightShoulderIn.outputPin1 = 'LCD-D11'
-		self.rightShoulderIn.midiNote = 50
-		self.all.append( self.rightShoulderIn )
-       
-		self.rightShoulderOut = Struct()
-		self.rightShoulderOut.key = 'u'
-		self.rightShoulderOut.outputPin1 = 'CSID3'
-		self.rightShoulderOut.midiNote = 51
-		self.all.append( self.rightShoulderOut )
+		self.rightShoulder = Struct()
+		self.rightShoulder.key = 'y'
+		self.rightShoulder.outputPin1 = 'CSID3'
+		self.rightShoulder.outputPin2 = 'LCD-D11'
+		self.rightShoulder.outputPin1MaxTime = 1
+		self.rightShoulder.outputPin2Maxtime = 1
+		self.rightShoulder.midiNote = 50
+		self.all.append( self.rightShoulder )
        
 		self.rightArm = Struct()
 		self.rightArm.key = 'j'
 		self.rightArm.outputPin1 = 'CSID5'
 		self.rightArm.outputPin2 = 'LCD-D7'
+		self.rightArm.outputPin1MaxTime = 0.75
+		self.rightArm.outputPin2MaxTime = 0.75
 		self.rightArm.midiNote = 52
 		self.all.append( self.rightArm )
        
-		self.leftShoulderOut = Struct()
-		self.leftShoulderOut.key = 'i'
-		self.leftShoulderOut.outputPin1  = 'LCD-D12'
-		self.leftShoulderOut.linkKey = 'r'
-                self.leftShoulderOut.linkedMovement = self.rightShoulderOut
-		self.leftShoulderOut.midiNote = 53
-		self.all.append( self.leftShoulderOut )
-       
-		self.leftShoulderIn = Struct()
-		self.leftShoulderIn.key = 'o'
-		self.leftShoulderIn.outputPin1 = 'LCD-D21'
-		self.leftShoulderIn.midiNote = 54
-		self.leftShoulderIn.linkKey = 't'
-		self.leftShoulderIn.linkedMovement = self.rightShoulderIn
-		self.all.append( self.leftShoulderIn )
+		self.leftShoulder = Struct()
+		self.leftShoulder.key = 'u'
+		self.leftShoulder.outputPin1 = 'LCD-D12'
+		self.leftShoulder.outputPin2 = 'LCD-D21'
+		self.leftShoulder.outputPin1MaxTime = 1
+                self.leftShoulder.outputPin2Maxtime = 1
+		self.leftShoulder.linkKey = 't'
+                self.leftShoulder.linkedMovement = self.rightShoulder
+		self.leftShoulder.midiNote = 53
+		self.all.append( self.leftShoulder )
        
 		self.leftArm = Struct()
 		self.leftArm.key = 'h'
 		self.leftArm.outputPin1 = 'CSID4'
 		self.leftArm.outputPin2 = 'LCD-D6'
+		self.leftArm.outputPin2MaxTime = 0.75
 		self.leftArm.midiNote = 55
 		self.all.append( self.leftArm )
 
@@ -88,6 +85,8 @@ class Movement:
 		self.mouth.key = 'x'
 		self.mouth.outputPin1 = 'LCD-D4'
 		self.mouth.outputPin2 = 'CSID2'
+		self.mouth.outputPin1MaxTime = 0.75
+		self.mouth.outputPin2MaxTime = 0.75
 		self.mouth.midiNote = 56
 		self.all.append( self.mouth )
        
@@ -115,30 +114,36 @@ class Movement:
 		self.eyesBlink.key = 'v'
 		self.eyesBlink.outputPin1 = 'LCD-D15'
 		self.eyesBlink.outputPin2 = 'LCD-D20'
+		self.eyesBlink.outputPin1MaxTime = 0.5
+		self.eyesBlink.outputPin2MaxTime = 0.5
 		self.eyesBlink.midiNote = 60
 		self.all.append( self.eyesBlink )
        
 		self.bodyLeanUp = Struct()
 		self.bodyLeanUp.key = 's'
 		self.bodyLeanUp.outputPin1 = 'LCD-D5'
+		self.bodyLeanUp.outputInverted = True
 		self.bodyLeanUp.midiNote = 61
 		self.all.append( self.bodyLeanUp ) 
 
 		self.bodyLeanDown = Struct()
-                self.bodyLeanDown.key = 'x'
+                self.bodyLeanDown.key = 'm'
                 self.bodyLeanDown.outputPin1 = 'CSID7'
+		self.bodyLeanDown.outputPin1MaxTime = 2
                 self.bodyLeanDown.midiNote = 62
                 self.all.append( self.bodyLeanDown )
        
 		self.neckLeft = Struct()
 		self.neckLeft.key = 'a'
 		self.neckLeft.outputPin1 = 'LCD-D3'
+		self.neckLeft.outputPin1MaxTime = 2
 		self.neckLeft.midiNote = 63
 		self.all.append( self.neckLeft )
        
 		self.neckRight = Struct()
 		self.neckRight.key = 'd'
 		self.neckRight.outputPin1 = 'CSID0'
+		self.neckRight.outputPin1MaxTime = 2
 		self.neckRight.midiNote = 64
 		self.all.append( self.neckRight )
        
@@ -146,20 +151,42 @@ class Movement:
 		self.headUpDown.key = 'w'
 		self.headUpDown.outputPin1 = 'LCD-D14'
 		self.headUpDown.outputPin2 = 'LCD-D19'
+		self.headUpDown.outputPin1MaxTime = 1
 		self.headUpDown.midiNote = 65
 		self.all.append( self.headUpDown )
 
-		#LCD-D20,21,22?
 		GPIO.cleanup()
 
 		for i in self.all:
+			val = GPIO.LOW
+			try:
+				if i.outputInverted == True:
+					val = GPIO.HIGH
+			except:
+				i.outputInverted = False
+
+			try:
+				if i.outputPin1MaxTime > -1:
+					i.pin1Time = -1
+			except:
+				i.outputPin1MaxTime = -1
+
+			try:
+				if i.outputPin2MaxTime > -1:
+					i.pin2Time = -1
+			except:
+				i.outputPin2MaxTime = -1 
+
 			GPIO.cleanup(i.outputPin1)
 			GPIO.setup(i.outputPin1,GPIO.OUT)
-			GPIO.output(i.outputPin1, GPIO.LOW)
+			GPIO.output(i.outputPin1, val)
 			if( i.outputPin2 ):
 				GPIO.cleanup(i.outputPin2)
 				GPIO.setup(i.outputPin2,GPIO.OUT)
-				GPIO.output(i.outputPin2, GPIO.LOW)
+				GPIO.output(i.outputPin2, val)
+
+		t = threading.Thread(target=self.updatePins, args = ())
+    		t.start()
 
 	# Fromat MIDI notes into a string to pass to the HTML front end
 	# This way, javascript key presses can control MIDI events directly
@@ -188,9 +215,30 @@ class Movement:
 			
 		return fullString
 
+	def updatePins(self ):
+		while self:
+			time.sleep(0.1)
+			for i in self.all:
+				if i.outputPin1MaxTime > -1:
+					if i.pin1Time > 0:
+						i.pin1Time-=0.1
+						if i.pin1Time <= 0:
+							i.pin1Time = -1
+						print("pin1!!!!")
+				
+				if i.outputPin2MaxTime > -1:
+					if i.pin2Time > 0:
+						i.pin2Time-=0.1
+						if i.pin2Time <= 0:
+							i.pin2Time = -1
+						print("pin2!!!!")
+
 	def executeMovement( self, key, val ):
 		for i in self.all:
 	            	if( i.key == key and key ):
+				if i.outputInverted == True:
+					val = 1 - val
+
 				if( val == 1 ):
 					GPIO.output(i.outputPin1, 1)
 				else:

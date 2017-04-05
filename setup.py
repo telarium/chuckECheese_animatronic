@@ -8,7 +8,7 @@ import string
 class Setup:
     def __init__(self):
 	path = os.path.dirname(os.path.realpath(sys.argv[0]))
-	os.system("sudo apt-get install python-pygame git build-essential python-dev python-pip flex bison dnsmasq -y")
+	os.system("sudo apt-get install git build-essential python-dev python-pip flex bison dnsmasq -y")
 	
 	# Install mjpg-streamer
 	os.system( "wget --no-check-certificate http://lilnetwork.com/download/raspberrypi/mjpg-streamer.tar.gz -P " + path )
