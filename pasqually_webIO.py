@@ -38,7 +38,6 @@ class WebServer:
 
         self.server = Process(target=run_server)
         self.server.start()
-	print( "HERE WE GO!" )
 
         # Enable webcam
         res = "480x360"
