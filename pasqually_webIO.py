@@ -34,7 +34,7 @@ class WebServer:
 	    keyFunc = func1
 	    global midiFunc
 	    midiFunc = func2
-            app.run(host='0.0.0.0',port=80,debug=False)
+            app.run(host='0.0.0.0',port=80,threaded=True,debug=False)
 
         self.server = Process(target=run_server)
         self.server.start()
