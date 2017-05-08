@@ -48,28 +48,28 @@ class Movement:
 
 		self.rightShoulder = Struct()
 		self.rightShoulder.key = 'o'
-		self.rightShoulder.outputPin1 = 'CSID3'
-		self.rightShoulder.outputPin2 = 'LCD-D11'
-		self.rightShoulder.outputPin1MaxTime = 0.5
-		self.rightShoulder.outputPin2MaxTime = 60*10
+		self.rightShoulder.outputPin2 = 'CSID3'
+		self.rightShoulder.outputPin1 = 'LCD-D11'
+		self.rightShoulder.outputPin2MaxTime = 0.5
+		self.rightShoulder.outputPin1MaxTime = 60*10
 		self.rightShoulder.midiNote = 50
 		self.all.append( self.rightShoulder )
        
 		self.rightArm = Struct()
 		self.rightArm.key = 'l'
-		self.rightArm.outputPin1 = 'CSID5'
-		self.rightArm.outputPin2 = 'LCD-D7'
-		self.rightArm.outputPin1MaxTime = -1
-		self.rightArm.outputPin2MaxTime = 0.75
+		self.rightArm.outputPin2 = 'CSID5'
+		self.rightArm.outputPin1 = 'LCD-D7'
+		self.rightArm.outputPin2MaxTime = -1
+		self.rightArm.outputPin1MaxTime = 0.75
 		self.rightArm.midiNote = 52
 		self.all.append( self.rightArm )
        
 		self.leftShoulder = Struct()
 		self.leftShoulder.key = 'u'
-		self.leftShoulder.outputPin1 = 'LCD-D12'
-		self.leftShoulder.outputPin2 = 'LCD-D21'
-		self.leftShoulder.outputPin1MaxTime = 0.5
-                self.leftShoulder.outputPin2MaxTime = 60*10
+		self.leftShoulder.outputPin2 = 'LCD-D12'
+		self.leftShoulder.outputPin1 = 'LCD-D21'
+		self.leftShoulder.outputPin2MaxTime = 0.5
+                self.leftShoulder.outputPin1MaxTime = 60*10
 		self.leftShoulder.linkKey = 'i'
                 self.leftShoulder.linkedMovement = self.rightShoulder
 		self.leftShoulder.midiNote = 53
@@ -77,10 +77,10 @@ class Movement:
        
 		self.leftArm = Struct()
 		self.leftArm.key = 'j'
-		self.leftArm.outputPin1 = 'CSID4'
-		self.leftArm.outputPin2 = 'LCD-D6'
-		self.leftArm.outputPin1MaxTime = -1
-		self.leftArm.outputPin2MaxTime = 0.75
+		self.leftArm.outputPin2 = 'CSID4'
+		self.leftArm.outputPin1 = 'LCD-D6'
+		self.leftArm.outputPin2MaxTime = -1
+		self.leftArm.outputPin1MaxTime = 0.75
 		self.leftArm.linkKey = 'k'
 		self.leftArm.linkedMovement = self.rightArm
 		self.leftArm.midiNote = 55
@@ -144,14 +144,14 @@ class Movement:
 		self.neckLeft = Struct()
 		self.neckLeft.key = 'a'
 		self.neckLeft.outputPin1 = 'LCD-D3'
-		self.neckLeft.outputPin1MaxTime = 1.25
+		self.neckLeft.outputPin1MaxTime = 0.8
 		self.neckLeft.midiNote = 63
 		self.all.append( self.neckLeft )
        
 		self.neckRight = Struct()
 		self.neckRight.key = 'd'
 		self.neckRight.outputPin1 = 'CSID0'
-		self.neckRight.outputPin1MaxTime = 1.25
+		self.neckRight.outputPin1MaxTime = 0.8
 		self.neckRight.midiNote = 64
 		self.all.append( self.neckRight )
        
@@ -191,7 +191,7 @@ class Movement:
 			if( i.outputPin2 ):
 				GPIO.cleanup(i.outputPin2)
 				GPIO.setup(i.outputPin2,GPIO.OUT)
-				self.setPin(i.outputPin2, val)
+				self.setPin(i.outputPin2, 1-val)
 
 	# Fromat MIDI notes into a string to pass to the HTML front end
 	# This way, javascript key presses can control MIDI events directly
