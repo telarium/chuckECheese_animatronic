@@ -37,12 +37,33 @@ class Struct():
 	outputPin1MaxTime = -1 # How much time is pin 1 allowed to be pulled high? (optional, -1 means infinite)
 	outputPin2MaxTime = -1 # See above (optional, -1 means infinite)
 	outputInverted = False # Invert high/low for this movement (optional)
+	callbackFunc = None # A function to call when the value has changed (optional)
 	linkKey = None # A keyboard key that binds this movement to another (optional)
 	linkedMovement = None # The movement we want to bind to this link (optional)
 
 class Movement:
 	all = []
 
+	def onEyeMove( self, movement, val ):
+		print "blarg"
+		if val == 0 and self.leftShoulder.keyIsPressed != 1 and self.rightShoulder.keyIsPressed != 1:
+			pin = None
+			if movement == self.eyesLeft:
+				pin = self.eyesRight.outputPin1
+			elif movement == self.eyesRight:
+				pin = self.eyesLeft.outputPin1
+
+			if pin:
+				print "set!"
+				self.setPin(pin,1)
+				time.sleep(0.25)
+				print self.leftShoulder.keyIsPressed
+				print self.rightShoulder.keyIsPressed
+				if self.leftShoulder.keyIsPressed != 1 and self.rightShoulder.keyIsPressed != 1:
+					print("UNSET " + str(pin))
+					self.setPin(pin,0)
+
+		
 	def __init__(self):
 		self.bThreadStarted = False	
 
@@ -109,6 +130,7 @@ class Movement:
 		self.eyesLeft.outputPin1 = 'LCD-D22'
 		self.eyesLeft.outputPin1MaxTime = 60*10
 		self.eyesLeft.midiNote = 58
+		self.eyesLeft.callbackFunc = self.onEyeMove
 		self.all.append( self.eyesLeft )
        
 		self.eyesRight = Struct()
@@ -116,6 +138,7 @@ class Movement:
 		self.eyesRight.outputPin1 = 'LCD-D13'
 		self.eyesRight.outputPin1MaxTime = 60*10
 		self.eyesRight.midiNote = 59
+		self.eyesRight.callbackFunc = self.onEyeMove
 		self.all.append( self.eyesRight )
        
 		self.eyesBlink = Struct()
@@ -135,11 +158,11 @@ class Movement:
 		self.all.append( self.bodyLeanUp ) 
 
 		self.bodyLeanDown = Struct()
-                self.bodyLeanDown.key = 'n'
-                self.bodyLeanDown.outputPin1 = 'CSID7'
+		self.bodyLeanDown.key = 'n'
+		self.bodyLeanDown.outputPin1 = 'CSID7'
 		self.bodyLeanDown.outputPin1MaxTime = 2
-                self.bodyLeanDown.midiNote = 62
-                self.all.append( self.bodyLeanDown )
+		self.bodyLeanDown.midiNote = 62
+		self.all.append( self.bodyLeanDown )
        
 		self.neckLeft = Struct()
 		self.neckLeft.key = 'a'
@@ -166,6 +189,7 @@ class Movement:
 		GPIO.cleanup()
 
 		for i in self.all:
+			i.keyIsPressed = False
 			val = GPIO.LOW
 			try:
 				if i.outputInverted == True:
@@ -173,22 +197,14 @@ class Movement:
 			except:
 				i.outputInverted = False
 
-			try:
-				if i.outputPin1MaxTime > -1:
-					i.pin1Time = 7
-			except:
-				i.outputPin1MaxTime = -1
-
-			try:
-				if i.outputPin2MaxTime > -1:
-					i.pin2Time = 0
-			except:
-				i.outputPin2MaxTime = -1 
-
+			
+			i.pin1Time = 0
+			
 			GPIO.cleanup(i.outputPin1)
 			GPIO.setup(i.outputPin1,GPIO.OUT)
 			self.setPin(i.outputPin1, val)
 			if( i.outputPin2 ):
+				i.pin2Time = 0
 				GPIO.cleanup(i.outputPin2)
 				GPIO.setup(i.outputPin2,GPIO.OUT)
 				self.setPin(i.outputPin2, 1-val)
@@ -240,8 +256,17 @@ class Movement:
 		GPIO.output(pin,val)
 
 	def executeMovement( self, key, val ):
+		print "exe"
 		for i in self.all:
-	            	if( i.key == key and key ):
+			bDoCallback = False
+			if( i.key == key and key ):
+				if val == 1 and i.keyIsPressed == False:
+					i.keyIsPressed = True
+					bDoCallback = True
+				elif val == 0 and i.keyIsPressed == True:
+					i.keyIsPressed = False
+					bDoCallback = True
+
 				if i.outputInverted == True:
 					val = 1 - val
 
@@ -257,6 +282,16 @@ class Movement:
 						i.pin2Time = 0
 					else:
 						i.pin2Time = i.outputPin2MaxTime
+
+				func = i.callbackFunc
+				print func
+				try:
+					if bDoCallback:
+						t = threading.Thread(target=i.callbackFunc, args = (i,val))
+						t.start()
+				except:
+					pass
+
 				break
 			elif( i.linkKey and i.linkKey == key and key ):
 				self.executeMovement( i.key, val )

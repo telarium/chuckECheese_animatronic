@@ -13,16 +13,24 @@ class Pasqually():
 	midiNotes = {}
 
 	def __init__(self):
-		self.isRunning = True
+		self.webServer = WebServer(self.sendWebKey,self.getMidiNotes)
 		self.movements = Movement()
-		self.webServer = WebServer(self.sendWebKey,self.movements.getMidiNotes)
+		self.isRunning = True
 
 		while self.isRunning:
 			time.sleep(0.1)
-            
+ 
+ 	def getMidiNotes(i):
+ 		print self
+ 		return "LKJLKSJDF"
+
 	def sendWebKey(self,key, val):
-                key = key.lower()
-                self.movements.executeMovement( key, int(val) )
+		#try:
+		key = key.lower()
+		print key
+		self.movements.executeMovement( key, int(val) )
+		#except:
+		#	pass
 
 animatronic = Pasqually()
 animatronic.webServer.shutdown()
