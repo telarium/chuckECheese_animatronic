@@ -3,6 +3,7 @@ import sys
 import time
 import platform
 from threading import Thread
+from pydispatch import dispatcher
 from pasqually_movements import Movement
 from pasqually_webIO import WebServer
 
@@ -13,24 +14,16 @@ class Pasqually():
 	midiNotes = {}
 
 	def __init__(self):
-		self.webServer = WebServer(self.sendWebKey,self.getMidiNotes)
-		self.movements = Movement()
+		self.movements = Movement()		
+		dispatcher.connect( self.onKeyEvent, signal="keyEvent", sender=dispatcher.Any )
+		self.webServer = WebServer()
 		self.isRunning = True
-
+		
 		while self.isRunning:
 			time.sleep(0.1)
- 
- 	def getMidiNotes(i):
- 		print self
- 		return "LKJLKSJDF"
 
-	def sendWebKey(self,key, val):
-		#try:
-		key = key.lower()
-		print key
-		self.movements.executeMovement( key, int(val) )
-		#except:
-		#	pass
+	def onKeyEvent(self,key,val):
+		self.movements.executeMovement(key, val)
 
 animatronic = Pasqually()
 animatronic.webServer.shutdown()

@@ -8,7 +8,8 @@ import string
 class Setup:
     def __init__(self):
 	path = os.path.dirname(os.path.realpath(sys.argv[0]))
-	os.system("sudo apt-get install git build-essential python-dev python-pip flex bison dnsmasq -y")
+	os.system("sudo apt-get install git build-essential python-dev python-pip flex bison dnsmasq python-blinker -y")
+	os.system("sudo pip install flask")
 	
 	# Install mjpg-streamer
 	os.system( "wget --no-check-certificate http://lilnetwork.com/download/raspberrypi/mjpg-streamer.tar.gz -P " + path )
@@ -16,23 +17,11 @@ class Setup:
 	os.system( "sudo apt-get install libjpeg62-turbo-dev imagemagick -y" )
 	os.system( "cd " + path + "/mjpg-streamer/mjpg-streamer && make" )
 
-	# Install Flask
-	try:
-		import Flask
-	except:
-		os.system( "sudo pip install flask")
-
-	os.system( "sudo pip install flask" )
-
-	# Install CHIP_IO Python library
-	try:
-		import CHIP_IO.GPIO as GPIO
-	except:
-		os.system('git clone https://github.com/atenart/dtc.git ' + path + '/dtc')
-		os.system('cd ' + path + '/dtc && sudo make && sudo make install PREFIX=/usr')
-		os.system('git clone git://github.com/xtacocorex/CHIP_IO.git ' + path + '/CHIP_IO')
-		os.system('cd ' + path + '/CHIP_IO && sudo python setup.py install')
-		os.system('cd ' + path + ' && sudo rm -rf ' + path + '/CHIP_IO')
+	os.system('git clone https://github.com/atenart/dtc.git ' + path + '/dtc')
+	os.system('cd ' + path + '/dtc && sudo make && sudo make install PREFIX=/usr')
+	os.system('git clone git://github.com/xtacocorex/CHIP_IO.git ' + path + '/CHIP_IO')
+	os.system('cd ' + path + '/CHIP_IO && sudo python setup.py install')
+	os.system('cd ' + path + ' && sudo rm -rf ' + path + '/CHIP_IO')
 	
 	# TODO... store hours of operation here
         self.settingsFile = os.path.dirname(os.path.realpath(sys.argv[0])) + "/settings.txt" 
@@ -115,4 +104,3 @@ class Setup:
         os.system( "systemctl status hostapd-systemd" )
 
 install = Setup()
-print("Done!")

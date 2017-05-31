@@ -256,7 +256,6 @@ class Movement:
 		GPIO.output(pin,val)
 
 	def executeMovement( self, key, val ):
-		print "exe"
 		for i in self.all:
 			bDoCallback = False
 			if( i.key == key and key ):
@@ -284,7 +283,6 @@ class Movement:
 						i.pin2Time = i.outputPin2MaxTime
 
 				func = i.callbackFunc
-				print func
 				try:
 					if bDoCallback:
 						t = threading.Thread(target=i.callbackFunc, args = (i,val))

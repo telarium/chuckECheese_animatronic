@@ -1,6 +1,7 @@
 import os
 import socket
 import sys
+from pydispatch import dispatcher
 from multiprocessing import Process
 from flask import Flask, render_template, url_for, request, jsonify, g
 
@@ -16,29 +17,22 @@ class WebServer:
         return render_template('index.html')
 
     @app.route('/onKeyPress', methods=['GET'])
-    def onKeyPress():
-        ret_data = {"value": request.args.get('keyVal')}
-        global keyFunc
-        keyFunc( request.args.get('keyVal'), request.args.get('val' ) )
+    def webKeyEvent():
+        dispatcher.send(signal="keyEvent",key=request.args.get('keyVal'), val=int(request.args.get('val' )))
+            #message=request.args.get('keyVal'), arg2=int(request.args.get('val')), sender="web")
         return request.args.get('keyVal')
 
-    @app.route('/getMidiNotes', methods=['GET', 'POST'])
-    def getMidiNotes():
-	global midiFunc
-	return midiFunc()
+    @app.route('/startSession', methods=['GET', 'POST'])
+    def startSession():
+        return True
 
-    def __init__(self, func1, func2):
-
+    def __init__(self):
         def run_server():
-	    global keyFunc
-	    keyFunc = func1
-	    global midiFunc
-	    midiFunc = func2
             app.run(host='0.0.0.0',port=80,threaded=True,debug=False)
 
         self.server = Process(target=run_server)
         self.server.start()
-
+        
         # Enable webcam
         res = "480x360"
         framerate = 24
