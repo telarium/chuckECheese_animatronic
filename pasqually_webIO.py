@@ -6,8 +6,6 @@ from multiprocessing import Process
 from flask import Flask, render_template, url_for, request, jsonify, g
 
 app = Flask(__name__)
-keyFunc = None
-midiFunc = None
 
 class WebServer:
     @app.route("/")
