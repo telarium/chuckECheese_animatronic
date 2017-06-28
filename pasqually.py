@@ -14,7 +14,7 @@ class Pasqually():
 	midiNotes = {}
 
 	def __init__(self):
-		self.movements = Movement()		
+		self.movements = Movement()
 		dispatcher.connect( self.onKeyEvent, signal="keyEvent", sender=dispatcher.Any )
 		self.webServer = WebServer()
 		self.isRunning = True
@@ -23,7 +23,10 @@ class Pasqually():
 			time.sleep(0.1)
 
 	def onKeyEvent(self,key,val):
-		self.movements.executeMovement(key, val)
+		try:
+			self.movements.executeMovement(str(key).lower(), val)
+		except:
+			print "Invalid key!"
 
 animatronic = Pasqually()
 animatronic.webServer.shutdown()

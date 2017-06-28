@@ -44,9 +44,9 @@ class Struct():
 class Movement:
 	all = []
 
+	# Callback function for eyes to do a best attempt to re-center the eyeballs when keys are released.
 	def onEyeMove( self, movement, val ):
-		print "blarg"
-		if val == 0 and self.leftShoulder.keyIsPressed != 1 and self.rightShoulder.keyIsPressed != 1:
+		if val == 0 and self.leftShoulder.keyIsPressed != True and self.rightShoulder.keyIsPressed != True:
 			pin = None
 			if movement == self.eyesLeft:
 				pin = self.eyesRight.outputPin1
@@ -54,19 +54,18 @@ class Movement:
 				pin = self.eyesLeft.outputPin1
 
 			if pin:
-				print "set!"
+				# Move eyes in the opposite direction for a split second.
+				# This will actuate the springs and hopefully re-center the eyeballs.
 				self.setPin(pin,1)
-				time.sleep(0.25)
-				print self.leftShoulder.keyIsPressed
-				print self.rightShoulder.keyIsPressed
-				if self.leftShoulder.keyIsPressed != 1 and self.rightShoulder.keyIsPressed != 1:
-					print("UNSET " + str(pin))
+				time.sleep(0.05)
+				# Don't disable output if user has pressed another eye key
+				if self.eyesRight.keyIsPressed != True and self.eyesLeft.keyIsPressed != True:
 					self.setPin(pin,0)
-
 		
 	def __init__(self):
 		self.bThreadStarted = False	
 
+		# Define all of our movements here.
 		self.rightShoulder = Struct()
 		self.rightShoulder.key = 'o'
 		self.rightShoulder.outputPin2 = 'CSID3'
@@ -197,7 +196,6 @@ class Movement:
 			except:
 				i.outputInverted = False
 
-			
 			i.pin1Time = 0
 			
 			GPIO.cleanup(i.outputPin1)
@@ -236,6 +234,7 @@ class Movement:
 			
 		return fullString
 
+	# Monitor state of IO and disable any that have been left on past the maximum allowed time.
 	def updatePins(self):
 		while self:
 			time.sleep(0.1)
@@ -284,6 +283,7 @@ class Movement:
 
 				func = i.callbackFunc
 				try:
+					# If a callback function has been defined for this movement, execute in a thread.
 					if bDoCallback:
 						t = threading.Thread(target=i.callbackFunc, args = (i,val))
 						t.start()
@@ -292,6 +292,7 @@ class Movement:
 
 				break
 			elif( i.linkKey and i.linkKey == key and key ):
+				# Execute any other movements that are linked to this movement
 				self.executeMovement( i.key, val )
 			        self.executeMovement( i.linkedMovement.key, val )
 				break
