@@ -1,12 +1,14 @@
+var socket = io.connect('http://' + document.domain + ':' + location.port);
+
+socket.on('connect', function() {
+
+	socket.emit('message', {data: 'I\'m connected!'});
+});
+
 var midiNotes = []
 
 function sendKey(key, num){
-	$.ajax({
-            type: "GET",
-            url: "/onKeyPress",
-            contentType: "application/json; charset=utf-8",
-            data: { keyVal: key, val: num }
-        });
+	socket.emit('onKeyPress', {keyVal: key, val: num});
 }
     
 var down = {}; // store down keys to prevent repeated keypresses
@@ -32,23 +34,7 @@ function doKeyUp(event){
 }
 
 function getMidiNotes(){
-        $.ajax({
-            url: '/getMidiNotes',
-            type: 'POST',
-            success: function(response) {
-		response = response.split(/,/);
-		for (i = 0; i < response.length; i++) {
-			if( response[i][1] ) {
-				event = []
-				event.key = response[i][0]
-				event.midiNote1 = parseInt(response[i][1]+response[i][2])
-				event.midiNote2 = parseInt(response[i][3]+response[i][4])
-				midiNotes.push(event)
-			}
-		} 
-		console.log(midiNotes);
-            },
-        });
+
 }
 
 getMidiNotes()
@@ -89,3 +75,4 @@ function onMIDIFailure(e) {
     // when we get a failed response, run this code
     console.log("No access to MIDI devices or your browser doesn't support WebMIDI API. Please use WebMIDIAPIShim " + e);
 }
+

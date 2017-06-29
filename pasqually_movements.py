@@ -258,6 +258,7 @@ class Movement:
 		for i in self.all:
 			bDoCallback = False
 			if( i.key == key and key ):
+				print i.key
 				if val == 1 and i.keyIsPressed == False:
 					i.keyIsPressed = True
 					bDoCallback = True

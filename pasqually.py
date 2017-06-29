@@ -16,7 +16,9 @@ class Pasqually():
 	def __init__(self):
 		self.movements = Movement()
 		dispatcher.connect( self.onKeyEvent, signal="keyEvent", sender=dispatcher.Any )
+		print "shall me?"
 		self.webServer = WebServer()
+		print "we swhall"
 		self.isRunning = True
 		
 		while self.isRunning:

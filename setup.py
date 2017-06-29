@@ -9,7 +9,7 @@ class Setup:
     def __init__(self):
 	path = os.path.dirname(os.path.realpath(sys.argv[0]))
 	os.system("sudo apt-get install git build-essential python-dev python-pip flex bison dnsmasq python-blinker -y")
-	os.system("sudo pip install flask")
+	os.system("sudo pip install flask flask-socketio gevent")
 	
 	# Install mjpg-streamer
 	os.system( "wget --no-check-certificate http://lilnetwork.com/download/raspberrypi/mjpg-streamer.tar.gz -P " + path )
