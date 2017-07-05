@@ -8,7 +8,7 @@ from multiprocessing import Process
 from flask import Flask, render_template, url_for, request, jsonify, g
 from flask_socketio import SocketIO, emit
 
-app = Flask(__name__)
+app = app = Flask(__name__, static_folder='webpage')
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app)
 
@@ -16,9 +16,14 @@ socketio = SocketIO(app)
 class WebServer:
     @app.route("/")
     def index():
-        url_for('static', filename='pasqually.js')
-        url_for('static', filename='socket.io.min.js' )
-        return render_template('index.html')
+        #url_for('static', filename='pasqually.js')
+        #url_for('static', filename='socket.io.min.js' )
+        return app.send_static_file('index.html')
+
+    @app.route('/<path:path>')
+    def static_proxy(path):
+        # send_static_file will guess the correct MIME type
+        return app.send_static_file(path)
 
     @socketio.on('onKeyPress')
     def webKeyEvent(data):
@@ -26,10 +31,7 @@ class WebServer:
         return data["keyVal"]
 
     def __init__(self):
-        print "Start?"
         thread.start_new_thread(lambda: socketio.run(app,host='0.0.0.0',port=80), ())
-        #socketio.run(app,host='0.0.0.0',port=80)
-        print "START!"
         # Enable webcam
         res = "480x360"
         framerate = 24
