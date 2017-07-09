@@ -6,6 +6,7 @@ from threading import Thread
 from pydispatch import dispatcher
 from pasqually_movements import Movement
 from pasqually_webIO import WebServer
+from pasqually_systemInfo import SystemInfo
 
 class Pasqually():
 	airCompressorOffHourStart = 1 # The hour of the day to switch off the air compressor. Change to None to disable.
@@ -16,11 +17,17 @@ class Pasqually():
 	def __init__(self):
 		self.movements = Movement()
 		dispatcher.connect( self.onKeyEvent, signal="keyEvent", sender=dispatcher.Any )
+		dispatcher.connect( self.onConnectEvent, signal="connectEvent", sender=dispatcher.Any )
 		self.webServer = WebServer()
+		self.systemInfo = SystemInfo(self.webServer.socket)
 		self.isRunning = True
 		
 		while self.isRunning:
 			time.sleep(0.1)
+
+	def onConnectEvent(self):
+		print "User connected!"
+		self.systemInfo.myTest()
 
 	def onKeyEvent(self,key,val):
 		try:

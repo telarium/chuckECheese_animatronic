@@ -9,21 +9,23 @@ from flask import Flask, render_template, url_for, request, jsonify, g
 from flask_socketio import SocketIO, emit
 
 app = app = Flask(__name__, static_folder='webpage')
-app.config['SECRET_KEY'] = 'secret!'
+app.config['SECRET_KEY'] = 'Big Whoop is an amusement park... or is it?!'
 socketio = SocketIO(app)
 
 
 class WebServer:
     @app.route("/")
     def index():
-        #url_for('static', filename='pasqually.js')
-        #url_for('static', filename='socket.io.min.js' )
         return app.send_static_file('index.html')
 
     @app.route('/<path:path>')
     def static_proxy(path):
-        # send_static_file will guess the correct MIME type
+        # send_static_file will guess the correct MIME typen
         return app.send_static_file(path)
+
+    @socketio.on('onConnect')
+    def connectEvent(msg):
+        dispatcher.send(signal="connectEvent")
 
     @socketio.on('onKeyPress')
     def webKeyEvent(data):
@@ -37,6 +39,7 @@ class WebServer:
         framerate = 24
         cmd = "/home/pi/mjpg-streamer/mjpg_streamer -i \"/usr/lib/input_uvc.so -n -d /dev/video0 -r " + res + " -f " + str( framerate ) + "\" -o \"/usr/lib/output_http.so -w /home/pi/mjpg-streamer/www -n -p 8080\" -b >/dev/null 2>&1"
         os.system(cmd)
+        self.socket = socketio
 
     def shutdown(self):
         os.system('kill -9 `pidof mjpg_streamer` > /dev/null 2>&1')

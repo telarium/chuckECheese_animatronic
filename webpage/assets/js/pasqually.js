@@ -1,8 +1,11 @@
 var socket = io.connect('http://' + document.domain + ':' + location.port);
 
 socket.on('connect', function() {
+	socket.emit('onConnect', {data: 'I\'m connected!'});
+});
 
-	socket.emit('message', {data: 'I\'m connected!'});
+socket.on('my_response', function(msg){
+    //Response test
 });
 
 var midiNotes = []

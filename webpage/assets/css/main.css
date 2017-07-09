@@ -1200,13 +1200,6 @@
 			overflow: hidden;
 		}
 
-		#banner:before {
-			background-color: #000000;
-		}
-
-		body.is-loading #banner:before {
-			opacity: 1;
-		}
 
 /* Main */
 
