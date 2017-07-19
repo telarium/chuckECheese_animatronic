@@ -8,3 +8,4 @@ settings.txt
 *.bak
 *.lib
 *.pyc
+*.save*

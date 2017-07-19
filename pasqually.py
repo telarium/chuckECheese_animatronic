@@ -27,7 +27,6 @@ class Pasqually():
 
 	def onConnectEvent(self):
 		print "User connected!"
-		self.systemInfo.myTest()
 
 	def onKeyEvent(self,key,val):
 		try:

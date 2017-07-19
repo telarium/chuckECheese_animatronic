@@ -61,7 +61,28 @@ class Movement:
 				# Don't disable output if user has pressed another eye key
 				if self.eyesRight.keyIsPressed != True and self.eyesLeft.keyIsPressed != True:
 					self.setPin(pin,0)
-		
+
+	# Callback function for eyes to attempt a half-blink... or, as I call it, the "stink eye"
+	def onEyeBlinkHalf(self, movement, val):
+		try:
+			blinked = self.eyesBlinkHalf.bBlinked
+		except:
+			self.eyesBlinkHalf.bBlinked = False
+
+		print self.eyesBlinkHalf.bBlinked
+
+		self.setPin(self.eyesBlinkFull.outputPin2, 0)
+		if val == 1 and self.eyesBlinkHalf.bBlinked != True:
+			self.eyesBlinkHalf.bBlinked = True
+			time.sleep(0.020)
+			self.setPin(self.eyesBlinkHalf.outputPin1, 0)
+		elif val == 1 and self.eyesBlinkHalf.bBlinked == True:
+			self.eyesBlinkHalf.bBlinked = False
+			self.setPin(self.eyesBlinkHalf.outputPin1, 0)
+			self.executeMovement(self.eyesBlinkFull.key,0)
+			time.sleep(0.025)
+			self.setPin(self.eyesBlinkFull.outputPin2, 0)
+
 	def __init__(self):
 		self.bThreadStarted = False	
 
@@ -89,9 +110,9 @@ class Movement:
 		self.leftShoulder.outputPin2 = 'LCD-D12'
 		self.leftShoulder.outputPin1 = 'LCD-D21'
 		self.leftShoulder.outputPin2MaxTime = 0.5
-                self.leftShoulder.outputPin1MaxTime = 60*10
+		self.leftShoulder.outputPin1MaxTime = 60*10
 		self.leftShoulder.linkKey = 'i'
-                self.leftShoulder.linkedMovement = self.rightShoulder
+		self.leftShoulder.linkedMovement = self.rightShoulder
 		self.leftShoulder.midiNote = 53
 		self.all.append( self.leftShoulder )
        
@@ -140,41 +161,49 @@ class Movement:
 		self.eyesRight.callbackFunc = self.onEyeMove
 		self.all.append( self.eyesRight )
        
-		self.eyesBlink = Struct()
-		self.eyesBlink.key = 'w'
-		self.eyesBlink.outputPin1 = 'LCD-D15'
-		self.eyesBlink.outputPin2 = 'LCD-D20'
-		self.eyesBlink.outputPin1MaxTime = 0.25
-		self.eyesBlink.outputPin2MaxTime = 0.25
-		self.eyesBlink.midiNote = 60
-		self.all.append( self.eyesBlink )
+		self.eyesBlinkFull = Struct()
+		self.eyesBlinkFull.key = 'w'
+		self.eyesBlinkFull.outputPin1 = 'LCD-D15'
+		self.eyesBlinkFull.outputPin2 = 'LCD-D20'
+		self.eyesBlinkFull.outputPin1MaxTime = 0.25
+		self.eyesBlinkFull.outputPin2MaxTime = 0.25
+		self.eyesBlinkFull.midiNote = 60
+		self.all.append( self.eyesBlinkFull )
+
+		self.eyesBlinkHalf = Struct()
+		self.eyesBlinkHalf.key = 'r'
+		self.eyesBlinkHalf.outputPin1 = 'LCD-D15'
+		self.eyesBlinkHalf.outputPin1MaxTime = 0.25
+		self.eyesBlinkHalf.midiNote = 61
+		self.eyesBlinkHalf.callbackFunc = self.onEyeBlinkHalf
+		self.all.append( self.eyesBlinkHalf )
        
 		self.bodyLeanUp = Struct()
 		self.bodyLeanUp.key = 'm'
 		self.bodyLeanUp.outputPin1 = 'LCD-D5'
 		self.bodyLeanUp.outputInverted = True
-		self.bodyLeanUp.midiNote = 61
+		self.bodyLeanUp.midiNote = 62
 		self.all.append( self.bodyLeanUp ) 
 
 		self.bodyLeanDown = Struct()
 		self.bodyLeanDown.key = 'n'
 		self.bodyLeanDown.outputPin1 = 'CSID7'
 		self.bodyLeanDown.outputPin1MaxTime = 2
-		self.bodyLeanDown.midiNote = 62
+		self.bodyLeanDown.midiNote = 63
 		self.all.append( self.bodyLeanDown )
        
 		self.neckLeft = Struct()
 		self.neckLeft.key = 'a'
 		self.neckLeft.outputPin1 = 'LCD-D3'
 		self.neckLeft.outputPin1MaxTime = 0.8
-		self.neckLeft.midiNote = 63
+		self.neckLeft.midiNote = 64
 		self.all.append( self.neckLeft )
        
 		self.neckRight = Struct()
 		self.neckRight.key = 'd'
 		self.neckRight.outputPin1 = 'CSID0'
 		self.neckRight.outputPin1MaxTime = 0.8
-		self.neckRight.midiNote = 64
+		self.neckRight.midiNote = 65
 		self.all.append( self.neckRight )
        
 		self.headUpDown = Struct()
@@ -182,7 +211,7 @@ class Movement:
 		self.headUpDown.outputPin1 = 'LCD-D14'
 		self.headUpDown.outputPin2 = 'LCD-D19'
 		self.headUpDown.outputPin1MaxTime = 60*60
-		self.headUpDown.midiNote = 65
+		self.headUpDown.midiNote = 66
 		self.all.append( self.headUpDown )
 
 		GPIO.cleanup()
@@ -287,6 +316,7 @@ class Movement:
 					# If a callback function has been defined for this movement, execute in a thread.
 					if bDoCallback:
 						t = threading.Thread(target=i.callbackFunc, args = (i,val))
+						t.setDaemon(True)
 						t.start()
 				except:
 					pass
@@ -301,4 +331,6 @@ class Movement:
 		if self.bThreadStarted == False:
 			self.bThreadStarted = True
 			t = threading.Thread(target=self.updatePins, args = ())
+			t.setDaemon(True)
 			t.start()
+			

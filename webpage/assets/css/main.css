@@ -1187,13 +1187,9 @@
 			}
 
 		#banner video {
-			-moz-transform: translateX(50%) translateY(0%);
-			-webkit-transform: translateX(50%) translateY(0%);
-			-ms-transform: translateX(50%) translateY(0%);
-			transform: translateX(50%) translateY(0%);
-			position: absolute;
-			top: 0%;
-			right: 50%;
+			position: fixed;
+			top: 0px;
+			right: 0px
 			width: auto;
 			height: auto;
 			opacity: 0.8;

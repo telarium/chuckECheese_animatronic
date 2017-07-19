@@ -25,11 +25,12 @@ class WebServer:
 
     @socketio.on('onConnect')
     def connectEvent(msg):
-        dispatcher.send(signal="connectEvent")
+        dispatcher.send(signal='connectEvent')
 
     @socketio.on('onKeyPress')
     def webKeyEvent(data):
         dispatcher.send(signal="keyEvent",key=data["keyVal"], val=int(data["val"]))
+        socketio.emit('systemInfo','hi',broadcast=True)
         return data["keyVal"]
 
     def __init__(self):
@@ -43,5 +44,6 @@ class WebServer:
 
     def shutdown(self):
         os.system('kill -9 `pidof mjpg_streamer` > /dev/null 2>&1')
+        self.socketio = None
         self.server.terminate()
         self.server.join()

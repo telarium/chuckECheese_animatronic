@@ -4,7 +4,7 @@ socket.on('connect', function() {
 	socket.emit('onConnect', {data: 'I\'m connected!'});
 });
 
-socket.on('my_response', function(msg){
+socket.on('systemInfo', function(msg){
     //Response test
 });
 
