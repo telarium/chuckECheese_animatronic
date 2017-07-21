@@ -36,14 +36,15 @@ class WebServer:
     def __init__(self):
         thread.start_new_thread(lambda: socketio.run(app,host='0.0.0.0',port=80), ())
         # Enable webcam
-        res = "480x360"
-        framerate = 24
-        cmd = "/home/pi/mjpg-streamer/mjpg_streamer -i \"/usr/lib/input_uvc.so -n -d /dev/video0 -r " + res + " -f " + str( framerate ) + "\" -o \"/usr/lib/output_http.so -w /home/pi/mjpg-streamer/www -n -p 8080\" -b >/dev/null 2>&1"
-        os.system(cmd)
+        res = "320x240"
+        framerate = 15
+        cmd = "mjpg_streamer -i \"input_uvc.so -y -n -d /dev/video0 -r " + res + " -f " + str( framerate ) + "\" -o \"output_http.so -n -p 8080\" &"
+        os.system("sudo pkill -9 mjpg_streamer")
+	os.system(cmd)
         self.socket = socketio
 
     def shutdown(self):
-        os.system('kill -9 `pidof mjpg_streamer` > /dev/null 2>&1')
+        os.system('sudo pkill -9 mjpg_streamer > /dev/null 2>&1')
         self.socketio.shutdown(socketio.SHUT_RDWR)
         self.socketio = None
         self.server.terminate()

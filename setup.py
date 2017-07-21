@@ -8,14 +8,14 @@ import string
 class Setup:
     def __init__(self):
 	path = os.path.dirname(os.path.realpath(sys.argv[0]))
-	os.system("sudo apt-get install git build-essential python-dev python-pip flex bison dnsmasq python-blinker -y")
+	os.system("sudo apt-get install git build-essential python python-dev python-pip flex bison dnsmasq python-blinker python-eventlet -y")
 	os.system("sudo pip install flask flask-socketio gevent psutil")
 	
 	# Install mjpg-streamer
 	os.system( "wget --no-check-certificate http://lilnetwork.com/download/raspberrypi/mjpg-streamer.tar.gz -P " + path )
 	os.system( "tar xvzf " + path + "/mjpg-streamer.tar.gz && sudo rm " + path + "/mjpg-streamer.tar.gz" )
 	os.system( "sudo apt-get install libjpeg62-turbo-dev imagemagick -y" )
-	os.system( "cd " + path + "/mjpg-streamer/mjpg-streamer && make" )
+	os.system( "cd " + path + "/mjpg-streamer/mjpg-streamer && make && sudo make install" )
 
 	os.system('git clone https://github.com/atenart/dtc.git ' + path + '/dtc')
 	os.system('cd ' + path + '/dtc && sudo make && sudo make install PREFIX=/usr')
@@ -57,7 +57,7 @@ class Setup:
 
         os.system( "sudo rm /etc/hosts" )
         os.system( "sudo mv temp /etc/hosts" )
-	os.system( "sudo hostname " + hostname )
+	os.system( "sudo hostname " + hostname + " &" )
 
     def setAccessPoint(self,name):
 	print("Setting access point...")
@@ -77,7 +77,7 @@ class Setup:
         f.close()
 
         os.system( "sudo mv temp /etc/network/interfaces" )
-        os.system( "sudo /etc/init.d/dnsmasq restart" )
+        os.system( "sudo /etc/init.d/dnsmasq restart &" )
 
         if( os.path.isfile( "/etc/hostapd.conf" ) ):
             os.system( "sudo rm /etc/hostapd.conf" )
@@ -87,7 +87,7 @@ class Setup:
         f.close()
 
         os.system( "sudo mv temp /etc/hostapd.conf" )
-        os.system( "sudo hostapd /etc/hostapd.conf" )
+        os.system( "sudo hostapd /etc/hostapd.conf &" )
 
         if( os.path.isfile( "/lib/systemd/system/hostapd-systemd.service" ) ):
             os.system( "sudo rm /lib/systemd/system/hostapd-systemd.service" )

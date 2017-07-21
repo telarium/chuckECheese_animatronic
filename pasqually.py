@@ -15,6 +15,7 @@ class Pasqually():
 	midiNotes = {}
 
 	def __init__(self):
+		os.system("i2cset -f -y 0 0x34 0x30 0x03") # Turn off AXP current limiting
 		self.movements = Movement()
 		dispatcher.connect( self.onKeyEvent, signal="keyEvent", sender=dispatcher.Any )
 		dispatcher.connect( self.onConnectEvent, signal="connectEvent", sender=dispatcher.Any )
