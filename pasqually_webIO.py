@@ -44,6 +44,7 @@ class WebServer:
 
     def shutdown(self):
         os.system('kill -9 `pidof mjpg_streamer` > /dev/null 2>&1')
+        self.socketio.shutdown(socketio.SHUT_RDWR)
         self.socketio = None
         self.server.terminate()
         self.server.join()

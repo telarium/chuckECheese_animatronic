@@ -7,6 +7,8 @@ import eventlet
 import psutil
 from flask_socketio import SocketIO, emit
 
+eventlet.monkey_patch()
+
 class SystemInfo:
 	def __init__(self,mysocket):
 		self.socket = mysocket
@@ -17,6 +19,7 @@ class SystemInfo:
 	def update(self):
 		while True:
 			time.sleep(1)
-			#print int(psutil.cpu_percent())
-			#print int(psutil.virtual_memory().percent)
-			self.socket.emit('systemInfo',{'cpu': int(psutil.cpu_percent()),'ram': int(psutil.virtual_memory().percent)},broadcast=True)
+			print psutil.cpu_percent()
+			#print psutil.virtual_memory().percent
+
+			self.socket.emit('systemInfo',{'cpu': str(psutil.cpu_percent()),'ram': str(psutil.virtual_memory().percent)},broadcast=True)

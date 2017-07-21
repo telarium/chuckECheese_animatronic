@@ -6,6 +6,8 @@ socket.on('connect', function() {
 
 socket.on('systemInfo', function(msg){
     //Response test
+    newMsg = '<p>CPU: ' + msg.cpu + '%, RAM: ' + msg.ram + '%</p>';
+    document.getElementById("sysInfo").innerHTML = newMsg;
 });
 
 var midiNotes = []
