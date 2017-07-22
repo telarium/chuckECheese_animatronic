@@ -8,20 +8,18 @@ import string
 class Setup:
     def __init__(self):
 	path = os.path.dirname(os.path.realpath(sys.argv[0]))
-	os.system("sudo apt-get install git build-essential python python-dev python-pip flex bison dnsmasq python-blinker python-eventlet -y")
+	os.system("sudo apt-get install git build-essential python python-dev python-pip flex bison dnsmasq python-blinker python-eventlet uvcdynctrl libv4l-dev -y")
 	os.system("sudo pip install flask flask-socketio gevent psutil")
 	
 	# Install mjpg-streamer
-	os.system( "wget --no-check-certificate http://lilnetwork.com/download/raspberrypi/mjpg-streamer.tar.gz -P " + path )
-	os.system( "tar xvzf " + path + "/mjpg-streamer.tar.gz && sudo rm " + path + "/mjpg-streamer.tar.gz" )
+	os.system( "cd /tmp && git clone https://github.com/SaintGimp/mjpg-streamer" )
 	os.system( "sudo apt-get install libjpeg62-turbo-dev imagemagick -y" )
-	os.system( "cd " + path + "/mjpg-streamer/mjpg-streamer && make && sudo make install" )
+	os.system( "cd /tmp/mjpg-streamer/mjpg-streamer-experimental && make USE_LIBV4L2=true && sudo make install" )
 
-	os.system('git clone https://github.com/atenart/dtc.git ' + path + '/dtc')
-	os.system('cd ' + path + '/dtc && sudo make && sudo make install PREFIX=/usr')
-	os.system('git clone git://github.com/xtacocorex/CHIP_IO.git ' + path + '/CHIP_IO')
-	os.system('cd ' + path + '/CHIP_IO && sudo python setup.py install')
-	os.system('cd ' + path + ' && sudo rm -rf ' + path + '/CHIP_IO')
+	# Install CHIP IO
+	os.system('cd /tmp && git clone git://github.com/xtacocorex/CHIP_IO.git ' + path + '/CHIP_IO')
+	os.system('cd /tmp/CHIP_IO && sudo python setup.py install')
+	os.system('cd ' + path)
 	
 	# TODO... store hours of operation here
         self.settingsFile = os.path.dirname(os.path.realpath(sys.argv[0])) + "/settings.txt" 
