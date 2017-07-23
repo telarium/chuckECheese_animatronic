@@ -1,4 +1,6 @@
 var socket = io.connect('http://' + document.domain + ':' + location.port);
+var midiInputs = null
+var midiOutputs = null
 
 socket.on('connect', function() {
 	socket.emit('onConnect', {data: 'I\'m connected!'});
@@ -8,6 +10,10 @@ socket.on('systemInfo', function(msg){
     //Response test
     newMsg = '<p>CPU: ' + msg.cpu + '%, RAM: ' + msg.ram + '%</p>';
     document.getElementById("sysInfo").innerHTML = newMsg;
+});
+
+socket.on('movement', function(movement){
+    playMIDINote(movement.midiNote,movement.val)
 });
 
 var midiNotes = []
@@ -24,7 +30,6 @@ function doKeyDown(event){
 	if (down[charCode] == null) { // first press
 		sendKey( String.fromCharCode(charCode), 1 )
 		down[charCode] = true; // record that the key's down
-		findMidiNote(String.fromCharCode(charCode),1)
 	}
 }
     
@@ -35,30 +40,6 @@ function doKeyUp(event){
 	sendKey( String.fromCharCode(charCode), 0 )
 	down[charCode] = null
 	sendKey( String.fromCharCode(charCode), 0 )
-	findMidiNote(String.fromCharCode(charCode),0)
-}
-
-function getMidiNotes(){
-
-}
-
-getMidiNotes()
-
-function findMidiNote( key, val ) {
-	key = key.toLowerCase();
-	noteMessage1 = null;
-	noteMessage2 = null;
-	for (i = 0; i < midiNotes.length; i++) {
-		if( midiNotes[i].key == key ) {
-			if( val == 1 ) {
-				val = 0x90;
-			} else {
-				val = 0x80;
-			}
-			noteMessage1 = [val, midiNotes[i].midiNote1, 0x7f];
-			console.log(noteMessage1 )
-		}
-	}	
 }
 
 // request MIDI access
@@ -70,10 +51,24 @@ if (navigator.requestMIDIAccess) {
     alert("No MIDI support in your browser.");
 }
 
+function playMIDINote(midiNote,val) {
+	if (val == 1) {
+		val = 144 // Typical note-on MIDI value
+	} else {
+		val = 128 // Typical note-off MIDI value
+	}
+	velocity = 128
+	for(i = 0; i < midiOutputs.length; i++){
+		midiOutputs[i].send( [val, midiNote, velocity])
+	}
+}
+
 // midi functions
 function onMIDISuccess(midiAccess) {
     // when we get a succesful response, run this code
     console.log('MIDI Access Object', midiAccess);
+    midiInputs = midiAccess.inputs.values();
+    midiOutputs = midiAccess.outputs.values()
 }
 
 function onMIDIFailure(e) {

@@ -94,45 +94,7 @@
 		line-height: 1.65;
 	}
 
-		@media screen and (max-width: 1680px) {
 
-			body, input, select, textarea {
-				font-size: 11pt;
-			}
-
-		}
-
-		@media screen and (max-width: 1280px) {
-
-			body, input, select, textarea {
-				font-size: 11pt;
-			}
-
-		}
-
-		@media screen and (max-width: 980px) {
-
-			body, input, select, textarea {
-				font-size: 12pt;
-			}
-
-		}
-
-		@media screen and (max-width: 736px) {
-
-			body, input, select, textarea {
-				font-size: 12pt;
-			}
-
-		}
-
-		@media screen and (max-width: 480px) {
-
-			body, input, select, textarea {
-				font-size: 12pt;
-			}
-
-		}
 
 	a {
 		-moz-transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
@@ -533,7 +495,22 @@
 
 		.box .image.fit {
 			margin: 0;
+			width: 100%;
 		}
+
+		.box .image.keypad {
+            margin: 0;
+            padding: 3em;
+            width: auto;
+            max-width: 100%;
+        }
+
+        .box .image.webcam {
+            margin: 0;
+            padding: 0em;
+            width: 100%;
+            max-width: 100%;
+        }
 
 		.box .image img {
 			border-radius: 4px 4px 0 0;
@@ -1206,7 +1183,7 @@
 
 
 		#main .inner {
-			width: 90%;
+			width: 100%;
 			max-width: 80em;
 			margin: 0 auto;
 		}

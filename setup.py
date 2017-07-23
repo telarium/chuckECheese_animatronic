@@ -8,7 +8,7 @@ import string
 class Setup:
     def __init__(self):
 	path = os.path.dirname(os.path.realpath(sys.argv[0]))
-	os.system("sudo apt-get install git build-essential python python-dev python-pip flex bison dnsmasq python-blinker python-eventlet uvcdynctrl libv4l-dev -y")
+	os.system("sudo apt-get install git build-essential python python-dev python-pip flex bison dnsmasq python-blinker python-eventlet uvcdynctrl libv4l-dev python-dbus -y")
 	os.system("sudo pip install flask flask-socketio gevent psutil")
 	
 	# Install mjpg-streamer
@@ -20,7 +20,12 @@ class Setup:
 	os.system('cd /tmp && git clone git://github.com/xtacocorex/CHIP_IO.git ' + path + '/CHIP_IO')
 	os.system('cd /tmp/CHIP_IO && sudo python setup.py install')
 	os.system('cd ' + path)
-	
+
+	# Install nmcli library
+	os.system('cd /tmp && git clone https://github.com/seveas/python-networkmanager')
+	os.system('cd /tmp/python-networkmanager && sudo python setup.py install')
+	os.system('cd ' + path)	
+
 	# TODO... store hours of operation here
         self.settingsFile = os.path.dirname(os.path.realpath(sys.argv[0])) + "/settings.txt" 
         if( not os.path.isfile( self.settingsFile ) ):

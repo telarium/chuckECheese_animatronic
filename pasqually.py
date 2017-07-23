@@ -6,6 +6,7 @@ from threading import Thread
 from pydispatch import dispatcher
 from pasqually_movements import Movement
 from pasqually_webIO import WebServer
+from pasqually_networkManager import NetworkManagement
 from pasqually_systemInfo import SystemInfo
 
 class Pasqually():
@@ -16,10 +17,10 @@ class Pasqually():
 
 	def __init__(self):
 		os.system("i2cset -f -y 0 0x34 0x30 0x03") # Turn off AXP current limiting
-		self.movements = Movement()
 		dispatcher.connect( self.onKeyEvent, signal="keyEvent", sender=dispatcher.Any )
 		dispatcher.connect( self.onConnectEvent, signal="connectEvent", sender=dispatcher.Any )
 		self.webServer = WebServer()
+		self.movements = Movement(self.webServer.socket)
 		self.systemInfo = SystemInfo(self.webServer.socket)
 		self.isRunning = True
 		
@@ -28,6 +29,7 @@ class Pasqually():
 
 	def onConnectEvent(self):
 		print "User connected!"
+		NetworkManagement().scanWifi()
 
 	def onKeyEvent(self,key,val):
 		try:

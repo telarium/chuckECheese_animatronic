@@ -1,4 +1,6 @@
 import time
+import eventlet
+from flask_socketio import SocketIO, emit
 import CHIP_IO.GPIO as GPIO
 import threading
 
@@ -83,7 +85,7 @@ class Movement:
 			time.sleep(0.025)
 			self.setPin(self.eyesBlinkFull.outputPin2, 0)
 
-	def __init__(self):
+	def __init__(self,mysocket):
 		self.bThreadStarted = False	
 
 		# Define all of our movements here.
@@ -215,6 +217,7 @@ class Movement:
 		self.all.append( self.headUpDown )
 
 		GPIO.cleanup()
+		self.socket = mysocket
 
 		for i in self.all:
 			i.keyIsPressed = False
@@ -320,7 +323,7 @@ class Movement:
 						t.start()
 				except:
 					pass
-
+				self.socket.emit('movement',{'key': key,'val': val,'midiNote': i.midiNote},broadcast=True)
 				break
 			elif( i.linkKey and i.linkKey == key and key ):
 				# Execute any other movements that are linked to this movement
