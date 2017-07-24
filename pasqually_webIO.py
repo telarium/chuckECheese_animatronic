@@ -30,8 +30,12 @@ class WebServer:
     @socketio.on('onKeyPress')
     def webKeyEvent(data):
         dispatcher.send(signal="keyEvent",key=data["keyVal"], val=int(data["val"]))
-        socketio.emit('systemInfo','hi',broadcast=True)
         return data["keyVal"]
+
+    @socketio.on('onGamepadButton')
+    def webGamepadEvent(data):
+        dispatcher.send(signal="gamepadEvent",buttonNum=data["buttonVal"], val=int(data["val"]))
+        return data["buttonVal"]
 
     def __init__(self):
         thread.start_new_thread(lambda: socketio.run(app,host='0.0.0.0',port=80), ())

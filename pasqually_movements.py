@@ -91,6 +91,7 @@ class Movement:
 		# Define all of our movements here.
 		self.rightShoulder = Struct()
 		self.rightShoulder.key = 'o'
+		self.rightShoulder.gamepadButton = 10
 		self.rightShoulder.outputPin2 = 'CSID3'
 		self.rightShoulder.outputPin1 = 'LCD-D11'
 		self.rightShoulder.outputPin2MaxTime = 0.5
@@ -100,6 +101,7 @@ class Movement:
        
 		self.rightArm = Struct()
 		self.rightArm.key = 'l'
+		self.rightArm.gamepadButton = 6
 		self.rightArm.outputPin2 = 'CSID5'
 		self.rightArm.outputPin1 = 'LCD-D7'
 		self.rightArm.outputPin2MaxTime = -1
@@ -109,6 +111,7 @@ class Movement:
        
 		self.leftShoulder = Struct()
 		self.leftShoulder.key = 'u'
+		self.leftShoulder.gamepadButton = 9
 		self.leftShoulder.outputPin2 = 'LCD-D12'
 		self.leftShoulder.outputPin1 = 'LCD-D21'
 		self.leftShoulder.outputPin2MaxTime = 0.5
@@ -120,6 +123,7 @@ class Movement:
        
 		self.leftArm = Struct()
 		self.leftArm.key = 'j'
+		self.leftArm.gamepadButton = 5
 		self.leftArm.outputPin2 = 'CSID4'
 		self.leftArm.outputPin1 = 'LCD-D6'
 		self.leftArm.outputPin2MaxTime = -1
@@ -131,6 +135,7 @@ class Movement:
 
 		self.mouth = Struct()
 		self.mouth.key = 'x'
+		self.mouth.gamepadButton = 1
 		self.mouth.outputPin1 = 'LCD-D4'
 		self.mouth.outputPin2 = 'CSID2'
 		self.mouth.outputPin1MaxTime = 0.75
@@ -140,6 +145,7 @@ class Movement:
        
 		self.mustache = Struct()
 		self.mustache.key = 'c'
+		self.mustache.gamepadButton = 1
 		self.mustache.outputPin1 = 'LCD-D18'
 		self.mustache.outputPin1MaxTime = 60*5
 		self.mustache.midiNote = 57
@@ -149,6 +155,7 @@ class Movement:
        
 		self.eyesLeft = Struct()
 		self.eyesLeft.key = 'q'
+		self.eyesLeft.gamepadButton = 3
 		self.eyesLeft.outputPin1 = 'LCD-D22'
 		self.eyesLeft.outputPin1MaxTime = 60*10
 		self.eyesLeft.midiNote = 58
@@ -157,6 +164,7 @@ class Movement:
        
 		self.eyesRight = Struct()
 		self.eyesRight.key = 'e'
+		self.eyesRight.gamepadButton = 2
 		self.eyesRight.outputPin1 = 'LCD-D13'
 		self.eyesRight.outputPin1MaxTime = 60*10
 		self.eyesRight.midiNote = 59
@@ -165,6 +173,7 @@ class Movement:
        
 		self.eyesBlinkFull = Struct()
 		self.eyesBlinkFull.key = 'w'
+		self.eyesBlinkFull.gamepadButton = 4
 		self.eyesBlinkFull.outputPin1 = 'LCD-D15'
 		self.eyesBlinkFull.outputPin2 = 'LCD-D20'
 		self.eyesBlinkFull.outputPin1MaxTime = 0.25
@@ -189,6 +198,7 @@ class Movement:
 
 		self.bodyLeanDown = Struct()
 		self.bodyLeanDown.key = 'n'
+		self.bodyLeanDown.gamepadButton = 14
 		self.bodyLeanDown.outputPin1 = 'CSID7'
 		self.bodyLeanDown.outputPin1MaxTime = 2
 		self.bodyLeanDown.midiNote = 63
@@ -196,6 +206,7 @@ class Movement:
        
 		self.neckLeft = Struct()
 		self.neckLeft.key = 'a'
+		self.neckLeft.gamepadButton = 15
 		self.neckLeft.outputPin1 = 'LCD-D3'
 		self.neckLeft.outputPin1MaxTime = 0.8
 		self.neckLeft.midiNote = 64
@@ -203,6 +214,7 @@ class Movement:
        
 		self.neckRight = Struct()
 		self.neckRight.key = 'd'
+		self.neckRight.gamepadButton = 16
 		self.neckRight.outputPin1 = 'CSID0'
 		self.neckRight.outputPin1MaxTime = 0.8
 		self.neckRight.midiNote = 65
@@ -210,6 +222,7 @@ class Movement:
        
 		self.headUpDown = Struct()
 		self.headUpDown.key = 's'
+		self.headUpDown.gamepadButton = 13
 		self.headUpDown.outputPin1 = 'LCD-D14'
 		self.headUpDown.outputPin2 = 'LCD-D19'
 		self.headUpDown.outputPin1MaxTime = 60*60
@@ -330,6 +343,14 @@ class Movement:
 				self.executeMovement( i.key, val )
 			        self.executeMovement( i.linkedMovement.key, val )
 				break
+
+	def executeGamepad(self,button,val):
+		for i in self.all:
+				try:
+					if button == i.gamepadButton:
+						self.executeMovement(i.key,val)
+				except:
+						i.gamepadButton = -1
 
 		if self.bThreadStarted == False:
 			self.bThreadStarted = True

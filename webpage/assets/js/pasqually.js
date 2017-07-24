@@ -76,3 +76,45 @@ function onMIDIFailure(e) {
     console.log("No access to MIDI devices or your browser doesn't support WebMIDI API. Please use WebMIDIAPIShim " + e);
 }
 
+var bGamepadActive = false;
+var gamepadState = []
+var updateInterval;
+	
+function findGamepad() {
+	return "getGamepads" in navigator;
+}
+
+function evalGamepadState() {
+	var gp = navigator.getGamepads()[0];
+	for(var i=0;i<gp.buttons.length;i++) {
+		if( gamepadState[i] != gp.buttons[i].pressed ) {
+			gamepadState[i] = gp.buttons[i].pressed
+			var num = gp.buttons[i].pressed ? 1 : 0;
+			socket.emit('onGamepadButton', {buttonVal: i+1, val: num});
+		}	
+	}
+}
+		
+$(document).ready(function() {
+	if(findGamepad()) {
+		$(window).on("gamepadconnected", function() {
+			bGamepadActive = true;
+			console.log("Gamepad detected!");
+			updateInterval = window.setInterval(evalGamepadState,75);
+		});
+
+		$(window).on("gamepaddisconnected", function() {
+			console.log("Gamepad disconnected!");
+			window.clearInterval(updateInterval);
+		});
+
+		//setup an interval for Chrome
+		var checkGP = window.setInterval(function() {
+			if(navigator.getGamepads()[0]) {
+				if(!bGamepadActive) $(window).trigger("gamepadconnected");
+				window.clearInterval(checkGP);
+			}
+		}, 500);
+	}
+		
+});

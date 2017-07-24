@@ -18,6 +18,7 @@ class Pasqually():
 	def __init__(self):
 		os.system("i2cset -f -y 0 0x34 0x30 0x03") # Turn off AXP current limiting
 		dispatcher.connect( self.onKeyEvent, signal="keyEvent", sender=dispatcher.Any )
+		dispatcher.connect( self.onGamepadEvent, signal="gamepadEvent", sender=dispatcher.Any )
 		dispatcher.connect( self.onConnectEvent, signal="connectEvent", sender=dispatcher.Any )
 		self.webServer = WebServer()
 		self.movements = Movement(self.webServer.socket)
@@ -36,6 +37,9 @@ class Pasqually():
 			self.movements.executeMovement(str(key).lower(), val)
 		except:
 			print "Invalid key!"
+
+	def onGamepadEvent(self,buttonNum,val):
+		self.movements.executeGamepad(int(buttonNum),int(val))
 
 animatronic = Pasqually()
 animatronic.webServer.shutdown()
