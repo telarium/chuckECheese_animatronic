@@ -344,6 +344,12 @@ class Movement:
 			        self.executeMovement( i.linkedMovement.key, val )
 				break
 
+		if self.bThreadStarted == False:
+			self.bThreadStarted = True
+			t = threading.Thread(target=self.updatePins, args = ())
+			t.setDaemon(True)
+			t.start()
+
 	def executeGamepad(self,button,val):
 		for i in self.all:
 				try:
@@ -351,10 +357,4 @@ class Movement:
 						self.executeMovement(i.key,val)
 				except:
 						i.gamepadButton = -1
-
-		if self.bThreadStarted == False:
-			self.bThreadStarted = True
-			t = threading.Thread(target=self.updatePins, args = ())
-			t.setDaemon(True)
-			t.start()
 			
