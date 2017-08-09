@@ -1,6 +1,4 @@
 var socket = io.connect('http://' + document.domain + ':' + location.port);
-var midiInputs = null
-var midiOutputs = null
 
 socket.on('connect', function() {
 	socket.emit('onConnect', {data: 'I\'m connected!'});
@@ -42,6 +40,11 @@ function doKeyUp(event){
 	sendKey( String.fromCharCode(charCode), 0 )
 }
 
+var midiInputs = null
+var midiOutputs = null
+var midiSendTest = null
+var midiAcc = null
+
 // request MIDI access
 if (navigator.requestMIDIAccess) {
     navigator.requestMIDIAccess({
@@ -52,23 +55,34 @@ if (navigator.requestMIDIAccess) {
 }
 
 function playMIDINote(midiNote,val) {
+	console.log("play",midiSendTest)
 	if (val == 1) {
 		val = 144 // Typical note-on MIDI value
 	} else {
 		val = 128 // Typical note-off MIDI value
 	}
 	velocity = 128
-	for(i = 0; i < midiOutputs.length; i++){
-		midiOutputs[i].send( [val, midiNote, velocity])
-	}
+	var output = midiAcc.outputs.get(midiSendTest);
+	//for (var output = midiOutputs.next(); output && !output.done; output = midiOutputs.next()) {
+	//	console.log('output'+midiNote,output)
+	//	output.send( [val, midiNote, velocity])
+	//}
+	//output.send([val,midiNote,velocity])
+	output.send([0x90, 60, 0x7f])
 }
 
 // midi functions
 function onMIDISuccess(midiAccess) {
     // when we get a succesful response, run this code
     console.log('MIDI Access Object', midiAccess);
+	midiAcc = midiAccess
     midiInputs = midiAccess.inputs.values();
     midiOutputs = midiAccess.outputs.values()
+    console.log("init:",midiOutputs)
+    for (var output = midiOutputs.next(); output && !output.done; output = midiOutputs.next()) {
+		console.log('output',output)
+		midiSendTest = output.value.id
+	}
 }
 
 function onMIDIFailure(e) {
