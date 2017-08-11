@@ -21,6 +21,8 @@ class Pasqually():
 		dispatcher.connect( self.onMovementEvent, signal="movementEvent", sender=dispatcher.Any )
 		dispatcher.connect( self.onGamepadEvent, signal="gamepadEvent", sender=dispatcher.Any )
 		dispatcher.connect( self.onConnectEvent, signal="connectEvent", sender=dispatcher.Any )
+		dispatcher.connect( self.onWifiScan, signal="wifiScan", sender=dispatcher.Any )
+		
 		self.webServer = WebServer()
 		self.movements = Movement()
 		self.systemInfo = SystemInfo(self.webServer.socket)
@@ -32,6 +34,9 @@ class Pasqually():
 	def onConnectEvent(self):
 		self.webServer.socket.emit('movementInfo',self.movements.getJSON())
 		NetworkManagement().scanWifi()
+
+	def onWifiScan(self,data):
+		self.webServer.socket.emit('wifiScan',data)
 
 	def onMovementEvent(self,key,val,midiNote):
 		self.webServer.socket.emit('movementEvent',{'key': key,'val': val,'midiNote': midiNote},broadcast=True)

@@ -10,6 +10,10 @@ socket.on('systemInfo', function(msg){
     document.getElementById("sysInfo").innerHTML = newMsg;
 });
 
+socket.on('wifiScan', function(data){
+	console.log(data.networks)
+});
+
 var movements = []
 
 socket.on('movementInfo', function(data){
