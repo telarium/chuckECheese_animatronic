@@ -10,14 +10,27 @@ socket.on('systemInfo', function(msg){
     document.getElementById("sysInfo").innerHTML = newMsg;
 });
 
-socket.on('movement', function(movement){
+var movements = []
+
+socket.on('movementInfo', function(data){
+	movements = data.movements
+});
+
+socket.on('movementEvent', function(movement){
     playMIDINote(movement.midiNote,movement.val)
 });
 
-var midiNotes = []
-
 function sendKey(key, num){
-	socket.emit('onKeyPress', {keyVal: key, val: num});
+	for(var i=0;i<movements.length;i++) {
+		if (!movements[i].lastTime) {
+			movements[i].lastTime = 0
+		}
+		if (movements[i].key == key.toLowerCase() && (window.performance.now() - movements[i].lastTime > 1)) {
+			socket.emit('onKeyPress', {keyVal: key, val: num});
+		}
+		movements[i].lastTime = window.performance.now()
+	}
+	
 }
     
 var down = {}; // store down keys to prevent repeated keypresses
@@ -27,7 +40,7 @@ function doKeyDown(event){
 	var charCode = (typeof event.which == "number") ? event.which : event.keyCode
 	if (down[charCode] == null) { // first press
 		sendKey( String.fromCharCode(charCode), 1 )
-		down[charCode] = true; // record that the key's down
+		down[charCode] = true; // Track with keys have been pressed
 	}
 }
     
@@ -35,8 +48,6 @@ document.onkeyup = doKeyUp;
 function doKeyUp(event){
 	var charCode = (typeof event.which == "number") ? event.which : event.keyCode
 	down[charCode] = null;
-	sendKey( String.fromCharCode(charCode), 0 )
-	down[charCode] = null
 	sendKey( String.fromCharCode(charCode), 0 )
 }
 
@@ -53,34 +64,40 @@ if (navigator.requestMIDIAccess) {
 }
 
 function playMIDINote(midiNote,val) {
-	console.log("play",midiAccess)
-	var velocity = 0x00
-	if (val == 1) {
-		val = 0x90 // Typical note-on MIDI value
-		velocity = 0x7f // Full velocity
-	} else {
-		val = 0x80 // Typical note-off MIDI value
+	if (midiOutputPort) {
+		console.log("play",midiAccess)
+		var velocity = 0x40 // Release velocity
+		if (val == 1) {
+			val = 0x90 // Typical note-on MIDI value
+			velocity = 0x7f // Full velocity
+		} else {
+			val = 0x80 // Typical note-off MIDI value
+		}
+		var output = midiAccess.outputs.get(midiOutputPort);
+		output.send([val, midiNote, velocity]) ;
 	}
-	var output = midiAccess.outputs.get(midiOutputPort);
-	output.send([val, midiNote, velocity]) ;
 }
 
-// midi functions
+function onMIDIMessage( event ) {
+	console.log(event)
+	//for(var i=0;i<movements.length;i++) {
+	//	console.log(movements[i].midiNote)
+	//}
+}
+
 function onMIDISuccess(midi) {
-    // when we get a succesful response, run this code
-    console.log('MIDI Access Object', midiAccess);
+    // When we successfully initiate the MIDI interface...
 	midiAccess = midi
-    midiInputs = midiAccess.inputs.values();
     midiOutputs = midiAccess.outputs.values()
     console.log("init:",midiOutputs)
     for (var output = midiOutputs.next(); output && !output.done; output = midiOutputs.next()) {
 		console.log('output',output)
 		midiOutputPort = output.value.id
 	}
+	midiAccess.inputs.forEach( function(entry) {entry.onmidimessage = onMIDIMessage;});
 }
 
 function onMIDIFailure(e) {
-    // when we get a failed response, run this code
     console.log("No access to MIDI devices or your browser doesn't support WebMIDI API. Please use WebMIDIAPIShim " + e);
 }
 

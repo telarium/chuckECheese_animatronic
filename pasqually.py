@@ -18,10 +18,11 @@ class Pasqually():
 	def __init__(self):
 		os.system("i2cset -f -y 0 0x34 0x30 0x03") # Turn off AXP current limiting
 		dispatcher.connect( self.onKeyEvent, signal="keyEvent", sender=dispatcher.Any )
+		dispatcher.connect( self.onMovementEvent, signal="movementEvent", sender=dispatcher.Any )
 		dispatcher.connect( self.onGamepadEvent, signal="gamepadEvent", sender=dispatcher.Any )
 		dispatcher.connect( self.onConnectEvent, signal="connectEvent", sender=dispatcher.Any )
 		self.webServer = WebServer()
-		self.movements = Movement(self.webServer.socket)
+		self.movements = Movement()
 		self.systemInfo = SystemInfo(self.webServer.socket)
 		self.isRunning = True
 		
@@ -29,8 +30,11 @@ class Pasqually():
 			time.sleep(0.1)
 
 	def onConnectEvent(self):
-		print "User connected!"
+		self.webServer.socket.emit('movementInfo',self.movements.getJSON())
 		NetworkManagement().scanWifi()
+
+	def onMovementEvent(self,key,val,midiNote):
+		self.webServer.socket.emit('movementEvent',{'key': key,'val': val,'midiNote': midiNote},broadcast=True)
 
 	def onKeyEvent(self,key,val):
 		try:

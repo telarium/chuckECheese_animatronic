@@ -1,8 +1,9 @@
 import time
 import eventlet
-from flask_socketio import SocketIO, emit
 import CHIP_IO.GPIO as GPIO
 import threading
+import json
+from pydispatch import dispatcher
 
 # Valve1  -> LCD-D22 -> Eye right
 # Valve2  -> LCD-D13 -> Eye left
@@ -79,13 +80,13 @@ class Movement:
 			time.sleep(0.020)
 			self.setPin(self.eyesBlinkHalf.outputPin1, 0)
 		elif val == 1 and self.eyesBlinkHalf.bBlinked == True:
-			self.eyesBlinkHalf.bBlinked = False
+			self.eyesBlinkHalf.bBlinked = Falsedis
 			self.setPin(self.eyesBlinkHalf.outputPin1, 0)
 			self.executeMovement(self.eyesBlinkFull.key,0)
 			time.sleep(0.025)
 			self.setPin(self.eyesBlinkFull.outputPin2, 0)
 
-	def __init__(self,mysocket):
+	def __init__(self):
 		self.bThreadStarted = False	
 
 		# Define all of our movements here.
@@ -230,7 +231,6 @@ class Movement:
 		self.all.append( self.headUpDown )
 
 		GPIO.cleanup()
-		self.socket = mysocket
 
 		for i in self.all:
 			i.keyIsPressed = False
@@ -254,30 +254,15 @@ class Movement:
 
 	# Fromat MIDI notes into a string to pass to the HTML front end
 	# This way, javascript key presses can control MIDI events directly
-	def getMidiNotes( self ):
-		fullString = ""
-		midiNote1 = None
-		midiNote2 = None
-
+	def getJSON( self ):
+		jsonData = '{"movements": ['
 		for i in self.all:
-			fullString += i.key
-			midiNote1 = str(i.midiNote)
-			if( len(midiNote1 ) < 2 ):
-				midiNote1 = "0" + midiNote1
-		
-			fullString+=midiNote1+"00"
+			jsonData = jsonData + '{"key":"' + i.key + '","midiNote":"' + str(i.midiNote) + '"},'
 
-			if( i.linkKey ):
-				fullString+=","+i.linkKey+midiNote1
-				midiNote2 = str(i.linkedMovement.midiNote)
-				if( len(midiNote2) < 2 ):
-					midiNote2 = "0" + midiNote2
+		jsonData = jsonData[:-1]
+		jsonData = jsonData + ']}'
 
-				fullString+=midiNote2
-
-			fullString+=","
-			
-		return fullString
+		return json.loads(jsonData)
 
 	# Monitor state of IO and disable any that have been left on past the maximum allowed time.
 	def updatePins(self):
@@ -336,7 +321,8 @@ class Movement:
 						t.start()
 				except:
 					pass
-				self.socket.emit('movement',{'key': key,'val': val,'midiNote': i.midiNote},broadcast=True)
+
+				dispatcher.send(signal="movementEvent",key=key, val=val, midiNote=i.midiNote)
 				break
 			elif( i.linkKey and i.linkKey == key and key ):
 				# Execute any other movements that are linked to this movement
