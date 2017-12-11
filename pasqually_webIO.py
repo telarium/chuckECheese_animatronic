@@ -3,21 +3,41 @@ import socket
 import sys
 import thread
 import eventlet
+import logging
+import SocketServer
+
+from wsgiref import handlers
 from pydispatch import dispatcher
 from multiprocessing import Process
-from flask import Flask, render_template, url_for, request, jsonify, g
 from flask_socketio import SocketIO, emit
+from flask import Flask, render_template, url_for, request, jsonify, g
+from flask_uploads import UploadSet, configure_uploads, DOCUMENTS, IMAGES
+
+# Patch system modules to be greenthread-friendly
+eventlet.monkey_patch()
+
+# Another monkey patch to avoid annoying (and useless?) socket pipe warnings when users disconnect
+SocketServer.BaseServer.handle_error = lambda *args, **kwargs: None
+handlers.BaseHandler.log_exception = lambda *args, **kwargs: None
 
 app = app = Flask(__name__, static_folder='webpage')
 app.config['SECRET_KEY'] = 'Big Whoop is an amusement park... or is it?!'
 socketio = SocketIO(app)
 
+# Turn off more annoying log messages that aren't helpful.
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
+
+# Configure server to accept uploads of MIDI files
+#docs = UploadSet('midi', ('midi'))
+#configure_uploads(app, docs)
 
 class WebServer:
     @app.route("/")
     def index():
         return app.send_static_file('index.html')
 
+    # Guess the correct MIME type for static files
     @app.route('/<path:path>')
     def static_proxy(path):
         # send_static_file will guess the correct MIME typen

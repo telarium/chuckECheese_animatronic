@@ -9,7 +9,7 @@ class Setup:
     def __init__(self):
 	path = os.path.dirname(os.path.realpath(sys.argv[0]))
 	os.system("sudo apt-get install git build-essential python python-dev python-pip flex bison dnsmasq python-blinker python-eventlet uvcdynctrl libv4l-dev python-dbus -y")
-	os.system("sudo pip install flask flask-socketio gevent psutil PyDispatcher CHIP-IO")
+	os.system("sudo pip install flask flask-socketio Flask-Uploads gevent psutil PyDispatcher CHIP-IO")
 	
 	# Install mjpg-streamer
 	os.system( "cd /tmp && git clone https://github.com/SaintGimp/mjpg-streamer" )

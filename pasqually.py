@@ -23,13 +23,9 @@ class Pasqually():
 		dispatcher.connect( self.onConnectEvent, signal="connectEvent", sender=dispatcher.Any )
 		dispatcher.connect( self.onWifiScan, signal="wifiScan", sender=dispatcher.Any )
 		
-		print 1
 		self.webServer = WebServer()
-		print 2
 		self.movements = Movement()
-		print 3
 		self.systemInfo = SystemInfo(self.webServer.socket)
-		print 4
 		self.isRunning = True
 		
 		while self.isRunning:
