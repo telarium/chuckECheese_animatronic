@@ -229,9 +229,7 @@ class Movement:
 		self.headUpDown.outputPin1MaxTime = 60*60
 		self.headUpDown.midiNote = 66
 		self.all.append( self.headUpDown )
-
-		GPIO.cleanup()
-
+		
 		for i in self.all:
 			i.keyIsPressed = False
 			val = GPIO.LOW

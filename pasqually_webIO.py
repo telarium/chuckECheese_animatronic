@@ -39,13 +39,17 @@ class WebServer:
 
     def __init__(self):
         thread.start_new_thread(lambda: socketio.run(app,host='0.0.0.0',port=80), ())
-        # Enable webcam
-        res = "320x240"
-        framerate = 30
-        cmd = "mjpg_streamer -i \"input_uvc.so -y -n -d /dev/video0 -r " + res + " -f " + str( framerate ) + "\" -o \"output_http.so -n -p 8080\" &"
-        os.system("sudo pkill -9 mjpg_streamer > /dev/null 2>&1')")
-	os.system("uvcdynctrl -f")
-	os.system(cmd)
+        # Enable webcam  
+        try:
+            res = "320x240"
+            framerate = 30
+            cmd = "mjpg_streamer -i \"./input_uvc.so -y -n -d /dev/video0 -r " + res + " -f " + str( framerate ) + "\" -o \"./output_http.so -n -p 8080\" &"
+            os.system("sudo pkill -9 mjpg_streamer > /dev/null 2>&1')")
+            os.system("uvcdynctrl -f")
+            os.system(cmd)
+        except:
+            print("mjpg_streamer did not start")
+
         self.socket = socketio
 
     def shutdown(self):

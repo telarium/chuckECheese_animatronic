@@ -9,21 +9,17 @@ class Setup:
     def __init__(self):
 	path = os.path.dirname(os.path.realpath(sys.argv[0]))
 	os.system("sudo apt-get install git build-essential python python-dev python-pip flex bison dnsmasq python-blinker python-eventlet uvcdynctrl libv4l-dev python-dbus -y")
-	os.system("sudo pip install flask flask-socketio gevent psutil")
+	os.system("sudo pip install flask flask-socketio gevent psutil PyDispatcher CHIP-IO")
 	
 	# Install mjpg-streamer
 	os.system( "cd /tmp && git clone https://github.com/SaintGimp/mjpg-streamer" )
 	os.system( "sudo apt-get install libjpeg62-turbo-dev imagemagick -y" )
 	os.system( "cd /tmp/mjpg-streamer/mjpg-streamer-experimental && make USE_LIBV4L2=true && sudo make install" )
 
-	# Install CHIP IO
-	os.system('cd /tmp && git clone git://github.com/xtacocorex/CHIP_IO.git ' + path + '/CHIP_IO')
-	os.system('cd /tmp/CHIP_IO && sudo python setup.py install')
-	os.system('cd ' + path)
-
 	# Install nmcli library
 	os.system('cd /tmp && git clone https://github.com/seveas/python-networkmanager')
 	os.system('cd /tmp/python-networkmanager && sudo python setup.py install')
+    os.system('cp *.so ' + path)
 	os.system('cd ' + path)	
 
 	# TODO... store hours of operation here
