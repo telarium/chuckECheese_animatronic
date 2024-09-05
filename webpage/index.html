@@ -17,8 +17,12 @@
 			<!--
 				Video must be available in both .mp4 and .webm formats to work correctly.
 			-->
-				<section id="banner" data-video="images/banner">
-					<img src="images/cec-header.png">
+				<section id="banner">
+				    <video autoplay muted loop>
+				        <source src="images/banner.mp4" type="video/mp4">
+				        Your browser does not support the video tag.
+				    </video>
+				    <img src="images/cec-header.png">
 				</section>
 
 			<!-- Main -->
@@ -35,7 +39,6 @@
 							<div class="box">
 								
 								<div class="inner">
-									<img class="image webcam" src="http://10.0.0.13:8080/?action=stream">
 									<div id="sysInfo">
 										<p>---</p>
 									</div>

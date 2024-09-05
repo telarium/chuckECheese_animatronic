@@ -5,8 +5,7 @@ socket.on('connect', function() {
 });
 
 socket.on('systemInfo', function(msg){
-    //Response test
-    newMsg = '<p>CPU: ' + msg.cpu + '%, RAM: ' + msg.ram + '%</p>';
+    newMsg = '<p>CPU: ' + msg.cpu + '%<br>RAM: ' + msg.ram + '%<br>Disk Usage: ' + msg.disk + '%<br>Temp: ' + msg.temperature + '°C<br>Wifi Strength: ' + msg.wifi_signal + '%</p>';
     document.getElementById("sysInfo").innerHTML = newMsg;
 });
 
@@ -17,11 +16,13 @@ socket.on('wifiScan', function(data){
 var movements = []
 
 socket.on('movementInfo', function(data){
-	movements = data.movements
-});
-
-socket.on('movementEvent', function(movement){
-    playMIDINote(movement.midiNote,movement.val)
+	for(var i=0;i<data.length;i++) {
+		var movement = {
+			key: data[i],
+			lastTime: 0
+		};
+		movements.push(movement)
+	}
 });
 
 function sendKey(key, num){
@@ -53,56 +54,6 @@ function doKeyUp(event){
 	var charCode = (typeof event.which == "number") ? event.which : event.keyCode
 	down[charCode] = null;
 	sendKey( String.fromCharCode(charCode), 0 )
-}
-
-var midiAccess = null
-var midiOutputPort = null
-
-// request MIDI access
-if (navigator.requestMIDIAccess) {
-    navigator.requestMIDIAccess({
-        sysex: false
-    }).then(onMIDISuccess, onMIDIFailure);
-} else {
-    alert("No MIDI support in your browser.");
-}
-
-function playMIDINote(midiNote,val) {
-	if (midiOutputPort) {
-		console.log("play",midiAccess)
-		var velocity = 0x40 // Release velocity
-		if (val == 1) {
-			val = 0x90 // Typical note-on MIDI value
-			velocity = 0x7f // Full velocity
-		} else {
-			val = 0x80 // Typical note-off MIDI value
-		}
-		var output = midiAccess.outputs.get(midiOutputPort);
-		output.send([val, midiNote, velocity]) ;
-	}
-}
-
-function onMIDIMessage( event ) {
-	console.log(event)
-	//for(var i=0;i<movements.length;i++) {
-	//	console.log(movements[i].midiNote)
-	//}
-}
-
-function onMIDISuccess(midi) {
-    // When we successfully initiate the MIDI interface...
-	midiAccess = midi
-    midiOutputs = midiAccess.outputs.values()
-    console.log("init:",midiOutputs)
-    for (var output = midiOutputs.next(); output && !output.done; output = midiOutputs.next()) {
-		console.log('output',output)
-		midiOutputPort = output.value.id
-	}
-	midiAccess.inputs.forEach( function(entry) {entry.onmidimessage = onMIDIMessage;});
-}
-
-function onMIDIFailure(e) {
-    console.log("No access to MIDI devices or your browser doesn't support WebMIDI API. Please use WebMIDIAPIShim " + e);
 }
 
 var bGamepadActive = false;

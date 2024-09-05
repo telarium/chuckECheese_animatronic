@@ -1165,12 +1165,12 @@
 
 		#banner video {
 			position: fixed;
-			top: 0px;
-			right: 0px
-			width: auto;
-			height: auto;
-			opacity: 0.8;
-			overflow: hidden;
+		    top: 0px;
+		    right: 0px;
+		    width: auto;
+		    height: auto;
+		    opacity: 0.8;
+		    overflow: hidden;
 		}
 
 

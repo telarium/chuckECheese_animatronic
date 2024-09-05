@@ -1,5 +1,4 @@
 import time
-import CHIP_IO.GPIO as GPIO
 import threading
 
 # Valve1  -> LCD-D22 -> Eye right
@@ -69,7 +68,7 @@ class Movement:
 		except:
 			self.eyesBlinkHalf.bBlinked = False
 
-		print self.eyesBlinkHalf.bBlinked
+		print(self.eyesBlinkHalf.bBlinked)
 
 		self.setPin(self.eyesBlinkFull.outputPin2, 0)
 		if val == 1 and self.eyesBlinkHalf.bBlinked != True:
@@ -216,22 +215,22 @@ class Movement:
 
 		for i in self.all:
 			i.keyIsPressed = False
-			val = GPIO.LOW
+			val = 0
 			try:
 				if i.outputInverted == True:
-					val = GPIO.HIGH
+					val = 1
 			except:
 				i.outputInverted = False
 
 			i.pin1Time = 0
 			
-			GPIO.cleanup(i.outputPin1)
-			GPIO.setup(i.outputPin1,GPIO.OUT)
+			#GPIO.cleanup(i.outputPin1)
+			#GPIO.setup(i.outputPin1,GPIO.OUT)
 			self.setPin(i.outputPin1, val)
 			if( i.outputPin2 ):
 				i.pin2Time = 0
-				GPIO.cleanup(i.outputPin2)
-				GPIO.setup(i.outputPin2,GPIO.OUT)
+				#GPIO.cleanup(i.outputPin2)
+				#GPIO.setup(i.outputPin2,GPIO.OUT)
 				self.setPin(i.outputPin2, 1-val)
 
 	# Fromat MIDI notes into a string to pass to the HTML front end
@@ -261,6 +260,13 @@ class Movement:
 			
 		return fullString
 
+	def getKeyboardKeys(self):
+		keys = []
+		for i in self.all:
+			keys.append(i.key)
+
+		return keys
+
 	# Monitor state of IO and disable any that have been left on past the maximum allowed time.
 	def updatePins(self):
 		while self:
@@ -279,13 +285,14 @@ class Movement:
 						self.setPin(i.outputPin2, 0)
 
 	def setPin( self, pin, val ):
-		GPIO.output(pin,val)
+		print("FIX THIS LATER!")
+		#GPIO.output(pin,val)
 
 	def executeMovement( self, key, val ):
 		for i in self.all:
 			bDoCallback = False
 			if( i.key == key and key ):
-				print i.key
+				print(i.key)
 				if val == 1 and i.keyIsPressed == False:
 					i.keyIsPressed = True
 					bDoCallback = True
@@ -323,7 +330,7 @@ class Movement:
 			elif( i.linkKey and i.linkKey == key and key ):
 				# Execute any other movements that are linked to this movement
 				self.executeMovement( i.key, val )
-			        self.executeMovement( i.linkedMovement.key, val )
+				self.executeMovement( i.linkedMovement.key, val )
 				break
 
 		if self.bThreadStarted == False:
