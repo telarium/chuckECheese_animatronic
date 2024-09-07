@@ -4,11 +4,13 @@ import time
 from pydispatch import dispatcher
 from web_io import WebServer
 from system_info import SystemInfo
+from gpio import GPIO
 from animatronic_movements import Movement
 
 class Pasqually:
     def __init__(self):
-        self.movements = Movement()
+        self.gpio = GPIO()
+        self.movements = Movement(self.gpio)
         self.webServer = WebServer()
         self.systemInfo = SystemInfo(self.webServer)
         self.setDispatchEvents()
