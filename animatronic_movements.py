@@ -1,5 +1,6 @@
 import time
 import threading
+from midi import MIDI
 
 # Valve1  -> LCD-D22 -> Eye right
 # Valve2  -> LCD-D13 -> Eye left
@@ -55,11 +56,11 @@ class Movement:
 			if pin:
 				# Move eyes in the opposite direction for a split second.
 				# This will actuate the springs and hopefully re-center the eyeballs.
-				self.setPin(pin,1,i.i2c_address)
+				self.setPin(pin,1,movement)
 				time.sleep(0.05)
 				# Don't disable output if user has pressed another eye key
 				if self.eyesRight.keyIsPressed != True and self.eyesLeft.keyIsPressed != True:
-					self.setPin(pin,0,i.i2c_address)
+					self.setPin(pin,0,movement)
 
 	# Callback function for eyes to attempt a half-blink... or, as I call it, the "stink eye"
 	def onEyeBlinkHalf(self, movement, val):
@@ -70,20 +71,21 @@ class Movement:
 
 		print(self.eyesBlinkHalf.bBlinked)
 
-		self.setPin(self.eyesBlinkFull.outputPin2, 0, self.eyesBlinkFull.i2c_address)
+		self.setPin(self.eyesBlinkFull.outputPin2, 0, self.eyesBlinkFull)
 		if val == 1 and self.eyesBlinkHalf.bBlinked != True:
 			self.eyesBlinkHalf.bBlinked = True
 			time.sleep(0.020)
-			self.setPin(self.eyesBlinkHalf.outputPin1, 0, self.eyesBlinkFull.i2c_address)
+			self.setPin(self.eyesBlinkHalf.outputPin1, 0, self.eyesBlinkFull)
 		elif val == 1 and self.eyesBlinkHalf.bBlinked == True:
 			self.eyesBlinkHalf.bBlinked = False
-			self.setPin(self.eyesBlinkHalf.outputPin1, 0, self.eyesBlinkFull.i2c_address)
+			self.setPin(self.eyesBlinkHalf.outputPin1, 0, self.eyesBlinkFull)
 			self.executeMovement(self.eyesBlinkFull.key,0)
 			time.sleep(0.025)
-			self.setPin(self.eyesBlinkFull.outputPin2, 0, self.eyesBlinkFull.i2c_address)
+			self.setPin(self.eyesBlinkFull.outputPin2, 0, self.eyesBlinkFull)
 
 	def __init__(self, gpio):
 		self.gpio = gpio
+		self.midi = MIDI(callback=self.midi_event_received)
 		self.bThreadStarted = False	
 
 		# Define all of our movements here.
@@ -92,8 +94,8 @@ class Movement:
 		self.rightShoulder.i2c_address = 0x20
 		self.rightShoulder.outputPin2 = 'CSID3'
 		self.rightShoulder.outputPin1 = 'LCD-D11'
-		self.rightShoulder.outputPin2MaxTime = 0.5
-		self.rightShoulder.outputPin1MaxTime = 60*10
+		#self.rightShoulder.outputPin2MaxTime = 0.5
+		#self.rightShoulder.outputPin1MaxTime = 60*10
 		self.rightShoulder.midiNote = 50
 		self.all.append( self.rightShoulder )
 
@@ -102,8 +104,8 @@ class Movement:
 		self.rightArm.i2c_address = 0x20
 		self.rightArm.outputPin2 = 'CSID5'
 		self.rightArm.outputPin1 = 'LCD-D7'
-		self.rightArm.outputPin2MaxTime = -1
-		self.rightArm.outputPin1MaxTime = 0.75
+		#self.rightArm.outputPin2MaxTime = -1
+		#self.rightArm.outputPin1MaxTime = 0.75
 		self.rightArm.midiNote = 52
 		self.all.append( self.rightArm )
        
@@ -112,8 +114,8 @@ class Movement:
 		self.leftShoulder.i2c_address = 0x20
 		self.leftShoulder.outputPin2 = 'LCD-D12'
 		self.leftShoulder.outputPin1 = 'LCD-D21'
-		self.leftShoulder.outputPin2MaxTime = 0.5
-		self.leftShoulder.outputPin1MaxTime = 60*10
+		#self.leftShoulder.outputPin2MaxTime = 0.5
+		#self.leftShoulder.outputPin1MaxTime = 60*10
 		self.leftShoulder.linkKey = 'i'
 		self.leftShoulder.linkedMovement = self.rightShoulder
 		self.leftShoulder.midiNote = 53
@@ -124,8 +126,8 @@ class Movement:
 		self.leftArm.i2c_address = 0x20
 		self.leftArm.outputPin2 = 'CSID4'
 		self.leftArm.outputPin1 = 'LCD-D6'
-		self.leftArm.outputPin2MaxTime = -1
-		self.leftArm.outputPin1MaxTime = 0.75
+		#self.leftArm.outputPin2MaxTime = -1
+		#self.leftArm.outputPin1MaxTime = 0.75
 		self.leftArm.linkKey = 'k'
 		self.leftArm.linkedMovement = self.rightArm
 		self.leftArm.midiNote = 55
@@ -136,8 +138,8 @@ class Movement:
 		self.mouth.i2c_address = 0x20
 		self.mouth.outputPin1 = 'LCD-D4'
 		self.mouth.outputPin2 = 'CSID2'
-		self.mouth.outputPin1MaxTime = 0.75
-		self.mouth.outputPin2MaxTime = 0.75
+		#self.mouth.outputPin1MaxTime = 0.75
+		#self.mouth.outputPin2MaxTime = 0.75
 		self.mouth.midiNote = 56
 		self.all.append( self.mouth )
        
@@ -145,7 +147,7 @@ class Movement:
 		self.mustache.key = 'c'
 		self.mustache.i2c_address = 0x20
 		self.mustache.outputPin1 = 'LCD-D18'
-		self.mustache.outputPin1MaxTime = 60*5
+		#self.mustache.outputPin1MaxTime = 60*5
 		self.mustache.midiNote = 57
 		self.mustache.linkKey = 'z'
 		self.mustache.linkedMovement = self.mouth
@@ -155,7 +157,7 @@ class Movement:
 		self.eyesLeft.key = 'q'
 		self.eyesLeft.i2c_address = 0x20
 		self.eyesLeft.outputPin1 = 'LCD-D22'
-		self.eyesLeft.outputPin1MaxTime = 60*10
+		#self.eyesLeft.outputPin1MaxTime = 60*10
 		self.eyesLeft.midiNote = 58
 		self.eyesLeft.callbackFunc = self.onEyeMove
 		self.all.append( self.eyesLeft )
@@ -164,7 +166,7 @@ class Movement:
 		self.eyesRight.key = 'e'
 		self.eyesRight.i2c_address = 0x20
 		self.eyesRight.outputPin1 = 'LCD-D13'
-		self.eyesRight.outputPin1MaxTime = 60*10
+		#self.eyesRight.outputPin1MaxTime = 60*10
 		self.eyesRight.midiNote = 59
 		self.eyesRight.callbackFunc = self.onEyeMove
 		self.all.append( self.eyesRight )
@@ -174,8 +176,8 @@ class Movement:
 		self.eyesBlinkFull.i2c_address = 0x20
 		self.eyesBlinkFull.outputPin1 = 1
 		self.eyesBlinkFull.outputPin2 = 2
-		self.eyesBlinkFull.outputPin1MaxTime = 0.25
-		self.eyesBlinkFull.outputPin2MaxTime = 0.25
+		#self.eyesBlinkFull.outputPin1MaxTime = 0.25
+		#self.eyesBlinkFull.outputPin2MaxTime = 0.25
 		self.eyesBlinkFull.midiNote = 60
 		self.all.append( self.eyesBlinkFull )
 
@@ -183,7 +185,7 @@ class Movement:
 		self.eyesBlinkHalf.key = 'r'
 		self.eyesBlinkHalf.i2c_address = 0x20
 		self.eyesBlinkHalf.outputPin1 = 'LCD-D15'
-		self.eyesBlinkHalf.outputPin1MaxTime = 0.25
+		#self.eyesBlinkHalf.outputPin1MaxTime = 0.25
 		self.eyesBlinkHalf.midiNote = 61
 		self.eyesBlinkHalf.callbackFunc = self.onEyeBlinkHalf
 		self.all.append( self.eyesBlinkHalf )
@@ -200,7 +202,7 @@ class Movement:
 		self.bodyLeanDown.key = 'n'
 		self.bodyLeanDown.i2c_address = 0x20
 		self.bodyLeanDown.outputPin1 = 'CSID7'
-		self.bodyLeanDown.outputPin1MaxTime = 2
+		#self.bodyLeanDown.outputPin1MaxTime = 2
 		self.bodyLeanDown.midiNote = 63
 		self.all.append( self.bodyLeanDown )
        
@@ -208,7 +210,7 @@ class Movement:
 		self.neckLeft.key = 'a'
 		self.neckLeft.i2c_address = 0x20
 		self.neckLeft.outputPin1 = 'LCD-D3'
-		self.neckLeft.outputPin1MaxTime = 0.8
+		#self.neckLeft.outputPin1MaxTime = 0.8
 		self.neckLeft.midiNote = 64
 		self.all.append( self.neckLeft )
        
@@ -216,7 +218,7 @@ class Movement:
 		self.neckRight.key = 'd'
 		self.neckRight.i2c_address = 0x20
 		self.neckRight.outputPin1 = 'CSID0'
-		self.neckRight.outputPin1MaxTime = 0.8
+		#self.neckRight.outputPin1MaxTime = 0.8
 		self.neckRight.midiNote = 65
 		self.all.append( self.neckRight )
        
@@ -225,7 +227,7 @@ class Movement:
 		self.headUpDown.i2c_address = 0x20
 		self.headUpDown.outputPin1 = 'LCD-D14'
 		self.headUpDown.outputPin2 = 'LCD-D19'
-		self.headUpDown.outputPin1MaxTime = 60*60
+		#self.headUpDown.outputPin1MaxTime = 60*60
 		self.headUpDown.midiNote = 66
 		self.all.append( self.headUpDown )
 
@@ -239,15 +241,11 @@ class Movement:
 				i.outputInverted = False
 
 			i.pin1Time = 0
-			
-			#GPIO.cleanup(i.outputPin1)
-			#GPIO.setup(i.outputPin1,GPIO.OUT)
-			self.setPin(i.outputPin1, val, i.i2c_address)
+
+			self.setPin(i.outputPin1, val, i)
 			if( i.outputPin2 ):
 				i.pin2Time = 0
-				#GPIO.cleanup(i.outputPin2)
-				#GPIO.setup(i.outputPin2,GPIO.OUT)
-				self.setPin(i.outputPin2, 1-val, i.i2c_address)
+				self.setPin(i.outputPin2, 1-val, i)
 
 	# Fromat MIDI notes into a string to pass to the HTML front end
 	# This way, javascript key presses can control MIDI events directly
@@ -292,17 +290,17 @@ class Movement:
 					i.pin1Time-=0.1
 					if i.pin1Time <= 0:
 						i.pin1Time = 0
-						self.setPin(i.outputPin1, 0, i.i2c_address)
+						self.setPin(i.outputPin1, 0, i)
 				
 				if i.outputPin2MaxTime > -1 and i.pin2Time > 0:
 					i.pin2Time-=0.1
 					if i.pin2Time <= 0:
 						i.pin2Time = 0
-						self.setPin(i.outputPin2, 0, i.i2c_address)
+						self.setPin(i.outputPin2, 0, i)
 
-	def setPin( self, pin, val, i2c_address ):
-		if( i2c_address):
-			self.gpio.set_pin_from_address(i2c_address, pin, val)
+	def setPin( self, pin, val, movement ):
+		if( movement.i2c_address):
+			self.gpio.set_pin_from_address(movement.i2c_address, pin, val)
 
 	def executeMovement( self, key, val ):
 		for i in self.all:
@@ -312,21 +310,26 @@ class Movement:
 				if val == 1 and i.keyIsPressed == False:
 					i.keyIsPressed = True
 					bDoCallback = True
+					if( i.midiNote > 0):
+						self.midi.send_note_on(i.midiNote)
 				elif val == 0 and i.keyIsPressed == True:
 					i.keyIsPressed = False
 					bDoCallback = True
+					if( i.midiNote > 0):
+						self.midi.send_note_off(i.midiNote)
 
 				if i.outputInverted == True:
 					val = 1 - val
 
-				self.setPin(i.outputPin1, val, i.i2c_address)
+				self.setPin(i.outputPin1, val, i)
+
 				if( val == 1 ):
 					i.pin1Time = i.outputPin1MaxTime
 				else:
 					i.pin1Time = 0
 
 				if( i.outputPin2 ):
-					self.setPin(i.outputPin2, 1-val, i.i2c_address)
+					self.setPin(i.outputPin2, 1-val, i)
 					if( val == 1 ):
 						i.pin2Time = 0
 					else:
@@ -354,4 +357,14 @@ class Movement:
 			t = threading.Thread(target=self.updatePins, args = ())
 			t.setDaemon(True)
 			t.start()
+
+	def midi_event_received(self, msg):
+		"""
+		Callback function to handle received MIDI events.
+		:param msg: The MIDI message received from the input.
+		"""
+		if msg.type == 'note_on':
+			print(f"Note ON received: {msg.note} with velocity {msg.velocity}")
+		elif msg.type == 'note_off':
+			print(f"Note OFF received: {msg.note}")
 			

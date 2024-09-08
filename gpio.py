@@ -50,6 +50,5 @@ class GPIO:
     def set_pin_from_address(self, i2c_address, pin, value):
         for mcp in self.mcp_devices:
             if mcp.address == i2c_address:
-                print("SET PIN: " + str(pin) + ", " + str(value))
                 mcp.set_pin(pin,value)
         return None
