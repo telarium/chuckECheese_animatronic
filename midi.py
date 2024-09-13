@@ -26,6 +26,7 @@ class MIDI:
         # Finds a MIDI input port with "MIDI" in its name.
         ports = mido.get_input_names()
         for port in ports:
+            print(port)
             if 'MIDI' in port:
                 print(f"Found MIDI input port: {port}")
                 return port
@@ -54,28 +55,26 @@ class MIDI:
                 print(f"Opened MIDI output port: {port_name_output}")
             except Exception as e:
                 print(f"Error opening MIDI output port '{port_name_output}': {e}")
-        else:
-            print("No valid MIDI output port found to open.")
 
         self.open_input_port()
 
-    def send_note_on(self, note, velocity=127):
+    def send_note_on(self, note, velocity=127, channel=0):
         if self.port is None:
             self.open_port()
 
         if self.port:
-            msg = mido.Message('note_on', note=note, velocity=velocity)
+            msg = mido.Message('note_on', note=note, velocity=velocity, channel=channel)
             self.port.send(msg)
-            print(f"Sent note_on: note={note}, velocity={velocity}")
+            print(f"Sent note_on: note={note}, velocity={velocity}, channel={channel}")
 
-    def send_note_off(self, note, velocity=127):
+    def send_note_off(self, note, velocity=127, channel=0):
         if self.port is None:
             self.open_port()
 
         if self.port:
-            msg = mido.Message('note_off', note=note, velocity=velocity)
+            msg = mido.Message('note_off', note=note, velocity=velocity, channel=channel)
             self.port.send(msg)
-            print(f"Sent note_off: note={note}, velocity={velocity}")
+            print(f"Sent note_off: note={note}, velocity={velocity}, channel={channel}")
 
     def start_input_thread(self):
         """
@@ -85,16 +84,23 @@ class MIDI:
 
     def listen_for_input(self):
         """
-        Continuously listens for incoming MIDI messages and triggers the callback when a note event is received.
-        This function runs asynchronously using eventlet to avoid blocking the main program.
+        Continuously listens for incoming MIDI messages and logs every detail for analysis.
         """
         if self.input_port:
             while True:
                 for msg in self.input_port.iter_pending():
-                    if self.callback and msg.type in ['note_on', 'note_off']:
-                        # Call the callback with the message details
-                        self.callback(msg)
-                    print(f"Received MIDI message: {msg}")
+                    # Log all messages in their raw form
+                    print(f"!Received MIDI message: {msg}")
+                    
+                    # Check for specific MIDI message types
+                    if msg.type == 'note_on' and msg.velocity > 0:
+                        print(f"Received NOTE_ON: note={msg.note}, velocity={msg.velocity}, channel={msg.channel}")
+                    elif msg.type == 'note_off' or (msg.type == 'note_on' and msg.velocity == 0):
+                        print(f"Received NOTE_OFF: note={msg.note}, channel={msg.channel}")
+                    else:
+                        # Print message details for further debugging
+                        print(f"Unknown or System Message: {msg.type} with details: {msg}")
+
                 eventlet.sleep(0.01)  # Yield control to other green threads
 
     def close(self):
