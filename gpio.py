@@ -41,7 +41,7 @@ class GPIO:
         bus = smbus.SMBus(1)  # Initialize I2C bus
 
         # I2C addresses of the MCP23008 devices
-        i2c_addresses = [0x20, 0x21, 0x22]
+        i2c_addresses = [0x20, 0x21, 0x23]
 
         # Initialize MCP23008 devices and store them in a list
         self.mcp_devices = [MCP23008(bus, addr) for addr in i2c_addresses]
