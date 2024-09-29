@@ -1,5 +1,5 @@
 # chuckECheese_animatronic
-A project to control an old 1981 Chuck E Cheese animatronic character by the name of Pasqually. Uses CHIP for the microcontroller to control pneumatics through a web interface.
+A project to retrofit an old 1981 Chuck E Cheese animatronic character named Pasqually, using as Raspberry PI to control pneumatics through a web interface. You know, for fun.
 
 # MIDI
 To use Chrome's MIDI capabilities (optional), you must access the HTTPS secure version of the web server.
