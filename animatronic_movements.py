@@ -2,32 +2,32 @@ import time
 import threading
 from midi import MIDI
 
-# Valve1  -> LCD-D22 -> Eye right
-# Valve2  -> LCD-D13 -> Eye left
-# Valve3  -> LCD-D20 -> Eyelid Up
-# Valve4  -> LCD-D15 -> Eyelid down
-# Valve5  -> LCD-D18 -> Mustache
+# Valve1  -> 0x20, GP0	-> Eye right
+# Valve2  -> 0x21, GP4	-> Eye left
+# Valve3  -> 0x20, GP1	-> Eyelid Up
+# Valve4  -> 0x21, GP5	-> Eyelid down
+# Valve5  -> 0x20, GP2	-> Mustache
 # Valve6  -> NONE
-# Valve7  -> LCD-D14 -> Neck down
-# Valve8  -> LCD-D19 -> Neck up
-# Valve9  -> LCD-D12 -> Left shoulder out
-# Valve10 -> LCD-D21 -> Left shoulder in
-# Valve11 -> LCD-D10 -> --unused--
-# Valve12 -> CSID6   -> --unused--
-# Valve13 -> LCD-D6  -> Left arm down
-# Valve14 -> CSID4   -> Left arm up
-# Valve15 -> LCD-D4  -> Mouth open
-# Valve16 -> CSID2   -> Mouth closed
-# Valve17 -> LCD-D3  -> Torso left
-# Valve18 -> CSID0   -> Torso right
-# Valve19 -> LCD-D5  -> Lean forward
-# Valve20 -> CSID7   -> Lean Backward
-# Valve21 -> LCD-D7  -> Right arm down
-# Valve22 -> CSID5   -> Right arm up
-# Valve23 -> LCD-D11 -> Right shoulder in
-# Valve24 -> CSID3   -> Right shoulder out
-# Valve25 -> NONE (24v)
-# Valve26 -> CSID1   -> --unused--
+# Valve7  -> 0x20, GP3	-> Neck down
+# Valve8  -> 0x21, GP6	-> Neck up
+# Valve9  -> 0x20, GP4	-> Left shoulder out
+# Valve10 -> 0x21, GP7	-> Left shoulder in
+# Valve11 -> 0x20, GP5	-> --unused--
+# Valve12 -> 0x23, GP0	-> --unused--
+# Valve13 -> 0x20, GP6	-> Left arm down
+# Valve14 -> 0x23, GP1	-> Left arm up
+# Valve15 -> 0x20, GP7	-> Mouth open
+# Valve16 -> 0x23, GP2	-> Mouth closed
+# Valve17 -> 0x21, GP0	-> Torso left
+# Valve18 -> 0x23, GP3	-> Torso right
+# Valve19 -> 0x21, GP1	-> Lean forward
+# Valve20 -> 0x23, GP4	-> Lean Backward
+# Valve21 -> 0x21, GP2	-> Right arm down
+# Valve22 -> 0x23, GP5	-> Right arm up
+# Valve23 -> 0x21, GP3	-> Right shoulder in
+# Valve24 -> 0x23, GP6	-> Right shoulder out
+# Valve25 -> NONE (COM 24v)
+# Valve26 -> 0x23, GP7	-> --unused--
 
 class Struct():
 	key = '' # A keyboard key press assigned to this movement
@@ -93,7 +93,7 @@ class Movement:
 		self.rightShoulder.key = 'o'
 		self.rightShoulder.i2c_address = 0x20
 		self.rightShoulder.outputPin2 = 'CSID3'
-		self.rightShoulder.outputPin1 = 'LCD-D11'
+		self.rightShoulder.outputPin1 = '3'
 		#self.rightShoulder.outputPin2MaxTime = 0.5
 		#self.rightShoulder.outputPin1MaxTime = 60*10
 		self.rightShoulder.midiNote = 50
