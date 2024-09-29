@@ -18,8 +18,8 @@ from midi import MIDI
 # Valve14 -> 0x23, GP1	-> Left arm up
 # Valve15 -> 0x20, GP7	-> Mouth open
 # Valve16 -> 0x23, GP2	-> Mouth closed
-# Valve17 -> 0x21, GP0	-> Torso left
-# Valve18 -> 0x23, GP3	-> Torso right
+# Valve17 -> 0x21, GP0	-> Neck/torso left
+# Valve18 -> 0x23, GP3	-> Neck/torso right
 # Valve19 -> 0x21, GP1	-> Lean forward
 # Valve20 -> 0x23, GP4	-> Lean Backward
 # Valve21 -> 0x21, GP2	-> Right arm down
@@ -31,8 +31,8 @@ from midi import MIDI
 
 class Struct():
 	key = '' # A keyboard key press assigned to this movement
-	outputPin1 = None # First IO pin on the Arduino
-	outputPin2 = None # Optional second IO pin (the inverse state of pin 1)
+	outputPin1 = [] # Index 0 is the I2C address for the GPIO expander, index 1 is the assigned pin on the GPIO expander
+	outputPin2 = [] # Optional second IO pin array, usually the inverse state of outputPin1 (see comment above)
 	midiNote = 0 # A MIDI note assigned to this movement to be recorded in a sequencer
 	outputPin1MaxTime = -1 # How much time is pin 1 allowed to be pulled high? (optional, -1 means infinite)
 	outputPin2MaxTime = -1 # See above (optional, -1 means infinite)
@@ -91,9 +91,8 @@ class Movement:
 		# Define all of our movements here.
 		self.rightShoulder = Struct()
 		self.rightShoulder.key = 'o'
-		self.rightShoulder.i2c_address = 0x20
-		self.rightShoulder.outputPin2 = 'CSID3'
-		self.rightShoulder.outputPin1 = '3'
+		self.rightShoulder.outputPin2 = [0x23, 6] # Shoulder out
+		self.rightShoulder.outputPin1 = [0x21, 3] # Shoulder in
 		#self.rightShoulder.outputPin2MaxTime = 0.5
 		#self.rightShoulder.outputPin1MaxTime = 60*10
 		self.rightShoulder.midiNote = 50
@@ -101,9 +100,8 @@ class Movement:
 
 		self.rightArm = Struct()
 		self.rightArm.key = 'l'
-		self.rightArm.i2c_address = 0x20
-		self.rightArm.outputPin2 = 'CSID5'
-		self.rightArm.outputPin1 = 'LCD-D7'
+		self.rightArm.outputPin2 = [0x23, 5] # Arm up
+		self.rightArm.outputPin1 = [0x21, 3] # Arm down
 		#self.rightArm.outputPin2MaxTime = -1
 		#self.rightArm.outputPin1MaxTime = 0.75
 		self.rightArm.midiNote = 52
@@ -111,9 +109,8 @@ class Movement:
        
 		self.leftShoulder = Struct()
 		self.leftShoulder.key = 'u'
-		self.leftShoulder.i2c_address = 0x20
-		self.leftShoulder.outputPin2 = 'LCD-D12'
-		self.leftShoulder.outputPin1 = 'LCD-D21'
+		self.leftShoulder.outputPin2 = [0x20, 4] # Shoulder out
+		self.leftShoulder.outputPin1 = [0x21, 7] # Shoulder in
 		#self.leftShoulder.outputPin2MaxTime = 0.5
 		#self.leftShoulder.outputPin1MaxTime = 60*10
 		self.leftShoulder.linkKey = 'i'
@@ -123,9 +120,8 @@ class Movement:
        
 		self.leftArm = Struct()
 		self.leftArm.key = 'j'
-		self.leftArm.i2c_address = 0x20
-		self.leftArm.outputPin2 = 'CSID4'
-		self.leftArm.outputPin1 = 'LCD-D6'
+		self.leftArm.outputPin2 = [0x23, 1] # Arm up
+		self.leftArm.outputPin1 = [0x20, 6] # Arm down
 		#self.leftArm.outputPin2MaxTime = -1
 		#self.leftArm.outputPin1MaxTime = 0.75
 		self.leftArm.linkKey = 'k'
@@ -135,9 +131,8 @@ class Movement:
 
 		self.mouth = Struct()
 		self.mouth.key = 'x'
-		self.mouth.i2c_address = 0x20
-		self.mouth.outputPin1 = 'LCD-D4'
-		self.mouth.outputPin2 = 'CSID2'
+		self.mouth.outputPin1 = [0x20, 7] # Mouth open
+		self.mouth.outputPin2 = [0x23, 2] # Mouth close
 		#self.mouth.outputPin1MaxTime = 0.75
 		#self.mouth.outputPin2MaxTime = 0.75
 		self.mouth.midiNote = 56
@@ -145,8 +140,7 @@ class Movement:
        
 		self.mustache = Struct()
 		self.mustache.key = 'c'
-		self.mustache.i2c_address = 0x20
-		self.mustache.outputPin1 = 'LCD-D18'
+		self.mustache.outputPin1 = [0x20, 2]
 		#self.mustache.outputPin1MaxTime = 60*5
 		self.mustache.midiNote = 57
 		self.mustache.linkKey = 'z'
@@ -155,8 +149,7 @@ class Movement:
        
 		self.eyesLeft = Struct()
 		self.eyesLeft.key = 'q'
-		self.eyesLeft.i2c_address = 0x20
-		self.eyesLeft.outputPin1 = 'LCD-D22'
+		self.eyesLeft.outputPin1 = [0x21, 4]
 		#self.eyesLeft.outputPin1MaxTime = 60*10
 		self.eyesLeft.midiNote = 58
 		self.eyesLeft.callbackFunc = self.onEyeMove
@@ -164,8 +157,7 @@ class Movement:
        
 		self.eyesRight = Struct()
 		self.eyesRight.key = 'e'
-		self.eyesRight.i2c_address = 0x20
-		self.eyesRight.outputPin1 = 'LCD-D13'
+		self.eyesRight.outputPin1 = [0x20, 0]
 		#self.eyesRight.outputPin1MaxTime = 60*10
 		self.eyesRight.midiNote = 59
 		self.eyesRight.callbackFunc = self.onEyeMove
@@ -173,9 +165,8 @@ class Movement:
        
 		self.eyesBlinkFull = Struct()
 		self.eyesBlinkFull.key = 'w'
-		self.eyesBlinkFull.i2c_address = 0x20
-		self.eyesBlinkFull.outputPin1 = 1
-		self.eyesBlinkFull.outputPin2 = 2
+		self.eyesBlinkFull.outputPin1 = [0x21, 5] # Eyes close
+		self.eyesBlinkFull.outputPin2 = [0x20, 1] # Eyes open
 		#self.eyesBlinkFull.outputPin1MaxTime = 0.25
 		#self.eyesBlinkFull.outputPin2MaxTime = 0.25
 		self.eyesBlinkFull.midiNote = 60
@@ -183,8 +174,7 @@ class Movement:
 
 		self.eyesBlinkHalf = Struct()
 		self.eyesBlinkHalf.key = 'r'
-		self.eyesBlinkHalf.i2c_address = 0x20
-		self.eyesBlinkHalf.outputPin1 = 'LCD-D15'
+		self.eyesBlinkHalf.outputPin1 = [0x21, 5] # Eyes close
 		#self.eyesBlinkHalf.outputPin1MaxTime = 0.25
 		self.eyesBlinkHalf.midiNote = 61
 		self.eyesBlinkHalf.callbackFunc = self.onEyeBlinkHalf
@@ -192,41 +182,36 @@ class Movement:
        
 		self.bodyLeanUp = Struct()
 		self.bodyLeanUp.key = 'm'
-		self.bodyLeanUp.i2c_address = 0x20
-		self.bodyLeanUp.outputPin1 = 'LCD-D5'
+		self.bodyLeanUp.outputPin1 = [0x21, 1] # Lean forward
 		self.bodyLeanUp.outputInverted = True
 		self.bodyLeanUp.midiNote = 62
 		self.all.append( self.bodyLeanUp ) 
 
 		self.bodyLeanDown = Struct()
 		self.bodyLeanDown.key = 'n'
-		self.bodyLeanDown.i2c_address = 0x20
-		self.bodyLeanDown.outputPin1 = 'CSID7'
+		self.bodyLeanDown.outputPin1 = [0x23, 4] # Lean backward
 		#self.bodyLeanDown.outputPin1MaxTime = 2
 		self.bodyLeanDown.midiNote = 63
 		self.all.append( self.bodyLeanDown )
        
 		self.neckLeft = Struct()
 		self.neckLeft.key = 'a'
-		self.neckLeft.i2c_address = 0x20
-		self.neckLeft.outputPin1 = 'LCD-D3'
+		self.neckLeft.outputPin1 = [0x21, 0]
 		#self.neckLeft.outputPin1MaxTime = 0.8
 		self.neckLeft.midiNote = 64
 		self.all.append( self.neckLeft )
        
 		self.neckRight = Struct()
 		self.neckRight.key = 'd'
-		self.neckRight.i2c_address = 0x20
-		self.neckRight.outputPin1 = 'CSID0'
+		self.neckRight.outputPin1 = [0x23, 3]
 		#self.neckRight.outputPin1MaxTime = 0.8
 		self.neckRight.midiNote = 65
 		self.all.append( self.neckRight )
        
 		self.headUpDown = Struct()
 		self.headUpDown.key = 's'
-		self.headUpDown.i2c_address = 0x20
-		self.headUpDown.outputPin1 = 'LCD-D14'
-		self.headUpDown.outputPin2 = 'LCD-D19'
+		self.headUpDown.outputPin1 = [0x20, 3] # Head down
+		self.headUpDown.outputPin2 = [0x21, 6] # Head up
 		#self.headUpDown.outputPin1MaxTime = 60*60
 		self.headUpDown.midiNote = 66
 		self.all.append( self.headUpDown )
@@ -298,9 +283,10 @@ class Movement:
 						i.pin2Time = 0
 						self.setPin(i.outputPin2, 0, i)
 
+	# Set the GPIO pin state. When using the MCP23008 GPIO expander, index 0 of the pin value is the I2C address of the GPIO bank... 
+	# ...and index 1 is the assigned pin on the MCP23008. For example, "0x20 pin 1"
 	def setPin( self, pin, val, movement ):
-		if( movement.i2c_address):
-			self.gpio.set_pin_from_address(movement.i2c_address, pin, val)
+			self.gpio.set_pin_from_address(pin[0], pin[1], val)
 
 	def executeMovement( self, key, val ):
 		for i in self.all:
