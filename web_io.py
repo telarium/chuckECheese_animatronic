@@ -1,7 +1,9 @@
 import os
 import socket
 import sys
+import ssl
 import eventlet
+from eventlet import wsgi
 import logging
 from flask import Flask
 from flask_socketio import SocketIO
@@ -61,8 +63,29 @@ class WebServer:
 
     def run_server(self):
         try:
-            print("Starting server...")
-            socketio.run(app, host='0.0.0.0', port=80)
+            # Start HTTP server on port 80 in a new green thread
+            print("Starting HTTP server on port 80...")
+            eventlet.spawn_n(socketio.run, app, host='0.0.0.0', port=80)
+
+            # HTTPS setup
+            print("Starting HTTPS server on port 443...")
+            
+            # Create an SSL context
+            ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+            ssl_context.load_cert_chain(certfile='server.crt', keyfile='server.key')
+
+            # Create a new SSL socket for HTTPS
+            https_socket = eventlet.wrap_ssl(eventlet.listen(('0.0.0.0', 443)),
+                                             certfile='server.crt',
+                                             keyfile='server.key',
+                                             server_side=True)
+
+            # Start HTTPS server using the SSL socket
+            eventlet.spawn_n(wsgi.server, https_socket, app)
+
+            # Keep the main thread alive to ensure the servers keep running
+            eventlet.sleep(10**6)
+
         except Exception as e:
             print(f"Error running server: {e}")
 
