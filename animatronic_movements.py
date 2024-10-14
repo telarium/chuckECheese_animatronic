@@ -101,8 +101,8 @@ class Movement:
 		self.rightArm = Struct()
 		self.rightArm.key = 'l'
 		self.rightArm.outputPin2 = [0x23, 5] # Arm up
-		self.rightArm.outputPin1 = [0x21, 3] # Arm down
-		#self.rightArm.outputPin2MaxTime = -1
+		self.rightArm.outputPin1 = [0x21, 2] # Arm down
+		self.rightArm.outputPin2MaxTime = -1
 		#self.rightArm.outputPin1MaxTime = 0.75
 		self.rightArm.midiNote = 52
 		self.all.append( self.rightArm )
@@ -113,8 +113,8 @@ class Movement:
 		self.leftShoulder.outputPin1 = [0x21, 7] # Shoulder in
 		#self.leftShoulder.outputPin2MaxTime = 0.5
 		#self.leftShoulder.outputPin1MaxTime = 60*10
-		self.leftShoulder.linkKey = 'i'
-		self.leftShoulder.linkedMovement = self.rightShoulder
+		#self.leftShoulder.linkKey = 'i'
+		#self.leftShoulder.linkedMovement = self.rightShoulder
 		self.leftShoulder.midiNote = 53
 		self.all.append( self.leftShoulder )
        
@@ -124,8 +124,8 @@ class Movement:
 		self.leftArm.outputPin1 = [0x20, 6] # Arm down
 		#self.leftArm.outputPin2MaxTime = -1
 		#self.leftArm.outputPin1MaxTime = 0.75
-		self.leftArm.linkKey = 'k'
-		self.leftArm.linkedMovement = self.rightArm
+		#self.leftArm.linkKey = 'k'
+		#self.leftArm.linkedMovement = self.rightArm
 		self.leftArm.midiNote = 55
 		self.all.append( self.leftArm )
 
@@ -139,11 +139,11 @@ class Movement:
 		self.all.append( self.mouth )
        
 		self.mustache = Struct()
-		self.mustache.key = 'c'
+		self.mustache.key = 'z'
 		self.mustache.outputPin1 = [0x20, 2]
 		#self.mustache.outputPin1MaxTime = 60*5
 		self.mustache.midiNote = 57
-		self.mustache.linkKey = 'z'
+		#self.mustache.linkKey = 'c'
 		self.mustache.linkedMovement = self.mouth
 		self.all.append( self.mustache )
        
@@ -171,14 +171,6 @@ class Movement:
 		#self.eyesBlinkFull.outputPin2MaxTime = 0.25
 		self.eyesBlinkFull.midiNote = 60
 		self.all.append( self.eyesBlinkFull )
-
-		self.eyesBlinkHalf = Struct()
-		self.eyesBlinkHalf.key = 'r'
-		self.eyesBlinkHalf.outputPin1 = [0x21, 5] # Eyes close
-		#self.eyesBlinkHalf.outputPin1MaxTime = 0.25
-		self.eyesBlinkHalf.midiNote = 61
-		self.eyesBlinkHalf.callbackFunc = self.onEyeBlinkHalf
-		self.all.append( self.eyesBlinkHalf )
        
 		self.bodyLeanUp = Struct()
 		self.bodyLeanUp.key = 'm'
@@ -292,7 +284,6 @@ class Movement:
 		for i in self.all:
 			bDoCallback = False
 			if( i.key == key and key ):
-				print(i.key)
 				if val == 1 and i.keyIsPressed == False:
 					i.keyIsPressed = True
 					bDoCallback = True
@@ -307,6 +298,8 @@ class Movement:
 				if i.outputInverted == True:
 					val = 1 - val
 
+				print(i.outputPin1)
+				print(val)
 				self.setPin(i.outputPin1, val, i)
 
 				if( val == 1 ):
