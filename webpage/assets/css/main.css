@@ -501,7 +501,7 @@
 		.box .image.keypad {
             margin: 0;
             padding: 3em;
-            width: auto;
+            width: 275px;
             max-width: 100%;
         }
 
