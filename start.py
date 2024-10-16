@@ -6,6 +6,7 @@ from web_io import WebServer
 from system_info import SystemInfo
 from gpio import GPIO
 from animatronic_movements import Movement
+from gamepad_input import USBGamepadReader
 
 class Pasqually:
     def __init__(self):
@@ -13,6 +14,7 @@ class Pasqually:
         self.movements = Movement(self.gpio)
         self.webServer = WebServer()
         self.systemInfo = SystemInfo(self.webServer)
+        self.gamepad = USBGamepadReader()
         self.setDispatchEvents()
         self.isRunning = True
 

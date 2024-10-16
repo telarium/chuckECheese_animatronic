@@ -11,9 +11,9 @@ class Setup:
 		# List of system packages to install
 		packages = [
 			"git", "build-essential", "python-dev-is-python3", "flex", "bison", 
-			"dnsmasq", "python3-smbus", "python3-mido", "python3-rtmidi",
-			"python3-flask", "python3-flask-socketio", "python3-flask-talisman", 
-			"python3-eventlet", "python3-psutil", "python3-pydispatch", "python3-setuptools"
+			"dnsmasq", "python3-smbus", "python3-evdev", "python3-setuptools",
+			"python3-flask", "python3-flask-socketio", "python3-flask-talisman",
+			"python3-eventlet", "python3-psutil", "python3-pydispatch"
 		]
 
 		self.run_command("sudo apt-get update")
