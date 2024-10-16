@@ -1,6 +1,5 @@
 import time
 import threading
-from midi import MIDI
 
 # Valve1  -> 0x20, GP0	-> Eye right
 # Valve2  -> 0x21, GP4	-> Eye left
@@ -85,7 +84,6 @@ class Movement:
 
 	def __init__(self, gpio):
 		self.gpio = gpio
-		self.midi = MIDI(callback=self.midi_event_received)
 		self.bThreadStarted = False	
 
 		# Define all of our movements here.
@@ -287,13 +285,9 @@ class Movement:
 				if val == 1 and i.keyIsPressed == False:
 					i.keyIsPressed = True
 					bDoCallback = True
-					if( i.midiNote > 0):
-						self.midi.send_note_on(i.midiNote)
 				elif val == 0 and i.keyIsPressed == True:
 					i.keyIsPressed = False
 					bDoCallback = True
-					if( i.midiNote > 0):
-						self.midi.send_note_off(i.midiNote)
 
 				if i.outputInverted == True:
 					val = 1 - val
@@ -336,14 +330,4 @@ class Movement:
 			t = threading.Thread(target=self.updatePins, args = ())
 			t.setDaemon(True)
 			t.start()
-
-	def midi_event_received(self, msg):
-		"""
-		Callback function to handle received MIDI events.
-		:param msg: The MIDI message received from the input.
-		"""
-		if msg.type == 'note_on':
-			print(f"Note ON received: {msg.note} with velocity {msg.velocity}")
-		elif msg.type == 'note_off':
-			print(f"Note OFF received: {msg.note}")
 			
