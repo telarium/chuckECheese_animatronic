@@ -37,7 +37,7 @@ class Pasqually:
     def run(self):
         try:
             while self.isRunning:
-                time.sleep(0.1)
+                time.sleep(0.01)
         except KeyboardInterrupt:
             self.shutdown()
 
