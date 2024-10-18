@@ -30,6 +30,7 @@ import threading
 
 class Struct():
 	key = '' # A keyboard key press assigned to this movement
+	description = "" # A handy description of this movement
 	outputPin1 = [] # Index 0 is the I2C address for the GPIO expander, index 1 is the assigned pin on the GPIO expander
 	outputPin2 = [] # Optional second IO pin array, usually the inverse state of outputPin1 (see comment above)
 	midiNote = 0 # A MIDI note assigned to this movement to be recorded in a sequencer
@@ -56,7 +57,7 @@ class Movement:
 				# Move eyes in the opposite direction for a split second.
 				# This will actuate the springs and hopefully re-center the eyeballs.
 				self.setPin(pin,1,movement)
-				time.sleep(0.05)
+				time.sleep(0.04)
 				# Don't disable output if user has pressed another eye key
 				if self.eyesRight.keyIsPressed != True and self.eyesLeft.keyIsPressed != True:
 					self.setPin(pin,0,movement)
@@ -67,8 +68,6 @@ class Movement:
 			blinked = self.eyesBlinkHalf.bBlinked
 		except:
 			self.eyesBlinkHalf.bBlinked = False
-
-		print(self.eyesBlinkHalf.bBlinked)
 
 		self.setPin(self.eyesBlinkFull.outputPin2, 0, self.eyesBlinkFull)
 		if val == 1 and self.eyesBlinkHalf.bBlinked != True:
@@ -88,6 +87,7 @@ class Movement:
 
 		# Define all of our movements here.
 		self.rightShoulder = Struct()
+		self.rightShoulder.description = "Shoulder R"
 		self.rightShoulder.key = 'o'
 		self.rightShoulder.outputPin2 = [0x23, 6] # Shoulder out
 		self.rightShoulder.outputPin1 = [0x21, 3] # Shoulder in
@@ -98,6 +98,7 @@ class Movement:
 
 		self.rightArm = Struct()
 		self.rightArm.key = 'l'
+		self.rightArm.description = "Elbow R"
 		self.rightArm.outputPin2 = [0x23, 5] # Arm up
 		self.rightArm.outputPin1 = [0x21, 2] # Arm down
 		self.rightArm.outputPin2MaxTime = -1
@@ -106,6 +107,7 @@ class Movement:
 		self.all.append( self.rightArm )
        
 		self.leftShoulder = Struct()
+		self.leftShoulder.description = "Shoulder L"
 		self.leftShoulder.key = 'u'
 		self.leftShoulder.outputPin2 = [0x20, 4] # Shoulder out
 		self.leftShoulder.outputPin1 = [0x21, 7] # Shoulder in
@@ -117,6 +119,7 @@ class Movement:
 		self.all.append( self.leftShoulder )
        
 		self.leftArm = Struct()
+		self.leftArm.description = "Elbow L"
 		self.leftArm.key = 'j'
 		self.leftArm.outputPin2 = [0x23, 1] # Arm up
 		self.leftArm.outputPin1 = [0x20, 6] # Arm down
@@ -128,6 +131,7 @@ class Movement:
 		self.all.append( self.leftArm )
 
 		self.mouth = Struct()
+		self.mouth.description = "Mouth"
 		self.mouth.key = 'x'
 		self.mouth.outputPin1 = [0x20, 7] # Mouth open
 		self.mouth.outputPin2 = [0x23, 2] # Mouth close
@@ -137,6 +141,7 @@ class Movement:
 		self.all.append( self.mouth )
        
 		self.mustache = Struct()
+		self.mustache.description = "Mustache"
 		self.mustache.key = 'z'
 		self.mustache.outputPin1 = [0x20, 2]
 		#self.mustache.outputPin1MaxTime = 60*5
@@ -146,6 +151,7 @@ class Movement:
 		self.all.append( self.mustache )
        
 		self.eyesLeft = Struct()
+		self.eyesLeft.description = "Eyes L"
 		self.eyesLeft.key = 'q'
 		self.eyesLeft.outputPin1 = [0x21, 4]
 		#self.eyesLeft.outputPin1MaxTime = 60*10
@@ -154,6 +160,7 @@ class Movement:
 		self.all.append( self.eyesLeft )
        
 		self.eyesRight = Struct()
+		self.eyesRight.description = "Eyes R"
 		self.eyesRight.key = 'e'
 		self.eyesRight.outputPin1 = [0x20, 0]
 		#self.eyesRight.outputPin1MaxTime = 60*10
@@ -162,6 +169,7 @@ class Movement:
 		self.all.append( self.eyesRight )
        
 		self.eyesBlinkFull = Struct()
+		self.eyesBlinkFull.description = "Eyes Blink"
 		self.eyesBlinkFull.key = 'w'
 		self.eyesBlinkFull.outputPin1 = [0x21, 5] # Eyes close
 		self.eyesBlinkFull.outputPin2 = [0x20, 1] # Eyes open
@@ -171,6 +179,7 @@ class Movement:
 		self.all.append( self.eyesBlinkFull )
        
 		self.bodyLeanUp = Struct()
+		self.bodyLeanUp.description = "Lean Forward"
 		self.bodyLeanUp.key = 'm'
 		self.bodyLeanUp.outputPin1 = [0x21, 1] # Lean forward
 		self.bodyLeanUp.outputInverted = True
@@ -178,6 +187,7 @@ class Movement:
 		self.all.append( self.bodyLeanUp ) 
 
 		self.bodyLeanDown = Struct()
+		self.bodyLeanDown.description = "Lean Back"
 		self.bodyLeanDown.key = 'n'
 		self.bodyLeanDown.outputPin1 = [0x23, 4] # Lean backward
 		#self.bodyLeanDown.outputPin1MaxTime = 2
@@ -185,6 +195,7 @@ class Movement:
 		self.all.append( self.bodyLeanDown )
        
 		self.neckLeft = Struct()
+		self.neckLeft.description = "Head L"
 		self.neckLeft.key = 'a'
 		self.neckLeft.outputPin1 = [0x21, 0]
 		#self.neckLeft.outputPin1MaxTime = 0.8
@@ -192,6 +203,7 @@ class Movement:
 		self.all.append( self.neckLeft )
        
 		self.neckRight = Struct()
+		self.neckRight.description = "Head R"
 		self.neckRight.key = 'd'
 		self.neckRight.outputPin1 = [0x23, 3]
 		#self.neckRight.outputPin1MaxTime = 0.8
@@ -199,6 +211,7 @@ class Movement:
 		self.all.append( self.neckRight )
        
 		self.headUpDown = Struct()
+		self.headUpDown.description = "Head Down"
 		self.headUpDown.key = 's'
 		self.headUpDown.outputPin1 = [0x20, 3] # Head down
 		self.headUpDown.outputPin2 = [0x21, 6] # Head up
@@ -289,41 +302,43 @@ class Movement:
 					i.keyIsPressed = False
 					bDoCallback = True
 
-				if i.outputInverted == True:
-					val = 1 - val
+				if bDoCallback:
 
-				print(i.outputPin1)
-				print(val)
-				self.setPin(i.outputPin1, val, i)
+					if i.outputInverted == True:
+						val = 1 - val
 
-				if( val == 1 ):
-					i.pin1Time = i.outputPin1MaxTime
-				else:
-					i.pin1Time = 0
+					print(f"{i.description}: {val}")
 
-				if( i.outputPin2 ):
-					self.setPin(i.outputPin2, 1-val, i)
+					self.setPin(i.outputPin1, val, i)
+
 					if( val == 1 ):
-						i.pin2Time = 0
+						i.pin1Time = i.outputPin1MaxTime
 					else:
-						i.pin2Time = i.outputPin2MaxTime
+						i.pin1Time = 0
 
-				func = i.callbackFunc
-				try:
-					# If a callback function has been defined for this movement, execute in a thread.
-					if bDoCallback:
-						t = threading.Thread(target=i.callbackFunc, args = (i,val))
-						t.setDaemon(True)
-						t.start()
-				except:
-					pass
+					if( i.outputPin2 ):
+						self.setPin(i.outputPin2, 1-val, i)
+						if( val == 1 ):
+							i.pin2Time = 0
+						else:
+							i.pin2Time = i.outputPin2MaxTime
 
-				break
-			elif( i.linkKey and i.linkKey == key and key ):
-				# Execute any other movements that are linked to this movement
-				self.executeMovement( i.key, val )
-				self.executeMovement( i.linkedMovement.key, val )
-				break
+					func = i.callbackFunc
+					try:
+						# If a callback function has been defined for this movement, execute in a thread.
+						if bDoCallback:
+							t = threading.Thread(target=i.callbackFunc, args = (i,val))
+							t.setDaemon(True)
+							t.start()
+					except:
+						pass
+
+					break
+				elif( i.linkKey and i.linkKey == key and key ):
+					# Execute any other movements that are linked to this movement
+					self.executeMovement( i.key, val )
+					self.executeMovement( i.linkedMovement.key, val )
+					break
 
 		if self.bThreadStarted == False:
 			self.bThreadStarted = True
