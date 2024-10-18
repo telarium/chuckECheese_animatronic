@@ -292,8 +292,8 @@ class Movement:
 			self.gpio.set_pin_from_address(pin[0], pin[1], val)
 
 	def executeMovement( self, key, val ):
+		bDoCallback = False
 		for i in self.all:
-			bDoCallback = False
 			if( i.key == key and key ):
 				if val == 1 and i.keyIsPressed == False:
 					i.keyIsPressed = True
@@ -345,4 +345,6 @@ class Movement:
 			t = threading.Thread(target=self.updatePins, args = ())
 			t.setDaemon(True)
 			t.start()
+
+		return bDoCallback
 			
