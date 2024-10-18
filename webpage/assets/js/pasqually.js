@@ -30,36 +30,40 @@ socket.on('movementInfo', function(data){
     }
 });
 
-function sendKey(key, num){
+function sendKey(key, num) {
     for (var i = 0; i < movements.length; i++) {
         if (!movements[i].lastTime) {
             movements[i].lastTime = 0;
         }
         if (movements[i].key == key.toLowerCase() && (window.performance.now() - movements[i].lastTime > 1)) {
             socket.emit('onKeyPress', {keyVal: key, val: num});
-            playMIDINote(60,num)
+            playMIDINote(60, num);
+            movements[i].lastTime = window.performance.now();
+            break;  // Stop further iterations once the key event is sent
         }
-        movements[i].lastTime = window.performance.now();
     }
 }
-    
-var down = {}; // store down keys to prevent repeated keypresses
-document.onkeydown = doKeyDown;
 
-function doKeyDown(event){
+var down = new Set(); // Use a Set to store pressed keys
+
+function doKeyDown(event) {
     var charCode = (typeof event.which == "number") ? event.which : event.keyCode;
-    if (down[charCode] == null) { // first press
+    if (!down.has(charCode)) { // first press
         sendKey(String.fromCharCode(charCode), 1);
-        down[charCode] = true; // Track which keys have been pressed
+        down.add(charCode); // Add key to the Set
     }
 }
-    
-document.onkeyup = doKeyUp;
-function doKeyUp(event){
+
+function doKeyUp(event) {
     var charCode = (typeof event.which == "number") ? event.which : event.keyCode;
-    down[charCode] = null;
-    sendKey(String.fromCharCode(charCode), 0);
+    if (down.has(charCode)) { // only send if key was previously pressed
+        sendKey(String.fromCharCode(charCode), 0);
+        down.delete(charCode); // Remove key from the Set
+    }
 }
+
+document.onkeydown = doKeyDown;
+document.onkeyup = doKeyUp;
 
 var midiAccess = null
 var midiOutputPort = null
@@ -74,7 +78,6 @@ if (navigator.requestMIDIAccess) {
 }
 
 function playMIDINote(midiNote,val) {
-	console.log("play",midiAccess)
 	if (midiOutputPort) {
 		var velocity = 0x40 // Release velocity
 		if (val == 1) {
@@ -89,11 +92,7 @@ function playMIDINote(midiNote,val) {
 }
 
 function onMIDIMessage( event ) {
-	console.log("LKSJDF")
-	console.log(event)
-	//for(var i=0;i<movements.length;i++) {
-	//	console.log(movements[i].midiNote)
-	//}
+	//
 }
 
 function onMIDISuccess(midi) {
