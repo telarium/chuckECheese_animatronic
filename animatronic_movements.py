@@ -38,8 +38,7 @@ class Struct():
 	outputPin2MaxTime = -1 # See above (optional, -1 means infinite)
 	outputInverted = False # Invert high/low for this movement (optional)
 	callbackFunc = None # A function to call when the value has changed (optional)
-	linkKey = None # A keyboard key that binds this movement to another (optional)
-	linkedMovement = None # The movement we want to bind to this link (optional)
+	linkedKeys = [] # Instead of a unique movement, this movement can link two or more keys together as a combined movement (optional)
 
 class Movement:
 	all = []
@@ -130,6 +129,18 @@ class Movement:
 		self.leftArm.midiNote = 55
 		self.all.append( self.leftArm )
 
+		self.leftAndRightArms = Struct()
+		self.leftAndRightArms.description = "Arms L+R"
+		self.leftAndRightArms.key = 'k'
+		self.leftAndRightArms.linkedKeys = ['j','l']
+		self.all.append( self.leftAndRightArms )
+
+		self.leftAndRightElbows = Struct()
+		self.leftAndRightElbows.description = "Elbows L+R"
+		self.leftAndRightElbows.key = 'i'
+		self.leftAndRightElbows.linkedKeys = ['u','o']
+		self.all.append( self.leftAndRightElbows )
+
 		self.mouth = Struct()
 		self.mouth.description = "Mouth"
 		self.mouth.key = 'x'
@@ -149,6 +160,13 @@ class Movement:
 		#self.mustache.linkKey = 'c'
 		self.mustache.linkedMovement = self.mouth
 		self.all.append( self.mustache )
+
+		self.mouthAndMustache = Struct()
+		self.mouthAndMustache.description = "Mouth + Mustache"
+		self.mouthAndMustache.key = 'c'
+		self.mouthAndMustache.linkedKeys = ['z','x']
+		self.all.append( self.mouthAndMustache )
+
        
 		self.eyesLeft = Struct()
 		self.eyesLeft.description = "Eyes L"
@@ -230,10 +248,11 @@ class Movement:
 
 			i.pin1Time = 0
 
-			self.setPin(i.outputPin1, val, i)
-			if( i.outputPin2 ):
-				i.pin2Time = 0
-				self.setPin(i.outputPin2, 1-val, i)
+			if i.outputPin1:
+				self.setPin(i.outputPin1, val, i)
+				if( i.outputPin2 ):
+					i.pin2Time = 0
+					self.setPin(i.outputPin2, 1-val, i)
 
 	# Fromat MIDI notes into a string to pass to the HTML front end
 	# This way, javascript key presses can control MIDI events directly
@@ -249,14 +268,6 @@ class Movement:
 				midiNote1 = "0" + midiNote1
 		
 			fullString+=midiNote1+"00"
-
-			if( i.linkKey ):
-				fullString+=","+i.linkKey+midiNote1
-				midiNote2 = str(i.linkedMovement.midiNote)
-				if( len(midiNote2) < 2 ):
-					midiNote2 = "0" + midiNote2
-
-				fullString+=midiNote2
 
 			fullString+=","
 			
@@ -303,6 +314,11 @@ class Movement:
 					bDoCallback = True
 
 				if bDoCallback:
+					if len(i.linkedKeys) > 0:
+						for linkedKey in i.linkedKeys:
+							self.executeMovement(linkedKey, val)
+
+						return True
 
 					if i.outputInverted == True:
 						val = 1 - val
@@ -333,11 +349,6 @@ class Movement:
 					except:
 						pass
 
-					break
-				elif( i.linkKey and i.linkKey == key and key ):
-					# Execute any other movements that are linked to this movement
-					self.executeMovement( i.key, val )
-					self.executeMovement( i.linkedMovement.key, val )
 					break
 
 		if self.bThreadStarted == False:
