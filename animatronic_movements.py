@@ -90,55 +90,53 @@ class Movement:
 		self.rightShoulder.key = 'o'
 		self.rightShoulder.outputPin2 = [0x23, 6] # Shoulder out
 		self.rightShoulder.outputPin1 = [0x21, 3] # Shoulder in
-		#self.rightShoulder.outputPin2MaxTime = 0.5
-		#self.rightShoulder.outputPin1MaxTime = 60*10
+		self.rightShoulder.outputPin2MaxTime = 0.5
+		self.rightShoulder.outputPin1MaxTime = 60*10
 		self.rightShoulder.midiNote = 50
 		self.all.append( self.rightShoulder )
-
-		self.rightArm = Struct()
-		self.rightArm.key = 'l'
-		self.rightArm.description = "Elbow R"
-		self.rightArm.outputPin2 = [0x23, 5] # Arm up
-		self.rightArm.outputPin1 = [0x21, 2] # Arm down
-		self.rightArm.outputPin2MaxTime = -1
-		#self.rightArm.outputPin1MaxTime = 0.75
-		self.rightArm.midiNote = 52
-		self.all.append( self.rightArm )
        
 		self.leftShoulder = Struct()
 		self.leftShoulder.description = "Shoulder L"
 		self.leftShoulder.key = 'u'
 		self.leftShoulder.outputPin2 = [0x20, 4] # Shoulder out
 		self.leftShoulder.outputPin1 = [0x21, 7] # Shoulder in
-		#self.leftShoulder.outputPin2MaxTime = 0.5
-		#self.leftShoulder.outputPin1MaxTime = 60*10
-		#self.leftShoulder.linkKey = 'i'
-		#self.leftShoulder.linkedMovement = self.rightShoulder
-		self.leftShoulder.midiNote = 53
+		self.leftShoulder.outputPin2MaxTime = 0.5
+		self.leftShoulder.outputPin1MaxTime = 60*10
+		self.leftShoulder.midiNote = 51
 		self.all.append( self.leftShoulder )
-       
-		self.leftArm = Struct()
-		self.leftArm.description = "Elbow L"
-		self.leftArm.key = 'j'
-		self.leftArm.outputPin2 = [0x23, 1] # Arm up
-		self.leftArm.outputPin1 = [0x20, 6] # Arm down
-		#self.leftArm.outputPin2MaxTime = -1
-		#self.leftArm.outputPin1MaxTime = 0.75
-		#self.leftArm.linkKey = 'k'
-		#self.leftArm.linkedMovement = self.rightArm
-		self.leftArm.midiNote = 55
-		self.all.append( self.leftArm )
-
-		self.leftAndRightArms = Struct()
-		self.leftAndRightArms.description = "Arms L+R"
-		self.leftAndRightArms.key = 'k'
-		self.leftAndRightArms.linkedKeys = ['j','l']
-		self.all.append( self.leftAndRightArms )
 
 		self.leftAndRightElbows = Struct()
 		self.leftAndRightElbows.description = "Elbows L+R"
 		self.leftAndRightElbows.key = 'i'
+		self.leftShoulder.midiNote = 52
 		self.leftAndRightElbows.linkedKeys = ['u','o']
+		self.all.append( self.leftAndRightElbows )
+
+		self.rightElbow = Struct()
+		self.rightElbow.key = 'l'
+		self.rightElbow.description = "Elbow R"
+		self.rightElbow.outputPin2 = [0x23, 5] # Arm up
+		self.rightElbow.outputPin1 = [0x21, 2] # Arm down
+		self.rightElbow.outputPin2MaxTime = -1
+		self.rightElbow.outputPin1MaxTime = 0.75
+		self.rightElbow.midiNote = 53
+		self.all.append( self.rightElbow )
+       
+		self.leftElbow = Struct()
+		self.leftElbow.description = "Elbow L"
+		self.leftElbow.key = 'j'
+		self.leftElbow.outputPin2 = [0x23, 1] # Arm up
+		self.leftElbow.outputPin1 = [0x20, 6] # Arm down
+		self.leftElbow.outputPin2MaxTime = -1
+		self.leftElbow.outputPin1MaxTime = 0.75
+		self.leftElbow.midiNote = 54
+		self.all.append( self.leftElbow )
+
+		self.leftAndRightElbows = Struct()
+		self.leftAndRightElbows.description = "Arms L+R"
+		self.leftAndRightElbows.key = 'k'
+		self.leftShoulder.midiNote = 55
+		self.leftAndRightElbows.linkedKeys = ['j','l']
 		self.all.append( self.leftAndRightElbows )
 
 		self.mouth = Struct()
@@ -146,8 +144,8 @@ class Movement:
 		self.mouth.key = 'x'
 		self.mouth.outputPin1 = [0x20, 7] # Mouth open
 		self.mouth.outputPin2 = [0x23, 2] # Mouth close
-		#self.mouth.outputPin1MaxTime = 0.75
-		#self.mouth.outputPin2MaxTime = 0.75
+		self.mouth.outputPin1MaxTime = 0.75
+		self.mouth.outputPin2MaxTime = 0.75
 		self.mouth.midiNote = 56
 		self.all.append( self.mouth )
        
@@ -155,24 +153,22 @@ class Movement:
 		self.mustache.description = "Mustache"
 		self.mustache.key = 'z'
 		self.mustache.outputPin1 = [0x20, 2]
-		#self.mustache.outputPin1MaxTime = 60*5
+		self.mustache.outputPin1MaxTime = 60*5
 		self.mustache.midiNote = 57
-		#self.mustache.linkKey = 'c'
-		self.mustache.linkedMovement = self.mouth
 		self.all.append( self.mustache )
 
 		self.mouthAndMustache = Struct()
 		self.mouthAndMustache.description = "Mouth + Mustache"
 		self.mouthAndMustache.key = 'c'
+		self.leftShoulder.midiNote = 51
 		self.mouthAndMustache.linkedKeys = ['z','x']
 		self.all.append( self.mouthAndMustache )
-
        
 		self.eyesLeft = Struct()
 		self.eyesLeft.description = "Eyes L"
 		self.eyesLeft.key = 'q'
 		self.eyesLeft.outputPin1 = [0x21, 4]
-		#self.eyesLeft.outputPin1MaxTime = 60*10
+		self.eyesLeft.outputPin1MaxTime = 60*10
 		self.eyesLeft.midiNote = 58
 		self.eyesLeft.callbackFunc = self.onEyeMove
 		self.all.append( self.eyesLeft )
@@ -181,7 +177,7 @@ class Movement:
 		self.eyesRight.description = "Eyes R"
 		self.eyesRight.key = 'e'
 		self.eyesRight.outputPin1 = [0x20, 0]
-		#self.eyesRight.outputPin1MaxTime = 60*10
+		self.eyesRight.outputPin1MaxTime = 60*10
 		self.eyesRight.midiNote = 59
 		self.eyesRight.callbackFunc = self.onEyeMove
 		self.all.append( self.eyesRight )
@@ -191,51 +187,50 @@ class Movement:
 		self.eyesBlinkFull.key = 'w'
 		self.eyesBlinkFull.outputPin1 = [0x21, 5] # Eyes close
 		self.eyesBlinkFull.outputPin2 = [0x20, 1] # Eyes open
-		#self.eyesBlinkFull.outputPin1MaxTime = 0.25
-		#self.eyesBlinkFull.outputPin2MaxTime = 0.25
+		self.eyesBlinkFull.outputPin1MaxTime = 0.25
+		self.eyesBlinkFull.outputPin2MaxTime = 0.25
 		self.eyesBlinkFull.midiNote = 60
 		self.all.append( self.eyesBlinkFull )
-       
-		self.bodyLeanUp = Struct()
-		self.bodyLeanUp.description = "Lean Forward"
-		self.bodyLeanUp.key = 'm'
-		self.bodyLeanUp.outputPin1 = [0x21, 1] # Lean forward
-		self.bodyLeanUp.outputInverted = True
-		self.bodyLeanUp.midiNote = 62
-		self.all.append( self.bodyLeanUp ) 
 
-		self.bodyLeanDown = Struct()
-		self.bodyLeanDown.description = "Lean Back"
-		self.bodyLeanDown.key = 'n'
-		self.bodyLeanDown.outputPin1 = [0x23, 4] # Lean backward
+		self.headLeft = Struct()
+		self.headLeft.description = "Head L"
+		self.headLeft.key = 'a'
+		self.headLeft.outputPin1 = [0x21, 0]
+		self.headLeft.outputPin1MaxTime = 0.8
+		self.headLeft.midiNote = 61
+		self.all.append( self.headLeft )
+       
+		self.headRight = Struct()
+		self.headRight.description = "Head R"
+		self.headRight.key = 'd'
+		self.headRight.outputPin1 = [0x23, 3]
+		self.headRight.outputPin1MaxTime = 0.8
+		self.headRight.midiNote = 62
+		self.all.append( self.headRight )
+       
+		self.headDown = Struct()
+		self.headDown.description = "Head Down"
+		self.headDown.key = 's'
+		self.headDown.outputPin1 = [0x20, 3] # Head down
+		self.headDown.outputPin2 = [0x21, 6] # Head up
+		self.headDown.midiNote = 63
+		self.all.append( self.headDown )
+       
+		self.bodyLeanForward = Struct()
+		self.bodyLeanForward.description = "Lean Forward"
+		self.bodyLeanForward.key = 'm'
+		self.bodyLeanForward.outputPin1 = [0x21, 1] # Lean forward
+		self.bodyLeanForward.outputInverted = True
+		self.bodyLeanForward.midiNote = 64
+		self.all.append( self.bodyLeanForward ) 
+
+		#self.bodyLeanDown = Struct()
+		#self.bodyLeanDown.description = "Lean Back"
+		#self.bodyLeanDown.key = 'n'
+		#self.bodyLeanDown.outputPin1 = [0x23, 4] # Lean backward
 		#self.bodyLeanDown.outputPin1MaxTime = 2
-		self.bodyLeanDown.midiNote = 63
-		self.all.append( self.bodyLeanDown )
-       
-		self.neckLeft = Struct()
-		self.neckLeft.description = "Head L"
-		self.neckLeft.key = 'a'
-		self.neckLeft.outputPin1 = [0x21, 0]
-		#self.neckLeft.outputPin1MaxTime = 0.8
-		self.neckLeft.midiNote = 64
-		self.all.append( self.neckLeft )
-       
-		self.neckRight = Struct()
-		self.neckRight.description = "Head R"
-		self.neckRight.key = 'd'
-		self.neckRight.outputPin1 = [0x23, 3]
-		#self.neckRight.outputPin1MaxTime = 0.8
-		self.neckRight.midiNote = 65
-		self.all.append( self.neckRight )
-       
-		self.headUpDown = Struct()
-		self.headUpDown.description = "Head Down"
-		self.headUpDown.key = 's'
-		self.headUpDown.outputPin1 = [0x20, 3] # Head down
-		self.headUpDown.outputPin2 = [0x21, 6] # Head up
-		#self.headUpDown.outputPin1MaxTime = 60*60
-		self.headUpDown.midiNote = 66
-		self.all.append( self.headUpDown )
+		#self.bodyLeanDown.midiNote = 63
+		#self.all.append( self.bodyLeanDown )
 
 		for i in self.all:
 			i.keyIsPressed = False
