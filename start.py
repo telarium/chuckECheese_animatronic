@@ -27,18 +27,20 @@ class Pasqually:
 		print(cpu)
 
 	def onConnectEvent(self):
-		self.webServer.broadcast('movementInfo', self.movements.getKeyboardKeys())
+		self.webServer.broadcast('movementInfo', self.movements.getAllMovementInfo())
 
 	def onKeyEvent(self, key, val):
+		# Receieve key events from the HTML front end and execute any specified movement
 		try:
 			self.movements.executeMovement(str(key).lower(), val)
 		except Exception as e:
 			print(f"Invalid key: {e}")
 
 	def onGamepadKeyEvent(self, key, val):
+		# Tell the HTML front end that a gamepad event occured so that it can play the corresponding MIDI note
 		try:
 			if self.movements.executeMovement(str(key).lower(), val):
-				self.webServer.broadcast('gamepadKeyEvent', str(key).lower(), val)
+				self.webServer.broadcast('gamepadKeyEvent', [str(key).lower(), val])
 		except Exception as e:
 			print(f"Invalid key: {e}")
 
