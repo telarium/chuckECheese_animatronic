@@ -21,23 +21,39 @@ socket.on('wifiScan', function(data){
 var movements = [];
 
 socket.on('movementInfo', function(data){
+    // Data is a two dimensional array. First index is the assigned keyboard key, second is the assigned MIDI note
     for (var i = 0; i < data.length; i++) {
         var movement = {
-            key: data[i],
+            key: data[i][0],
+            midiNote: data[i][1],
             lastTime: 0
         };
         movements.push(movement);
     }
 });
 
-function sendKey(key, num) {
+socket.on('gamepadKeyEvent', function(data){
+    // Data is a two dimensional array. First index is the assigned keyboard key, second is the value
+    key = data[0];
+    val = data[1];
+    for (var i = 0; i < movements.length; i++) {
+        if (movements[i].key == key.toLowerCase()) {
+            sendKey(key,val,false)
+        }
+    }
+});
+
+function sendKey(key, num, bBroadcast) {
     for (var i = 0; i < movements.length; i++) {
         if (!movements[i].lastTime) {
             movements[i].lastTime = 0;
         }
         if (movements[i].key == key.toLowerCase() && (window.performance.now() - movements[i].lastTime > 1)) {
-            socket.emit('onKeyPress', {keyVal: key, val: num});
-            playMIDINote(60, num);
+            if( bBroadcast) // Do we broadcast this event over the web socket?
+            {
+                socket.emit('onKeyPress', {keyVal: key, val: num});
+            }
+            playMIDINote(movements[i].midiNote, num);
             movements[i].lastTime = window.performance.now();
             break;  // Stop further iterations once the key event is sent
         }
@@ -49,7 +65,7 @@ var down = new Set(); // Use a Set to store pressed keys
 function doKeyDown(event) {
     var charCode = (typeof event.which == "number") ? event.which : event.keyCode;
     if (!down.has(charCode)) { // first press
-        sendKey(String.fromCharCode(charCode), 1);
+        sendKey(String.fromCharCode(charCode), 1, true);
         down.add(charCode); // Add key to the Set
     }
 }
@@ -57,7 +73,7 @@ function doKeyDown(event) {
 function doKeyUp(event) {
     var charCode = (typeof event.which == "number") ? event.which : event.keyCode;
     if (down.has(charCode)) { // only send if key was previously pressed
-        sendKey(String.fromCharCode(charCode), 0);
+        sendKey(String.fromCharCode(charCode), 0, true);
         down.delete(charCode); // Remove key from the Set
     }
 }
@@ -91,8 +107,22 @@ function playMIDINote(midiNote,val) {
 	}
 }
 
-function onMIDIMessage( event ) {
-	//
+function onMIDIMessage(event) {
+    var data = event.data; // MIDI data [statusByte, dataByte1, dataByte2]
+    var statusByte = data[0];
+    var noteNumber = data[1]; // MIDI note number
+    var velocity = data[2];   // Note velocity
+
+    var command = statusByte >> 4; // Upper nibble indicates the command
+    // var channel = statusByte & 0x0f; // Lower nibble indicates the channel (optional)
+
+    if (command === 9 && velocity > 0) {
+        // Note On message
+        console.log(`MIDI Note On - Note: ${noteNumber}, Velocity: ${velocity}`);
+    } else if (command === 8 || (command === 9 && velocity === 0)) {
+        // Note Off message
+        console.log(`MIDI Note Off - Note: ${noteNumber}`);
+    }
 }
 
 function onMIDISuccess(midi) {

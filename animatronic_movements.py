@@ -108,7 +108,7 @@ class Movement:
 		self.leftAndRightElbows = Struct()
 		self.leftAndRightElbows.description = "Elbows L+R"
 		self.leftAndRightElbows.key = 'i'
-		self.leftShoulder.midiNote = 52
+		self.leftAndRightElbows.midiNote = 52
 		self.leftAndRightElbows.linkedKeys = ['u','o']
 		self.all.append( self.leftAndRightElbows )
 
@@ -135,7 +135,7 @@ class Movement:
 		self.leftAndRightElbows = Struct()
 		self.leftAndRightElbows.description = "Arms L+R"
 		self.leftAndRightElbows.key = 'k'
-		self.leftShoulder.midiNote = 55
+		self.leftAndRightElbows.midiNote = 55
 		self.leftAndRightElbows.linkedKeys = ['j','l']
 		self.all.append( self.leftAndRightElbows )
 
@@ -160,7 +160,7 @@ class Movement:
 		self.mouthAndMustache = Struct()
 		self.mouthAndMustache.description = "Mouth + Mustache"
 		self.mouthAndMustache.key = 'c'
-		self.leftShoulder.midiNote = 51
+		self.mouthAndMustache.midiNote = 51
 		self.mouthAndMustache.linkedKeys = ['z','x']
 		self.all.append( self.mouthAndMustache )
        
@@ -268,12 +268,13 @@ class Movement:
 			
 		return fullString
 
-	def getKeyboardKeys(self):
-		keys = []
+	def getAllMovementInfo(self):
+		allMovements = []
 		for i in self.all:
-			keys.append(i.key)
+			movementInfo = [i.key, i.midiNote]
+			allMovements.append(movementInfo)
 
-		return keys
+		return allMovements
 
 	# Monitor state of IO and disable any that have been left on past the maximum allowed time.
 	def updatePins(self):

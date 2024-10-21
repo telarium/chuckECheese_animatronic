@@ -134,7 +134,7 @@ class USBGamepadReader:
 			print("\nStopping gamepad input listener.")
 
 	def _dispatch_key_event(self, key: str, value: int):
-		dispatcher.send(signal="keyEvent", key=key, val=value)
+		dispatcher.send(signal="gamepadKeyEvent", key=key, val=value)
 
 	def _process_button_event(self, event):
 		keycode = event.code
