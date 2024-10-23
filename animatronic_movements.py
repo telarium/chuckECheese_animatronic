@@ -39,6 +39,7 @@ class Struct():
 	outputInverted = False # Invert high/low for this movement (optional)
 	callbackFunc = None # A function to call when the value has changed (optional)
 	linkedKeys = [] # Instead of a unique movement, this movement can link two or more keys together as a combined movement (optional)
+	mirroredKey = None # If mirroring is enabled, we call this key instead (i.e. swapping left and right shoulders, optional)
 
 class Movement:
 	all = []
@@ -82,7 +83,8 @@ class Movement:
 
 	def __init__(self, gpio):
 		self.gpio = gpio
-		self.bThreadStarted = False	
+		self.bThreadStarted = False
+		self.bMirrored = False
 
 		# Define all of our movements here.
 		self.rightShoulder = Struct()
@@ -93,6 +95,7 @@ class Movement:
 		self.rightShoulder.outputPin2MaxTime = 0.5
 		self.rightShoulder.outputPin1MaxTime = 60*10
 		self.rightShoulder.midiNote = 50
+		self.rightShoulder.mirroredKey = 'u'
 		self.all.append( self.rightShoulder )
        
 		self.leftShoulder = Struct()
@@ -103,6 +106,7 @@ class Movement:
 		self.leftShoulder.outputPin2MaxTime = 0.5
 		self.leftShoulder.outputPin1MaxTime = 60*10
 		self.leftShoulder.midiNote = 51
+		self.leftShoulder.mirroredKey = 'o'
 		self.all.append( self.leftShoulder )
 
 		self.leftAndRightElbows = Struct()
@@ -120,6 +124,7 @@ class Movement:
 		self.rightElbow.outputPin2MaxTime = -1
 		self.rightElbow.outputPin1MaxTime = 0.75
 		self.rightElbow.midiNote = 53
+		self.rightElbow.mirroredKey = 'j'
 		self.all.append( self.rightElbow )
        
 		self.leftElbow = Struct()
@@ -130,6 +135,7 @@ class Movement:
 		self.leftElbow.outputPin2MaxTime = -1
 		self.leftElbow.outputPin1MaxTime = 0.75
 		self.leftElbow.midiNote = 54
+		self.leftElbow.mirroredKey = 'l'
 		self.all.append( self.leftElbow )
 
 		self.leftAndRightElbows = Struct()
@@ -171,6 +177,7 @@ class Movement:
 		self.eyesLeft.outputPin1MaxTime = 60*10
 		self.eyesLeft.midiNote = 58
 		self.eyesLeft.callbackFunc = self.onEyeMove
+		self.eyesLeft.mirroredKey = 'e'
 		self.all.append( self.eyesLeft )
        
 		self.eyesRight = Struct()
@@ -180,6 +187,7 @@ class Movement:
 		self.eyesRight.outputPin1MaxTime = 60*10
 		self.eyesRight.midiNote = 59
 		self.eyesRight.callbackFunc = self.onEyeMove
+		self.eyesRight.mirroredKey = 'q'
 		self.all.append( self.eyesRight )
        
 		self.eyesBlinkFull = Struct()
@@ -198,6 +206,7 @@ class Movement:
 		self.headLeft.outputPin1 = [0x21, 0]
 		self.headLeft.outputPin1MaxTime = 0.8
 		self.headLeft.midiNote = 61
+		self.headLeft.mirroredKey = 'd'
 		self.all.append( self.headLeft )
        
 		self.headRight = Struct()
@@ -206,6 +215,7 @@ class Movement:
 		self.headRight.outputPin1 = [0x23, 3]
 		self.headRight.outputPin1MaxTime = 0.8
 		self.headRight.midiNote = 62
+		self.headRight.mirroredKey = 'a'
 		self.all.append( self.headRight )
        
 		self.headDown = Struct()
@@ -298,7 +308,7 @@ class Movement:
 	def setPin( self, pin, val, movement ):
 			self.gpio.set_pin_from_address(pin[0], pin[1], val)
 
-	def executeMovement( self, key, val ):
+	def executeMovement( self, key, val, bBypassMirrorTest = False ):
 		bDoCallback = False
 		for i in self.all:
 			if( i.key == key and key ):
@@ -312,9 +322,13 @@ class Movement:
 				if bDoCallback:
 					if len(i.linkedKeys) > 0:
 						for linkedKey in i.linkedKeys:
-							self.executeMovement(linkedKey, val)
+							self.executeMovement(linkedKey, val, True)
 
 						return True
+
+					if not bBypassMirrorTest and self.bMirrored and i.mirroredKey:
+						print("Mirror: " + i.mirroredKey)
+						return self.executeMovement(i.mirroredKey, val, True)
 
 					if i.outputInverted == True:
 						val = 1 - val
