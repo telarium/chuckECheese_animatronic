@@ -259,6 +259,20 @@ class Movement:
 					i.pin2Time = 0
 					self.setPin(i.outputPin2, 1-val, i)
 
+
+		self.setMirrored(True)
+
+	def setMirrored(self, bMirrored):
+		if self.bMirrored == bMirrored:
+			return
+
+		for movement in self.all:
+			if movement.mirroredKey:
+				mirroredKey = movement.mirroredKey
+
+				movement.mirroredKey = movement.key
+				movement.key = mirroredKey
+
 	# Fromat MIDI notes into a string to pass to the HTML front end
 	# This way, javascript key presses can control MIDI events directly
 	def getMidiNotes( self ):
@@ -308,7 +322,7 @@ class Movement:
 	def setPin( self, pin, val, movement ):
 			self.gpio.set_pin_from_address(pin[0], pin[1], val)
 
-	def executeMovement( self, key, val, bBypassMirrorTest = False ):
+	def executeMovement( self, key, val ):
 		bDoCallback = False
 		for i in self.all:
 			if( i.key == key and key ):
@@ -322,13 +336,9 @@ class Movement:
 				if bDoCallback:
 					if len(i.linkedKeys) > 0:
 						for linkedKey in i.linkedKeys:
-							self.executeMovement(linkedKey, val, True)
+							self.executeMovement(linkedKey, val)
 
 						return True
-
-					if not bBypassMirrorTest and self.bMirrored and i.mirroredKey:
-						print("Mirror: " + i.mirroredKey)
-						return self.executeMovement(i.mirroredKey, val, True)
 
 					if i.outputInverted == True:
 						val = 1 - val
