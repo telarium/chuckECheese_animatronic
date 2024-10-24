@@ -39,6 +39,10 @@ class Button(Enum):
 	DPAD_DOWN = 's'                 # head down
 	DPAD_UP = 'w'                   # blink
 
+	# Start and Select Buttons. Holding down both toggles mirrored mode
+	START = 'start'
+	SELECT = 'select'
+
 class Direction(Enum):
 	NEUTRAL = 'neutral'
 	UP = 'up'
@@ -58,6 +62,9 @@ class StickState:
 
 class USBGamepadReader:
 	def __init__(self):
+		self.bStartButtonDown = False
+		self.bSelectButtonDown = False
+
 		# Mapping of event codes to Button Enum using ecodes constants
 		self.keyButtonMap = {
 			# Bumpers
@@ -75,6 +82,10 @@ class USBGamepadReader:
 			ecodes.BTN_NORTH: Button.BTN_NORTH,
 			ecodes.BTN_THUMBL: Button.BTN_THUMBL,
 			ecodes.BTN_THUMBR: Button.BTN_THUMBR,
+
+			# Start and Select Buttons
+			314: Button.SELECT,
+			315: Button.START,
 		}
 
 		self.device = self._find_gamepad()
@@ -138,9 +149,20 @@ class USBGamepadReader:
 
 	def _process_button_event(self, event):
 		keycode = event.code
+
 		if keycode in self.keyButtonMap:
 			button = self.keyButtonMap[keycode]
 			self._dispatch_key_event(button.value, event.value)
+
+			# Update Start and Select button states
+			if button == Button.START:
+				self.bStartButtonDown = bool(event.value)
+			elif button == Button.SELECT:
+				self.bSelectButtonDown = bool(event.value)
+
+			# Check if both Start and Select are pressed, which toggles mirrored mode.
+			if self.bStartButtonDown and self.bSelectButtonDown:
+				dispatcher.send(signal="mirrorModeToggle")
 
 	def _process_abs_event(self, event):
 		code = event.code
