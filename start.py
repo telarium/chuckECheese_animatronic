@@ -21,6 +21,7 @@ class Pasqually:
 	def setDispatchEvents(self):
 		dispatcher.connect(self.onKeyEvent, signal='keyEvent', sender=dispatcher.Any)
 		dispatcher.connect(self.onGamepadKeyEvent, signal='gamepadKeyEvent', sender=dispatcher.Any)
+		dispatcher.connect(self.onMirroredModeToggle, signal='mirrorModeToggle', sender=dispatcher.Any)
 		dispatcher.connect(self.onConnectEvent, signal='connectEvent', sender=dispatcher.Any)
 
 	def onSystemInfoEvent(self, cpu, ram):
@@ -43,6 +44,11 @@ class Pasqually:
 				self.webServer.broadcast('gamepadKeyEvent', [str(key).lower(), val])
 		except Exception as e:
 			print(f"Invalid key: {e}")
+
+	def onMirroredModeToggle(self):
+		# Toggle animation mirrored mode (swapping left and right movements)
+		bNewMirrorMode = not self.movements.bMirrored
+		self.movements.setMirrored(bNewMirrorMode)
 
 	def run(self):
 		try:

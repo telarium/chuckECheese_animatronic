@@ -260,11 +260,13 @@ class Movement:
 					self.setPin(i.outputPin2, 1-val, i)
 
 
-		self.setMirrored(True)
-
 	def setMirrored(self, bMirrored):
 		if self.bMirrored == bMirrored:
 			return
+
+		self.bMirrored = bMirrored
+
+		print(f"Setting mirrored mode: {self.bMirrored}")
 
 		for movement in self.all:
 			if movement.mirroredKey:
