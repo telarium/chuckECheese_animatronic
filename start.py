@@ -7,15 +7,17 @@ from system_info import SystemInfo
 from gpio import GPIO
 from animatronic_movements import Movement
 from gamepad_input import USBGamepadReader
+from show_player import ShowPlayer
 
 class Pasqually:
 	def __init__(self):
+		self.setDispatchEvents()
 		self.gpio = GPIO()
 		self.movements = Movement(self.gpio)
 		self.webServer = WebServer()
 		self.systemInfo = SystemInfo(self.webServer)
 		self.gamepad = USBGamepadReader()
-		self.setDispatchEvents()
+		self.showPlayer = ShowPlayer()
 		self.isRunning = True
 
 	def setDispatchEvents(self):
@@ -23,11 +25,19 @@ class Pasqually:
 		dispatcher.connect(self.onGamepadKeyEvent, signal='gamepadKeyEvent', sender=dispatcher.Any)
 		dispatcher.connect(self.onMirroredModeToggle, signal='mirrorModeToggle', sender=dispatcher.Any)
 		dispatcher.connect(self.onConnectEvent, signal='connectEvent', sender=dispatcher.Any)
+		dispatcher.connect(self.onShowListLoad, signal='showListLoad', sender=dispatcher.Any)
+
+	def onShowListLoad(self, showList):
+		print("SHOW LIST:")
+		print(showList)
+		self.webServer.broadcast('showListLoaded', showList)
 
 	def onSystemInfoEvent(self, cpu, ram):
 		print(cpu)
 
-	def onConnectEvent(self):
+	def onConnectEvent(self, client_ip):
+		print(f"Web client connected from IP: {client_ip}")
+		self.showPlayer.getShowList()
 		self.webServer.broadcast('movementInfo', self.movements.getAllMovementInfo())
 
 	def onKeyEvent(self, key, val):

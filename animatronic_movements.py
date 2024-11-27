@@ -48,16 +48,18 @@ class Movement:
 	def onEyeMove( self, movement, val ):
 		if val == 0 and self.leftShoulder.keyIsPressed != True and self.rightShoulder.keyIsPressed != True:
 			pin = None
+			moveTime = 0.06
 			if movement == self.eyesLeft:
 				pin = self.eyesRight.outputPin1
 			elif movement == self.eyesRight:
 				pin = self.eyesLeft.outputPin1
+				moveTime = 0.05
 
 			if pin:
 				# Move eyes in the opposite direction for a split second.
 				# This will actuate the springs and hopefully re-center the eyeballs.
 				self.setPin(pin,1,movement)
-				time.sleep(0.04)
+				time.sleep(moveTime)
 				# Don't disable output if user has pressed another eye key
 				if self.eyesRight.keyIsPressed != True and self.eyesLeft.keyIsPressed != True:
 					self.setPin(pin,0,movement)
@@ -92,8 +94,8 @@ class Movement:
 		self.rightShoulder.key = 'o'
 		self.rightShoulder.outputPin2 = [0x23, 6] # Shoulder out
 		self.rightShoulder.outputPin1 = [0x21, 3] # Shoulder in
-		self.rightShoulder.outputPin2MaxTime = 0.5
-		self.rightShoulder.outputPin1MaxTime = 60*10
+		#self.rightShoulder.outputPin2MaxTime = 1.5
+		#self.rightShoulder.outputPin1MaxTime = 60*10
 		self.rightShoulder.midiNote = 50
 		self.rightShoulder.mirroredKey = 'u'
 		self.all.append( self.rightShoulder )
@@ -103,8 +105,8 @@ class Movement:
 		self.leftShoulder.key = 'u'
 		self.leftShoulder.outputPin2 = [0x20, 4] # Shoulder out
 		self.leftShoulder.outputPin1 = [0x21, 7] # Shoulder in
-		self.leftShoulder.outputPin2MaxTime = 0.5
-		self.leftShoulder.outputPin1MaxTime = 60*10
+		#self.leftShoulder.outputPin2MaxTime = 1.5
+		#self.leftShoulder.outputPin1MaxTime = 60*10
 		self.leftShoulder.midiNote = 51
 		self.leftShoulder.mirroredKey = 'o'
 		self.all.append( self.leftShoulder )
@@ -121,8 +123,8 @@ class Movement:
 		self.rightElbow.description = "Elbow R"
 		self.rightElbow.outputPin2 = [0x23, 5] # Arm up
 		self.rightElbow.outputPin1 = [0x21, 2] # Arm down
-		self.rightElbow.outputPin2MaxTime = -1
-		self.rightElbow.outputPin1MaxTime = 0.75
+		#self.rightElbow.outputPin2MaxTime = -1
+		#self.rightElbow.outputPin1MaxTime = 0.75
 		self.rightElbow.midiNote = 53
 		self.rightElbow.mirroredKey = 'j'
 		self.all.append( self.rightElbow )
@@ -132,8 +134,8 @@ class Movement:
 		self.leftElbow.key = 'j'
 		self.leftElbow.outputPin2 = [0x23, 1] # Arm up
 		self.leftElbow.outputPin1 = [0x20, 6] # Arm down
-		self.leftElbow.outputPin2MaxTime = -1
-		self.leftElbow.outputPin1MaxTime = 0.75
+		#self.leftElbow.outputPin2MaxTime = -1
+		#self.leftElbow.outputPin1MaxTime = 0.75
 		self.leftElbow.midiNote = 54
 		self.leftElbow.mirroredKey = 'l'
 		self.all.append( self.leftElbow )
@@ -151,7 +153,7 @@ class Movement:
 		self.mouth.outputPin1 = [0x20, 7] # Mouth open
 		self.mouth.outputPin2 = [0x23, 2] # Mouth close
 		self.mouth.outputPin1MaxTime = 0.75
-		self.mouth.outputPin2MaxTime = 0.75
+		#self.mouth.outputPin2MaxTime = 0.75
 		self.mouth.midiNote = 56
 		self.all.append( self.mouth )
        
@@ -193,10 +195,10 @@ class Movement:
 		self.eyesBlinkFull = Struct()
 		self.eyesBlinkFull.description = "Eyes Blink"
 		self.eyesBlinkFull.key = 'w'
-		self.eyesBlinkFull.outputPin1 = [0x21, 5] # Eyes close
+		self.eyesBlinkFull.outputPin1 = [0x21, 5] # Eyes closeas
 		self.eyesBlinkFull.outputPin2 = [0x20, 1] # Eyes open
-		self.eyesBlinkFull.outputPin1MaxTime = 0.25
-		self.eyesBlinkFull.outputPin2MaxTime = 0.25
+		self.eyesBlinkFull.outputPin1MaxTime = 1
+		self.eyesBlinkFull.outputPin2MaxTime = 1
 		self.eyesBlinkFull.midiNote = 60
 		self.all.append( self.eyesBlinkFull )
 
@@ -204,7 +206,7 @@ class Movement:
 		self.headLeft.description = "Head L"
 		self.headLeft.key = 'a'
 		self.headLeft.outputPin1 = [0x21, 0]
-		self.headLeft.outputPin1MaxTime = 0.8
+		#self.headLeft.outputPin1MaxTime = 0.8
 		self.headLeft.midiNote = 61
 		self.headLeft.mirroredKey = 'd'
 		self.all.append( self.headLeft )
@@ -213,7 +215,7 @@ class Movement:
 		self.headRight.description = "Head R"
 		self.headRight.key = 'd'
 		self.headRight.outputPin1 = [0x23, 3]
-		self.headRight.outputPin1MaxTime = 0.8
+		#self.headRight.outputPin1MaxTime = 0.8
 		self.headRight.midiNote = 62
 		self.headRight.mirroredKey = 'a'
 		self.all.append( self.headRight )
