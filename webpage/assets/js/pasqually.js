@@ -38,12 +38,12 @@ socket.on('gamepadKeyEvent', function(data){
     val = data[1];
     for (var i = 0; i < movements.length; i++) {
         if (movements[i].key == key.toLowerCase()) {
-            sendKey(key,val,false)
+            sendKey(key,val,false,false)
         }
     }
 });
 
-function sendKey(key, num, bBroadcast) {
+function sendKey(key, num, bBroadcast, bMuteMidi) {
     for (var i = 0; i < movements.length; i++) {
         if (!movements[i].lastTime) {
             movements[i].lastTime = 0;
@@ -53,7 +53,10 @@ function sendKey(key, num, bBroadcast) {
             {
                 socket.emit('onKeyPress', {keyVal: key, val: num});
             }
-            playMIDINote(movements[i].midiNote, num);
+            if( !bMuteMidi )
+            {
+                playMIDINote(movements[i].midiNote, num);
+            }
             movements[i].lastTime = window.performance.now();
             break;  // Stop further iterations once the key event is sent
         }
@@ -65,7 +68,7 @@ var down = new Set(); // Use a Set to store pressed keys
 function doKeyDown(event) {
     var charCode = (typeof event.which == "number") ? event.which : event.keyCode;
     if (!down.has(charCode)) { // first press
-        sendKey(String.fromCharCode(charCode), 1, true);
+        sendKey(String.fromCharCode(charCode), 1, true, false);
         down.add(charCode); // Add key to the Set
     }
 }
@@ -73,7 +76,7 @@ function doKeyDown(event) {
 function doKeyUp(event) {
     var charCode = (typeof event.which == "number") ? event.which : event.keyCode;
     if (down.has(charCode)) { // only send if key was previously pressed
-        sendKey(String.fromCharCode(charCode), 0, true);
+        sendKey(String.fromCharCode(charCode), 0, true, false);
         down.delete(charCode); // Remove key from the Set
     }
 }
@@ -93,19 +96,41 @@ if (navigator.requestMIDIAccess) {
     alert("No MIDI support in your browser.");
 }
 
-function playMIDINote(midiNote,val) {
-	if (midiOutputPort) {
-		var velocity = 0x40 // Release velocity
-		if (val == 1) {
-			val = 0x90 // Typical note-on MIDI value
-			velocity = 0x7f // Full velocity
-		} else {
-			val = 0x80 // Typical note-off MIDI value
-		}
-		var output = midiAccess.outputs.get(midiOutputPort);
-		output.send([val, midiNote, velocity]) ;
-	}
+// Object to keep track of the state (on/off) of each MIDI note
+var noteState = {};
+
+function playMIDINote(midiNote, val) {
+    if (midiOutputPort) {
+        var velocity = 0x40; // Default release velocity
+
+        // Determine the intended state (on or off)
+        var isOn = val === 1;
+        var newState = isOn ? 'on' : 'off';
+
+        // Check if the state has changed
+        if (noteState[midiNote] === newState) {
+            return; // No change, skip sending the MIDI message
+        }
+
+        // Update the noteState object with the new state
+        noteState[midiNote] = newState;
+
+        // Prepare the MIDI message
+        var status = isOn ? 0x90 : 0x80; // Note-On (0x90) or Note-Off (0x80)
+        velocity = isOn ? 0x7f : velocity; // Full velocity for Note-On
+
+        var output = midiAccess.outputs.get(midiOutputPort);
+        if (output) {
+            console.log(`Sending MIDI ${newState.toUpperCase()} event for note ${midiNote} to port: ${output.name} (ID: ${output.id})`);
+            output.send([status, midiNote, velocity]);
+        } else {
+            console.warn(`MIDI output port with ID ${midiOutputPort} not found.`);
+        }
+    } else {
+        console.warn("No MIDI output port selected.");
+    }
 }
+
 
 function onMIDIMessage(event) {
     var data = event.data; // MIDI data [statusByte, dataByte1, dataByte2]
@@ -113,17 +138,30 @@ function onMIDIMessage(event) {
     var noteNumber = data[1]; // MIDI note number
     var velocity = data[2];   // Note velocity
 
-    var command = statusByte >> 4; // Upper nibble indicates the command
-    // var channel = statusByte & 0x0f; // Lower nibble indicates the channel (optional)
+    var command = statusByte >> 4;
+    var portName = event.target.name; // Name of the MIDI port
 
-    if (command === 9 && velocity > 0) {
-        // Note On message
-        console.log(`MIDI Note On - Note: ${noteNumber}, Velocity: ${velocity}`);
-    } else if (command === 8 || (command === 9 && velocity === 0)) {
-        // Note Off message
-        console.log(`MIDI Note Off - Note: ${noteNumber}`);
+    // When using LoopBe30, MIDI ports with "01" in the name are reserved only for output to a MIDI sequencer.
+    if (portName.startsWith("01. ")) {
+        //console.warn(`Ignoring MIDI event from unexpected port: ${portName}`);
+        return;
+    }
+
+    // Find any keyboard value that is assigned to this MIDI note
+    for (var i = 0; i < movements.length; i++) {
+        if (movements[i].midiNote == noteNumber)
+        {
+            if (command === 9 && velocity > 0) {
+                // Note On message
+                sendKey(movements[i].key, 1, true, true);
+            } else if (command === 8 || (command === 9 && velocity === 0)) {
+                // Note Off message
+                sendKey(movements[i].key, 0, true, true);
+            }
+        }
     }
 }
+
 
 function onMIDISuccess(midi) {
     // When we successfully initiate the MIDI interface...

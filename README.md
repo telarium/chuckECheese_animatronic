@@ -14,4 +14,6 @@ Make sure "Local Management via HTTPS" is enabled on your router.
 
 You'll also need to install a virtual MIDI device on Windows so that you can record the MIDI data in a sequencer and play it back later:
 
-https://www.nerds.de/en/loopbe1.html
+https://www.nerds.de/en/loopbe30.html
+
+Set it up so that it runs at least two MIDI ports. By default, port 1 will be used to output MIDI from the web frontend to the MIDI sequencer of your choice. To play MIDI from your sequencer to the web server, set the sequencer's MIDI output to be port 2.
