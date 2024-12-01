@@ -18,8 +18,54 @@ socket.on('wifiScan', function(data){
     console.log(data.networks);
 });
 
-var movements = [];
+var showList = [];
+socket.on('showListLoaded', function(data) {
+    showList = ["-- Select A Show! --"]; // Clear the current list
+    for (var i = 0; i < data.length; i++) {
+        showList.push(data[i]);
+    }
 
+    // Populate the dropdown
+    const dropdown = document.querySelector('select[name="Show List"]');
+    dropdown.innerHTML = ''; // Clear existing options
+
+    showList.forEach(item => {
+        const option = document.createElement('option');
+        option.value = item; // Use the value from the showList
+        option.textContent = item; // Display the value in the dropdown
+        dropdown.appendChild(option);
+    });
+
+    console.log('Dropdown updated:', showList);
+});
+
+document.getElementById('playButton').addEventListener('click', function() {
+    const dropdown = document.getElementById('showListDropdown');
+    const selectedShow = dropdown.value; // Get the selected dropdown value
+    
+    if (selectedShow) {
+        if (dropdown.selectedIndex === 0) {
+            alert('Mama mia! Please select a show first!');
+        } else {
+            socket.emit('showPlay',selectedShow);
+            console.log(`Playing show: ${selectedShow}`);
+        }
+    } else {
+        console.warn('No show selected.');
+    }
+});
+
+document.getElementById('pauseButton').addEventListener('click', function() {
+    socket.emit('showPause');
+    console.log(`Pausing show`);
+});
+
+document.getElementById('stopButton').addEventListener('click', function() {
+    socket.emit('showStop');
+    console.log(`Stopping show`);
+});
+
+var movements = [];
 socket.on('movementInfo', function(data){
     // Data is a two dimensional array. First index is the assigned keyboard key, second is the assigned MIDI note
     for (var i = 0; i < data.length; i++) {
@@ -93,7 +139,7 @@ if (navigator.requestMIDIAccess) {
         sysex: false
     }).then(onMIDISuccess, onMIDIFailure);
 } else {
-    alert("No MIDI support in your browser.");
+    console.log("No MIDI support in your browser. Try using HTTPS");
 }
 
 // Object to keep track of the state (on/off) of each MIDI note

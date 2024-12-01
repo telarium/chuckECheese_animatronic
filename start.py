@@ -26,14 +26,21 @@ class Pasqually:
 		dispatcher.connect(self.onMirroredModeToggle, signal='mirrorModeToggle', sender=dispatcher.Any)
 		dispatcher.connect(self.onConnectEvent, signal='connectEvent', sender=dispatcher.Any)
 		dispatcher.connect(self.onShowListLoad, signal='showListLoad', sender=dispatcher.Any)
+		dispatcher.connect(self.onShowPlay, signal='showPlay', sender=dispatcher.Any)
+		dispatcher.connect(self.onShowPause, signal='showPause', sender=dispatcher.Any)
+		dispatcher.connect(self.onShowStop, signal='showStop', sender=dispatcher.Any)
 
 	def onShowListLoad(self, showList):
-		print("SHOW LIST:")
-		print(showList)
 		self.webServer.broadcast('showListLoaded', showList)
 
-	def onSystemInfoEvent(self, cpu, ram):
-		print(cpu)
+	def onShowPlay(self,showName):
+		self.showPlayer.loadShow(showName)
+
+	def onShowStop(self):
+		self.showPlayer.stopShow()
+
+	def onShowPause(self):
+		self.showPlayer.togglePause()
 
 	def onConnectEvent(self, client_ip):
 		print(f"Web client connected from IP: {client_ip}")
