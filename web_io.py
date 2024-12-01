@@ -55,6 +55,18 @@ class WebServer:
 		ip = request.remote_addr
 		dispatcher.send(signal='connectEvent', client_ip=ip)
 
+	@socketio.on('showPlay')
+	def showPlayEvent(show_name):
+		dispatcher.send(signal='showPlay', showName=show_name)
+
+	@socketio.on('showStop')
+	def showStopEvent():
+		dispatcher.send(signal='showStop')
+
+	@socketio.on('showPause')
+	def showPauseEvent():
+		dispatcher.send(signal='showPause')
+
 	@socketio.on('onKeyPress')
 	def webKeyEvent(data):
 		dispatcher.send(signal="keyEvent", key=data["keyVal"], val=int(data["val"]))

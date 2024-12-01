@@ -13,7 +13,7 @@ class Setup:
 			"git", "build-essential", "python-dev-is-python3", "flex", "bison", 
 			"dnsmasq", "python3-smbus", "python3-evdev", "python3-setuptools",
 			"python3-flask", "python3-flask-socketio", "python3-flask-talisman",
-			"python3-eventlet", "python3-psutil", "python3-pydispatch"
+			"python3-eventlet", "python3-psutil", "python3-pydispatch", "python3-pygame"
 		]
 
 		self.run_command("sudo apt-get update")
