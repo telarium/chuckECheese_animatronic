@@ -1,0 +1,14 @@
+[PicoVoice]
+AccessKey = your_pv_access_key
+WakewordPath = path_to_wakeword.ppn
+RhinoContextPath = path_to_rhino_context.rhn
+
+[SpeechToText]
+GoogleCloudKeyPath = path_to_your_google_cloud_key.json
+
+[ChatGPT]
+OpenAIKey = your_openai_api_key
+
+[TextToSpeech]
+ElevenLabsKey = your_elevenlabs_api_key
+ElevenLabsVoiceID = your_elevenlabs_voice_id
