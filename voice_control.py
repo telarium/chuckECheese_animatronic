@@ -10,6 +10,10 @@ import configparser
 import struct
 from google.cloud import speech
 
+import audioop
+import webrtcvad
+import time
+
 class VoiceControl:
     def __init__(self, config_file="VoiceControlConfig.txt"):
         self.config = self.load_config(config_file)
@@ -24,6 +28,11 @@ class VoiceControl:
         self.initialize_recorder()
         self.initialize_porcupine()
         self.initialize_rhino()
+
+        # Create the VAD object (mode=3 is most aggressive. Try mode=1 or 0 if it's too strict).
+        self.vad = webrtcvad.Vad(mode=3)
+
+        # Create an OpenAI client (replace with correct usage in your environment if needed)
         self.openai_client = openai.Client(api_key=self.openai_api_key)
 
     def load_config(self, config_file):
@@ -39,6 +48,7 @@ class VoiceControl:
         if device_index is None:
             raise RuntimeError("No suitable audio device found.")
         try:
+            # NOTE: If you prefer 30ms frames, set frame_length=480 to align neatly with VAD.
             self.recorder = PvRecorder(device_index=device_index, frame_length=512)
         except Exception as e:
             print(f"Failed to initialize PvRecorder: {e}")
@@ -59,6 +69,7 @@ class VoiceControl:
             self.rhino = pvrhino.create(
                 access_key=self.pv_access_key,
                 context_path=self.rhino_context_path,
+                # endpoint_duration_sec=1.5,  # If you still want to tweak this, but not crucial now
             )
         except Exception as e:
             print(f"Failed to initialize Rhino: {e}")
@@ -129,6 +140,7 @@ class VoiceControl:
             print(f"Failed to process audio with Google: {e}")
 
     def detect_wakeword(self):
+        """Blocks until the wake word is detected."""
         print("Listening for wakeword...")
         self.recorder.start()
         try:
@@ -141,32 +153,132 @@ class VoiceControl:
         finally:
             self.recorder.stop()
 
-    def run(self):
+    def wait_for_speech(self, max_leading_silence_seconds=3):
+        """
+        After the wakeword is detected, wait for the user to start speaking.
+        If no speech is detected within max_leading_silence_seconds, return False.
+        """
+        print("Waiting for user to begin speaking...")
+        self.recorder.start()
+        start_time = time.time()
+
         try:
+            while (time.time() - start_time) < max_leading_silence_seconds:
+                pcm_512 = self.recorder.read()
+                # Break the 512-sample chunk into 160-sample sub-chunks
+                idx = 0
+                subchunk_size = 160
+                while idx + subchunk_size <= len(pcm_512):
+                    subchunk = pcm_512[idx : idx + subchunk_size]
+                    idx += subchunk_size
+
+                    pcm_bytes = struct.pack(f"<{len(subchunk)}h", *subchunk)
+                    is_speech = self.vad.is_speech(pcm_bytes, sample_rate=16000)
+                    if is_speech:
+                        print("Speech detected!")
+                        return True
+            # Timed out
+            print("No speech detected in leading silence window. Timing out.")
+            return False
+        finally:
+            self.recorder.stop()
+
+    def record_utterance_vad(self, max_silence_frames=40):
+        """
+        Once speech has started, record until trailing silence is detected.
+        max_silence_frames=40 => ~400ms if sub-chunk=10ms each.
+        """
+        print("Recording user utterance (waiting for trailing silence)...")
+
+        full_audio_buffer = []
+        silent_frame_count = 0
+
+        self.recorder.start()
+        try:
+            while True:
+                pcm_512 = self.recorder.read()
+                full_audio_buffer.extend(pcm_512)
+
+                # Break 512-sample chunk into 160-sample sub-chunks
+                idx = 0
+                subchunk_size = 160
+                while idx + subchunk_size <= len(pcm_512):
+                    subchunk = pcm_512[idx : idx + subchunk_size]
+                    idx += subchunk_size
+
+                    pcm_bytes = struct.pack(f"<{len(subchunk)}h", *subchunk)
+                    is_speech = self.vad.is_speech(pcm_bytes, sample_rate=16000)
+
+                    if not is_speech:
+                        silent_frame_count += 1
+                    else:
+                        silent_frame_count = 0
+
+                # If we've detected enough consecutive silent frames, user is done
+                if silent_frame_count >= max_silence_frames:
+                    print("Trailing silence detected — user finished speaking.")
+                    break
+
+        finally:
+            self.recorder.stop()
+
+        return full_audio_buffer
+
+    def run_rhino_offline(self, audio_buffer):
+        """
+        Feed the entire audio buffer to Rhino in one shot (offline).
+        Returns Rhino's final inference.
+        """
+        # Reset Rhino (clear any previous state)
+        self.rhino.reset()
+
+        frame_length = self.rhino.frame_length  # typically 512
+        index = 0
+        while index + frame_length <= len(audio_buffer):
+            frame = audio_buffer[index : index + frame_length]
+            _ = self.rhino.process(frame)
+            index += frame_length
+
+        # After feeding all frames, get final inference
+        inference = self.rhino.get_inference()
+        return inference
+
+    def run(self):
+        """
+        Main flow:
+          1) Detect wakeword
+          2) Wait for user to begin speaking (leading silence)
+          3) Record entire utterance until trailing silence
+          4) Run Rhino offline:
+             - If recognized, handle the intent
+             - Else send audio to Google STT -> ChatGPT
+        """
+        try:
+            # 1) Detect wakeword
             self.detect_wakeword()
-            self.recorder.start()
-            try:
-                pcm_frames = []
-                while True:
-                    pcm = self.recorder.read()
-                    result = self.rhino.process(pcm)
-                    if result:
-                        break
-                    pcm_frames.extend(pcm)
 
-                print("End of utterance detected.")
-                inference = self.rhino.get_inference()
+            # 2) Wait for the user to begin speaking
+            if not self.wait_for_speech(max_leading_silence_seconds=3):
+                print("No user command after wakeword; going idle...")
+                return
 
-                if inference.is_understood:
-                    print(f"Intent: {inference.intent}, Slots: {inference.slots}")
-                else:
-                    print("No intent detected. Converting audio to text...")
-                    audio_data = struct.pack(f"<{len(pcm_frames)}h", *pcm_frames)
-                    self.process_audio_with_google(audio_data)
-            finally:
-                self.recorder.stop()
+            # 3) Record the utterance with trailing silence detection
+            audio_buffer = self.record_utterance_vad(max_silence_frames=40)
+
+            # 4) Run Rhino offline
+            inference = self.run_rhino_offline(audio_buffer)
+            if inference.is_understood:
+                print("Rhino recognized an intent!")
+                print(f"Intent: {inference.intent}")
+                print(f"Slots: {inference.slots}")
+            else:
+                print("No intent recognized. Sending audio to ChatGPT (via Google STT).")
+                audio_data = struct.pack(f"<{len(audio_buffer)}h", *audio_buffer)
+                self.process_audio_with_google(audio_data)
+
         except Exception as e:
             print(f"Error in run method: {e}")
+
 
 if __name__ == "__main__":
     try:
