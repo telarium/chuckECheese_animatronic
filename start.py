@@ -8,6 +8,7 @@ from gpio import GPIO
 from animatronic_movements import Movement
 from gamepad_input import USBGamepadReader
 from show_player import ShowPlayer
+from voice_control import VoiceControl
 
 class Pasqually:
 	def __init__(self):
@@ -18,6 +19,7 @@ class Pasqually:
 		self.systemInfo = SystemInfo(self.webServer)
 		self.gamepad = USBGamepadReader()
 		self.showPlayer = ShowPlayer()
+		#self.voiceControl = VoiceControl()
 		self.isRunning = True
 
 	def setDispatchEvents(self):
@@ -29,6 +31,7 @@ class Pasqually:
 		dispatcher.connect(self.onShowPlay, signal='showPlay', sender=dispatcher.Any)
 		dispatcher.connect(self.onShowPause, signal='showPause', sender=dispatcher.Any)
 		dispatcher.connect(self.onShowStop, signal='showStop', sender=dispatcher.Any)
+		dispatcher.connect(self.onShowPlaybackMidiEvent, signal='showPlaybackMidiEvent', sender=dispatcher.Any)
 
 	def onShowListLoad(self, showList):
 		self.webServer.broadcast('showListLoaded', showList)
@@ -41,6 +44,11 @@ class Pasqually:
 
 	def onShowPause(self):
 		self.showPlayer.togglePause()
+
+	#dispatcher.send(signal="showPlaybackMidiEvent", midiNote = self.midiStates[midi_note], midiValue = state)
+	def onShowPlaybackMidiEvent(self, midiNote, value):
+		#print(f"MIDI Note {midiNote} {value}")
+		self.movements.executeMidiNote(midiNote, value)
 
 	def onConnectEvent(self, client_ip):
 		print(f"Web client connected from IP: {client_ip}")
