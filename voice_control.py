@@ -1,288 +1,215 @@
-#!/usr/bin/env python3
-
 import pvporcupine
 import pvrhino
-from pvrecorder import PvRecorder
-import openai
-import os
+import struct
 import subprocess
 import configparser
-import struct
+import os
+import wave
+from collections import deque
 from google.cloud import speech
+import openai
 
-import audioop
-import webrtcvad
-import time
 
-class VoiceControl:
-    def __init__(self, config_file="VoiceControlConfig.txt"):
-        self.config = self.load_config(config_file)
+class VoiceAssistant:
+	def __init__(self, config_file="VoiceControlConfig.txt"):
+		self.config = self.load_config(config_file)
 
-        self.pv_access_key = self.config["PicoVoice"]["AccessKey"]
-        self.wakeword_path = self.config["PicoVoice"]["WakewordPath"]
-        self.rhino_context_path = self.config["PicoVoice"]["RhinoContextPath"]
-        self.google_cloud_key_path = self.config["SpeechToText"]["GoogleCloudKeyPath"]
-        self.openai_api_key = self.config["ChatGPT"]["OpenAIKey"]
-        self.chatgpt_context = self.config["ChatGPT"]["ChatGPTContext"]
+		# PicoVoice and Google Speech-to-Text keys
+		self.pv_access_key = self.config["PicoVoice"]["AccessKey"]
+		self.wakeword_path = self.config["PicoVoice"]["WakewordPath"]
+		self.rhino_context_path = self.config["PicoVoice"]["RhinoContextPath"]
+		self.google_cloud_key_path = self.config["SpeechToText"]["GoogleCloudKeyPath"]
+		os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = self.google_cloud_key_path
 
-        self.initialize_recorder()
-        self.initialize_porcupine()
-        self.initialize_rhino()
+		# OpenAI ChatGPT key and context
+		self.openai_api_key = self.config["ChatGPT"]["OpenAIKey"]
+		self.chatgpt_context = self.config["ChatGPT"]["ChatGPTContext"]
+		openai.api_key = self.openai_api_key
+		self.openai_client = openai.Client(api_key=self.openai_api_key)
 
-        # Create the VAD object (mode=3 is most aggressive. Try mode=1 or 0 if it's too strict).
-        self.vad = webrtcvad.Vad(mode=3)
+		self.sample_rate = 16000
+		self.porcupine = pvporcupine.create(
+			access_key=self.pv_access_key,
+			keyword_paths=[self.wakeword_path],
+		)
+		self.rhino = pvrhino.create(
+			access_key=self.pv_access_key,
+			context_path=self.rhino_context_path,
+		)
 
-        # Create an OpenAI client (replace with correct usage in your environment if needed)
-        self.openai_client = openai.Client(api_key=self.openai_api_key)
+		self.pre_wakeword_buffer = deque(maxlen=10)  # Store ~1 second of pre-wakeword audio
+		self.frame_length = self.porcupine.frame_length
+		self.frame_size = self.frame_length * 2
+		self.speech_client = speech.SpeechClient()
 
-    def load_config(self, config_file):
-        config_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), config_file)
-        if not os.path.exists(config_path):
-            raise FileNotFoundError(f"Configuration file not found: {config_path}")
-        config = configparser.ConfigParser()
-        config.read(config_path)
-        return config
+	def load_config(self, config_file):
+		config_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), config_file)
+		if not os.path.exists(config_path):
+			raise FileNotFoundError(f"Configuration file not found: {config_path}")
+		config = configparser.ConfigParser()
+		config.read(config_path)
+		return config
 
-    def initialize_recorder(self):
-        device_index = self.get_audio_device_index()
-        if device_index is None:
-            raise RuntimeError("No suitable audio device found.")
-        try:
-            # NOTE: If you prefer 30ms frames, set frame_length=480 to align neatly with VAD.
-            self.recorder = PvRecorder(device_index=device_index, frame_length=512)
-        except Exception as e:
-            print(f"Failed to initialize PvRecorder: {e}")
-            raise
+	def record_audio_stream(self):
+		"""Start an audio recording stream."""
+		command = [
+			"arecord",
+			"-D", "plughw:CARD=Device,DEV=0",
+			"-f", "S16_LE",
+			"-r", str(self.sample_rate),
+			"-c", "1",
+			"--buffer-size=1920"
+		]
+		try:
+			print("Recording audio stream...")
+			process = subprocess.Popen(command, stdout=subprocess.PIPE)
+			return process
+		except Exception as e:
+			print(f"Error starting audio stream: {e}")
+			return None
 
-    def initialize_porcupine(self):
-        try:
-            self.porcupine = pvporcupine.create(
-                access_key=self.pv_access_key,
-                keyword_paths=[self.wakeword_path],
-            )
-        except Exception as e:
-            print(f"Failed to initialize Porcupine: {e}")
-            raise
+	def process_audio_stream(self, process):
+		"""Process audio for wakeword detection and transition seamlessly to intent capture."""
+		wakeword_detected = False
+		intent_audio = bytearray()
+		silent_frames = 0
+		max_silent_frames = int(self.sample_rate * 0.5 / self.frame_length)  # 0.5 seconds of silence
 
-    def initialize_rhino(self):
-        try:
-            self.rhino = pvrhino.create(
-                access_key=self.pv_access_key,
-                context_path=self.rhino_context_path,
-                # endpoint_duration_sec=1.5,  # If you still want to tweak this, but not crucial now
-            )
-        except Exception as e:
-            print(f"Failed to initialize Rhino: {e}")
-            raise
+		while True:
+			chunk = process.stdout.read(self.frame_size)
+			if len(chunk) < self.frame_size:
+				break
 
-    def get_audio_device_index(self, device_name=None):
-        try:
-            result = subprocess.run(["arecord", "-l"], capture_output=True, text=True)
-            output = result.stdout
+			self.pre_wakeword_buffer.append(chunk)
+			audio_frame = struct.unpack_from(f"{self.frame_length}h", chunk)
 
-            import re
-            pattern = r"card (\d+):.*device (\d+):.*\[(.*)\]"
-            matches = re.findall(pattern, output)
+			if not wakeword_detected and self.porcupine.process(audio_frame) >= 0:
+				print("Wakeword detected!")
+				wakeword_detected = True
+				intent_audio.extend(b"".join(self.pre_wakeword_buffer))
+				self.pre_wakeword_buffer.clear()
 
-            if not matches:
-                print("No audio capture devices found!")
-                return None
+			if wakeword_detected:
+				intent_audio.extend(chunk)
 
-            if device_name:
-                for card, device, name in matches:
-                    if device_name.lower() in name.lower():
-                        print(f"Using audio device: {name} (card {card}, device {device})")
-                        return int(card)
+				# Check for silence
+				rms = sum(x * x for x in audio_frame) / len(audio_frame)  # Root Mean Square
+				if rms < 100:  # Silence threshold (adjustable)
+					silent_frames += 1
+				else:
+					silent_frames = 0
 
-            card, device, name = matches[0]
-            print(f"Defaulting to first audio device: {name} (card {card}, device {device})")
-            return int(card)
-        except Exception as e:
-            print(f"Error while detecting audio devices: {e}")
-            return None
+				if silent_frames > max_silent_frames:
+					print("User stopped speaking.")
+					process.terminate()
+					process.wait()
+					return intent_audio
 
-    def send_to_chatgpt(self, text):
-        print(f"Sending text to ChatGPT: {text}")
-        try:
-            response = self.openai_client.chat.completions.create(
-                model="gpt-4",
-                messages=[
-                    {"role": "system", "content": self.chatgpt_context},
-                    {"role": "user", "content": text},
-                ],
-            )
-            chat_response = response.choices[0].message.content
-            print(f"ChatGPT Response: {chat_response}")
-            return chat_response
-        except Exception as e:
-            print(f"Failed to get response from ChatGPT: {e}")
-            return None
+				# Stop after 5 seconds of audio regardless
+				if len(intent_audio) >= self.sample_rate * 5 * 2:
+					print("Maximum recording duration reached.")
+					process.terminate()
+					process.wait()
+					return intent_audio
 
-    def process_audio_with_google(self, audio_data):
-        try:
-            client = speech.SpeechClient.from_service_account_file(self.google_cloud_key_path)
+	def save_audio_to_file(self, audio_data, filename):
+		"""Save audio data to a WAV file."""
+		with wave.open(filename, "wb") as wf:
+			wf.setnchannels(1)
+			wf.setsampwidth(2)
+			wf.setframerate(self.sample_rate)
+			wf.writeframes(audio_data)
+		print(f"Saved audio to {filename}")
 
-            audio = speech.RecognitionAudio(content=audio_data)
-            config = speech.RecognitionConfig(
-                encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
-                sample_rate_hertz=16000,
-                language_code="en-US",
-            )
+	def transcribe_audio(self, audio_data):
+		"""Send audio to Google Speech-to-Text."""
+		if isinstance(audio_data, bytearray):
+			audio_data = bytes(audio_data)
 
-            response = client.recognize(config=config, audio=audio)
-            if response.results:
-                transcribed_text = response.results[0].alternatives[0].transcript
-                print(f"Transcribed text: {transcribed_text}")
-                return self.send_to_chatgpt(transcribed_text)
-            else:
-                print("No speech recognized.")
-        except Exception as e:
-            print(f"Failed to process audio with Google: {e}")
+		audio = speech.RecognitionAudio(content=audio_data)
+		config = speech.RecognitionConfig(
+			encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
+			sample_rate_hertz=self.sample_rate,
+			language_code="en-US",
+		)
+		try:
+			print("Sending audio to Google Speech-to-Text...")
+			response = self.speech_client.recognize(config=config, audio=audio)
+			if response.results:
+				transcript = response.results[0].alternatives[0].transcript
+				print(f"Google Speech-to-Text result: {transcript}")
+				return transcript
+			else:
+				print("No transcription result from Google.")
+				return None
+		except Exception as e:
+			print(f"Error during transcription: {e}")
+			return None
 
-    def detect_wakeword(self):
-        """Blocks until the wake word is detected."""
-        print("Listening for wakeword...")
-        self.recorder.start()
-        try:
-            while True:
-                pcm = self.recorder.read()
-                keyword_index = self.porcupine.process(pcm)
-                if keyword_index >= 0:
-                    print("Wakeword detected!")
-                    break
-        finally:
-            self.recorder.stop()
+	def send_to_chatgpt(self, text):
+		print(f"Sending text to ChatGPT: {text}")
+		try:
+			response = self.openai_client.chat.completions.create(
+				model="gpt-4",
+				messages=[
+					{"role": "system", "content": self.chatgpt_context},
+					{"role": "user", "content": text},
+				],
+			)
+			chat_response = response.choices[0].message.content
+			return chat_response
+		except Exception as e:
+			print(f"Failed to get response from ChatGPT: {e}")
+			return None
 
-    def wait_for_speech(self, max_leading_silence_seconds=3):
-        """
-        After the wakeword is detected, wait for the user to start speaking.
-        If no speech is detected within max_leading_silence_seconds, return False.
-        """
-        print("Waiting for user to begin speaking...")
-        self.recorder.start()
-        start_time = time.time()
+	def run(self):
+		print("Listening for wakeword...")
+		stream_process = self.record_audio_stream()
+		if not stream_process:
+			print("Failed to start audio stream.")
+			return
 
-        try:
-            while (time.time() - start_time) < max_leading_silence_seconds:
-                pcm_512 = self.recorder.read()
-                # Break the 512-sample chunk into 160-sample sub-chunks
-                idx = 0
-                subchunk_size = 160
-                while idx + subchunk_size <= len(pcm_512):
-                    subchunk = pcm_512[idx : idx + subchunk_size]
-                    idx += subchunk_size
+		# Process audio and capture intent audio
+		intent_audio = self.process_audio_stream(stream_process)
 
-                    pcm_bytes = struct.pack(f"<{len(subchunk)}h", *subchunk)
-                    is_speech = self.vad.is_speech(pcm_bytes, sample_rate=16000)
-                    if is_speech:
-                        print("Speech detected!")
-                        return True
-            # Timed out
-            print("No speech detected in leading silence window. Timing out.")
-            return False
-        finally:
-            self.recorder.stop()
+		# Trim a small portion (e.g., 100ms) from the start of the intent audio
+		trim_frames = int(self.sample_rate * 0.1 * 2)  # 100 ms worth of frames
+		if len(intent_audio) > trim_frames:
+			intent_audio = intent_audio[trim_frames:]
+			print(f"Trimmed {trim_frames} bytes ({len(intent_audio)} bytes remaining).")
 
-    def record_utterance_vad(self, max_silence_frames=40):
-        """
-        Once speech has started, record until trailing silence is detected.
-        max_silence_frames=40 => ~400ms if sub-chunk=10ms each.
-        """
-        print("Recording user utterance (waiting for trailing silence)...")
+		# Save trimmed intent audio for debugging
+		self.save_audio_to_file(intent_audio, "intent_trimmed.wav")
 
-        full_audio_buffer = []
-        silent_frame_count = 0
+		# Send intent audio to Rhino
+		frame_length = self.rhino.frame_length
+		frame_size = frame_length * 2
 
-        self.recorder.start()
-        try:
-            while True:
-                pcm_512 = self.recorder.read()
-                full_audio_buffer.extend(pcm_512)
+		for i in range(0, len(intent_audio), frame_size):
+			frame = intent_audio[i:i + frame_size]
+			if len(frame) == frame_size:
+				audio_frame = struct.unpack_from(f"{frame_length}h", frame)
+				if self.rhino.process(audio_frame):
+					inference = self.rhino.get_inference()
+					if inference.is_understood:
+						print(f"Intent detected: {inference.intent}")
+						print(f"Slots: {inference.slots}")
+						return
 
-                # Break 512-sample chunk into 160-sample sub-chunks
-                idx = 0
-                subchunk_size = 160
-                while idx + subchunk_size <= len(pcm_512):
-                    subchunk = pcm_512[idx : idx + subchunk_size]
-                    idx += subchunk_size
+		print("No intent detected. Transcribing audio...")
+		transcription = self.transcribe_audio(intent_audio)
+		if transcription:
+			chatgpt_response = self.send_to_chatgpt(transcription)
+			print(f"ChatGPT Response: {chatgpt_response}")
 
-                    pcm_bytes = struct.pack(f"<{len(subchunk)}h", *subchunk)
-                    is_speech = self.vad.is_speech(pcm_bytes, sample_rate=16000)
-
-                    if not is_speech:
-                        silent_frame_count += 1
-                    else:
-                        silent_frame_count = 0
-
-                # If we've detected enough consecutive silent frames, user is done
-                if silent_frame_count >= max_silence_frames:
-                    print("Trailing silence detected — user finished speaking.")
-                    break
-
-        finally:
-            self.recorder.stop()
-
-        return full_audio_buffer
-
-    def run_rhino_offline(self, audio_buffer):
-        """
-        Feed the entire audio buffer to Rhino in one shot (offline).
-        Returns Rhino's final inference.
-        """
-        # Reset Rhino (clear any previous state)
-        self.rhino.reset()
-
-        frame_length = self.rhino.frame_length  # typically 512
-        index = 0
-        while index + frame_length <= len(audio_buffer):
-            frame = audio_buffer[index : index + frame_length]
-            _ = self.rhino.process(frame)
-            index += frame_length
-
-        # After feeding all frames, get final inference
-        inference = self.rhino.get_inference()
-        return inference
-
-    def run(self):
-        """
-        Main flow:
-          1) Detect wakeword
-          2) Wait for user to begin speaking (leading silence)
-          3) Record entire utterance until trailing silence
-          4) Run Rhino offline:
-             - If recognized, handle the intent
-             - Else send audio to Google STT -> ChatGPT
-        """
-        try:
-            # 1) Detect wakeword
-            self.detect_wakeword()
-
-            # 2) Wait for the user to begin speaking
-            if not self.wait_for_speech(max_leading_silence_seconds=3):
-                print("No user command after wakeword; going idle...")
-                return
-
-            # 3) Record the utterance with trailing silence detection
-            audio_buffer = self.record_utterance_vad(max_silence_frames=40)
-
-            # 4) Run Rhino offline
-            inference = self.run_rhino_offline(audio_buffer)
-            if inference.is_understood:
-                print("Rhino recognized an intent!")
-                print(f"Intent: {inference.intent}")
-                print(f"Slots: {inference.slots}")
-            else:
-                print("No intent recognized. Sending audio to ChatGPT (via Google STT).")
-                audio_data = struct.pack(f"<{len(audio_buffer)}h", *audio_buffer)
-                self.process_audio_with_google(audio_data)
-
-        except Exception as e:
-            print(f"Error in run method: {e}")
+	def cleanup(self):
+		self.porcupine.delete()
+		self.rhino.delete()
 
 
 if __name__ == "__main__":
-    try:
-        pasquallyAI = VoiceControl()
-        pasquallyAI.run()
-    except Exception as e:
-        print(f"VoiceControl failed to start: {e}")
+	try:
+		assistant = VoiceAssistant()
+		assistant.run()
+	except Exception as e:
+		print(f"VoiceAssistant failed to start: {e}")

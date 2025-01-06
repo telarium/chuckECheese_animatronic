@@ -7,20 +7,25 @@ import subprocess
 class Setup:
 	def __init__(self):
 		path = os.path.dirname(os.path.realpath(sys.argv[0]))
-		
-		# List of system packages to install
+
+		# List of system packages to install (from apt)
 		packages = [
-			"git", "build-essential", "python-dev-is-python3", "flex", "bison", 
-			"dnsmasq", "python3-smbus", "python3-evdev", "python3-setuptools",
-			"python3-flask", "python3-flask-socketio", "python3-flask-talisman",
+			"git", "build-essential", "python3-dev", "flex", "bison", 
+			"dnsmasq", "python3-smbus", "python3-evdev", "python3-setuptools", "python3-mido",
+			"python3-flask", "python3-flask-socketio", "python3-flask-talisman", "python3-pip",
 			"python3-eventlet", "python3-psutil", "python3-pydispatch", "python3-pygame"
 		]
 
 		self.run_command("sudo apt-get update")
 
-		# Install packages using subprocess and handle potential errors
+		# Install system packages using subprocess and handle potential errors
 		self.install_packages(packages)
 
+		# Install Python dependencies via pip with --break-system-packages
+		self.install_python_packages([
+			"pvporcupine", "pvrhino", "pvrecorder", "openai", "google-cloud-speech", 
+			"webrtcvad"
+		])
 		
 		# Clone the flask-uploads repository
 		self.run_command("git clone https://github.com/maxcountryman/flask-uploads.git")
@@ -31,10 +36,19 @@ class Setup:
 
 	def install_packages(self, packages):
 		try:
-			# Join package list into a single string and install via apt-get
+			# Install packages using apt-get
 			subprocess.check_call(["sudo", "apt-get", "install", "-y"] + packages)
 		except subprocess.CalledProcessError as e:
 			print(f"Failed to install packages: {e}")
+			sys.exit(1)
+
+	def install_python_packages(self, packages):
+		try:
+			for package in packages:
+				# Use pip with --break-system-packages flag to allow installation
+				subprocess.check_call(["sudo", sys.executable, "-m", "pip", "install", "--break-system-packages", package])
+		except subprocess.CalledProcessError as e:
+			print(f"Failed to install Python packages: {e}")
 			sys.exit(1)
 
 	def run_command(self, command):
