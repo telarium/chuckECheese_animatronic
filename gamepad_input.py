@@ -12,7 +12,7 @@ class Button(Enum):
 	# Left Stick
 	LEFT_STICK_LEFT = 'a'           # neck left
 	LEFT_STICK_RIGHT = 'd'          # neck right
-	LEFT_STICK_DOWN = 's'           # neck down
+	LEFT_STICK_UP = 's'             # neck up
 
 	# Right Stick
 	RIGHT_STICK_LEFT = 'i'          # both shoulders move out
@@ -36,8 +36,8 @@ class Button(Enum):
 	# D-pad
 	DPAD_LEFT = 'a'                 # neck left
 	DPAD_RIGHT = 'd'                # neck right
-	DPAD_DOWN = 's'                 # head down
-	DPAD_UP = 'w'                   # blink
+	DPAD_DOWN = 'w'                 # head up
+	DPAD_UP = 's'                   # blink
 
 	# Start and Select Buttons. Holding down both toggles mirrored mode
 	START = 'start'

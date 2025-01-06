@@ -53,7 +53,7 @@ class Movement:
 				pin = self.eyesRight.outputPin1
 			elif movement == self.eyesRight:
 				pin = self.eyesLeft.outputPin1
-				moveTime = 0.05
+				moveTime = 0.04
 
 			if pin:
 				# Move eyes in the opposite direction for a split second.
@@ -94,8 +94,8 @@ class Movement:
 		self.rightShoulder.key = 'o'
 		self.rightShoulder.outputPin2 = [0x23, 6] # Shoulder out
 		self.rightShoulder.outputPin1 = [0x21, 3] # Shoulder in
-		#self.rightShoulder.outputPin2MaxTime = 1.5
-		#self.rightShoulder.outputPin1MaxTime = 60*10
+		self.rightShoulder.outputPin2MaxTime = 5*60
+		self.rightShoulder.outputPin1MaxTime = 5*60
 		self.rightShoulder.midiNote = 50
 		self.rightShoulder.mirroredKey = 'u'
 		self.all.append( self.rightShoulder )
@@ -105,8 +105,8 @@ class Movement:
 		self.leftShoulder.key = 'u'
 		self.leftShoulder.outputPin2 = [0x20, 4] # Shoulder out
 		self.leftShoulder.outputPin1 = [0x21, 7] # Shoulder in
-		#self.leftShoulder.outputPin2MaxTime = 1.5
-		#self.leftShoulder.outputPin1MaxTime = 60*10
+		self.leftShoulder.outputPin2MaxTime = 5*60
+		self.leftShoulder.outputPin1MaxTime = 5*60
 		self.leftShoulder.midiNote = 51
 		self.leftShoulder.mirroredKey = 'o'
 		self.all.append( self.leftShoulder )
@@ -223,15 +223,15 @@ class Movement:
 		self.headDown = Struct()
 		self.headDown.description = "Head Down"
 		self.headDown.key = 's'
-		self.headDown.outputPin1 = [0x20, 3] # Head down
-		self.headDown.outputPin2 = [0x21, 6] # Head up
+		self.headDown.outputPin1 = [0x21, 6] # Head up
+		self.headDown.outputPin2 = [0x20, 3] # Head down
 		self.headDown.midiNote = 63
 		self.all.append( self.headDown )
        
 		self.bodyLeanForward = Struct()
 		self.bodyLeanForward.description = "Lean Forward"
 		self.bodyLeanForward.key = 'm'
-		self.bodyLeanForward.outputPin1 = [0x21, 1] # Lean forward
+		self.bodyLeanForward.outputPin1 = [0x23, 4] # Lean forward
 		self.bodyLeanForward.outputInverted = True
 		self.bodyLeanForward.midiNote = 64
 		self.all.append( self.bodyLeanForward ) 
@@ -382,4 +382,10 @@ class Movement:
 			t.start()
 
 		return bDoCallback
+
+	def executeMidiNote(self, midiNote, val):
+		for movement in self.all:
+			if( movement.midiNote == midiNote):
+				self.executeMovement(movement.key, val)
+				break
 			
