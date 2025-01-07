@@ -11,7 +11,7 @@ from flask_uploads import UploadSet, configure_uploads
 from pydispatch import dispatcher
 
 # Patch system modules to be greenthread-friendly
-eventlet.monkey_patch()
+eventlet.monkey_patch(socket=True, time=True, select=True, os=True)
 
 # Another monkey patch to avoid annoying (and useless?) socket pipe warnings when users disconnect
 import socketserver
