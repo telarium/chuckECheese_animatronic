@@ -10,7 +10,7 @@ class Setup:
 
 		# List of system packages to install (from apt)
 		packages = [
-			"git", "build-essential", "python3-dev", "flex", "bison", "ffmpeg",
+			"git", "build-essential", "python3-dev", "flex", "bison", "mpv",
 			"dnsmasq", "python3-smbus", "python3-evdev", "python3-setuptools", "python3-mido",
 			"python3-flask", "python3-flask-socketio", "python3-flask-talisman", "python3-pip",
 			"python3-eventlet", "python3-psutil", "python3-pydispatch", "python3-pygame"
@@ -23,8 +23,7 @@ class Setup:
 
 		# Install Python dependencies via pip with --break-system-packages
 		self.install_python_packages([
-			"pvporcupine", "pvrhino", "pvrecorder", "openai", "google-cloud-speech", 
-			"webrtcvad", "pydub"
+			"pvporcupine", "pvrhino", "openai", "google-cloud-speech", "elevenlabs"
 		])
 		
 		# Clone the flask-uploads repository
