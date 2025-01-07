@@ -7,8 +7,10 @@ import os
 import wave
 from collections import deque
 from google.cloud import speech
+from pydub import AudioSegment
 import openai
-
+import pygame
+import requests
 
 class VoiceAssistant:
 	def __init__(self, config_file="VoiceControlConfig.txt"):
@@ -26,6 +28,10 @@ class VoiceAssistant:
 		self.chatgpt_context = self.config["ChatGPT"]["ChatGPTContext"]
 		openai.api_key = self.openai_api_key
 		self.openai_client = openai.Client(api_key=self.openai_api_key)
+
+		# ElevenLabs TTS keys
+		self.elevenlabs_key = self.config["TextToSpeech"]["ElevenLabsKey"]
+		self.elevenlabs_voice_id = self.config["TextToSpeech"]["ElevenLabsVoiceID"]
 
 		self.sample_rate = 16000
 		self.porcupine = pvporcupine.create(
@@ -157,10 +163,79 @@ class VoiceAssistant:
 				],
 			)
 			chat_response = response.choices[0].message.content
+			print(f"ChatGPT Response: {chat_response}")
+
+			# Generate and play TTS audio
+			self.generate_and_play_tts(chat_response)
+
 			return chat_response
 		except Exception as e:
 			print(f"Failed to get response from ChatGPT: {e}")
 			return None
+
+	def generate_and_play_tts(self, text):
+		"""Generate audio using ElevenLabs TTS API with eleven_multilingual_v2, convert it, and play it back."""
+		try:
+			print("Generating audio using ElevenLabs API...")
+
+			# Define the API endpoint
+			url = f"https://api.elevenlabs.io/v1/text-to-speech/{self.elevenlabs_voice_id}"
+			headers = {
+				"xi-api-key": self.elevenlabs_key,
+				"Content-Type": "application/json"
+			}
+			payload = {
+				"text": text,
+				"model_id": "eleven_multilingual_v2",
+				"voice_settings": {
+					"stability": 0.7,
+					"similarity_boost": 0.8,
+					"style_exaggeration": 0.8
+				}
+			}
+
+			# Send the request to ElevenLabs API
+			response = requests.post(url, headers=headers, json=payload)
+
+			# Check response status and handle audio
+			if response.status_code == 200:
+				raw_filename = "raw_response.wav"
+				compatible_filename = "response.wav"
+
+				# Save raw audio
+				with open(raw_filename, "wb") as f:
+					f.write(response.content)
+				print(f"Audio saved to {raw_filename}")
+
+				# Convert to a compatible WAV format
+				audio = AudioSegment.from_file(raw_filename)
+				audio.export(compatible_filename, format="wav")
+				print(f"Converted audio saved to {compatible_filename}")
+
+				# Play the converted audio
+				self.play_audio(compatible_filename)
+			else:
+				print(f"Error from ElevenLabs API: {response.status_code}, {response.text}")
+
+		except Exception as e:
+			print(f"Error generating or playing TTS audio: {e}")
+
+
+	def play_audio(self, filename):
+		"""Play an audio file using pygame."""
+		try:
+			print(f"Playing audio from {filename}...")
+			pygame.mixer.init()
+			pygame.mixer.music.load(filename)
+			pygame.mixer.music.play()
+
+			# Wait until the audio finishes playing
+			while pygame.mixer.music.get_busy():
+				pygame.time.Clock().tick(10)
+		except Exception as e:
+			print(f"Error playing audio: {e}")
+		finally:
+			pygame.mixer.quit()
 
 	def run(self):
 		print("Listening for wakeword...")
@@ -199,8 +274,7 @@ class VoiceAssistant:
 		print("No intent detected. Transcribing audio...")
 		transcription = self.transcribe_audio(intent_audio)
 		if transcription:
-			chatgpt_response = self.send_to_chatgpt(transcription)
-			print(f"ChatGPT Response: {chatgpt_response}")
+			self.send_to_chatgpt(transcription)
 
 	def cleanup(self):
 		self.porcupine.delete()
