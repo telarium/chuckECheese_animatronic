@@ -10,10 +10,11 @@ class Setup:
 
 		# List of system packages to install (from apt)
 		packages = [
-			"git", "build-essential", "python3-dev", "flex", "bison", "mpv",
+			"git", "build-essential", "python3-dev", "flex", "bison", "mpv", "hostapd", "dnsmasq"
 			"dnsmasq", "python3-smbus", "python3-evdev", "python3-setuptools", "python3-mido",
 			"python3-flask", "python3-flask-socketio", "python3-flask-talisman", "python3-pip",
-			"python3-eventlet", "python3-psutil", "python3-pydispatch", "python3-pygame"
+			"python3-eventlet", "python3-psutil", "python3-pydispatch", "python3-pygame", "iw",
+			"iproute2", "libttspico-utils"
 		]
 
 		self.run_command("sudo apt-get update")

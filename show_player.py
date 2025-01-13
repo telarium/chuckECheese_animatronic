@@ -6,13 +6,11 @@ import eventlet
 from pydispatch import dispatcher
 
 class ShowPlayer:
-	def __init__(self):
-		pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
-		pygame.display.init()
-		pygame.display.set_mode((1, 1))
+	def __init__(self, pygame_instance):
 		
-		self.MUSIC_END = pygame.USEREVENT + 1
-		pygame.mixer.music.set_endevent(self.MUSIC_END)
+		self.pygame = pygame_instance
+		self.MUSIC_END = self.pygame.USEREVENT + 1
+		self.pygame.mixer.music.set_endevent(self.MUSIC_END)
 
 		self.showList = []
 		self.active_showName = None
@@ -34,13 +32,13 @@ class ShowPlayer:
 		last_checked_time = 0  # Keep track of the last update time
 		while True:
 			try:
-				for event in pygame.event.get():
+				for event in self.pygame.event.get():
 					if event.type == self.MUSIC_END and self.active_showName is not None:
 						print("Show has completed!")
 						self.stopShow()
 
-				if pygame.mixer.music.get_busy():  # Check if music is playing
-					current_time_ms = pygame.mixer.music.get_pos()  # Get playback time in milliseconds
+				if self.pygame.mixer.music.get_busy():  # Check if music is playing
+					current_time_ms = self.pygame.mixer.music.get_pos()  # Get playback time in milliseconds
 
 					# Process MIDI data for the current time
 					if current_time_ms != last_checked_time:
@@ -83,8 +81,8 @@ class ShowPlayer:
 					if self.parseMidiFile(showName):
 						self.active_showName = showName
 						self.midiStates.clear()  # Reset MIDI states for a new show
-						pygame.mixer.music.load(file_path)
-						pygame.mixer.music.play()
+						self.pygame.mixer.music.load(file_path)
+						self.pygame.mixer.music.play()
 						print(f"Playing show: {file_path}")
 						return
 					
@@ -95,7 +93,7 @@ class ShowPlayer:
 
 	def stopShow(self):
 		if self.active_showName is not None:
-			pygame.mixer.music.stop()
+			self.pygame.mixer.music.stop()
 			self.bPaused = False
 			self.active_showName = None
 			print("Stopped")
@@ -104,11 +102,11 @@ class ShowPlayer:
 		if not self.bPaused:
 			self.bPaused = True
 			print("Paused")
-			pygame.mixer.music.pause()
+			self.pygame.mixer.music.pause()
 		else:
 			self.bPaused = False
 			print("Unpaused")
-			pygame.mixer.music.unpause()
+			self.pygame.mixer.music.unpause()
 
 	def parseMidiFile(self, showName):
 		if self.show_dir is None:

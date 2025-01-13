@@ -2,6 +2,7 @@ from collections import deque
 from google.cloud import speech
 from elevenlabs.client import ElevenLabs
 from elevenlabs import Voice, VoiceSettings, stream
+from pydispatch import dispatcher
 import openai
 import pvporcupine
 import pvrhino
@@ -16,8 +17,8 @@ import sys
 import threading
 import time
 
-class VoiceControl:
-	def __init__(self, config_file="VoiceControlConfig.txt"):
+class VoiceInputProcessor:
+	def __init__(self, config_file="config.cfg"):
 		self.config = self.load_config(config_file)
 
 		# PicoVoice and Google Speech-to-Text keys
@@ -56,8 +57,8 @@ class VoiceControl:
 		self.temp_dir = tempfile.TemporaryDirectory()
 
 		# Register signal handlers for graceful shutdown
-		signal.signal(signal.SIGTERM, self.cleanup)
-		signal.signal(signal.SIGINT, self.cleanup)
+		signal.signal(signal.SIGTERM, self.shutdown)
+		signal.signal(signal.SIGINT, self.shutdown)
 
 		self.running = True  # Control flag for the main thread
 
@@ -101,7 +102,7 @@ class VoiceControl:
 		wakeword_detected = False
 		intent_audio = bytearray()
 		silent_frames = 0
-		max_silent_frames = int(self.sample_rate * 1.5 / self.frame_length)  # 1.5 seconds of silence
+		timeout_time = 5 # The initial default time (in seconds) inbetween the wakeword and when speaking starts
 
 		while True:
 			chunk = process.stdout.read(self.frame_size)
@@ -113,18 +114,22 @@ class VoiceControl:
 
 			if not wakeword_detected and self.porcupine.process(audio_frame) >= 0:
 				print("Wakeword detected!")
+				dispatcher.send(signal="voiceInputEvent", id="wakeWord")
+				timeout_time = 5
 				wakeword_detected = True
 				intent_audio.extend(b"".join(self.pre_wakeword_buffer))
 				self.pre_wakeword_buffer.clear()
 
 			if wakeword_detected:
 				intent_audio.extend(chunk)
+				max_silent_frames = int(self.sample_rate * timeout_time / self.frame_length)  # 1.5 seconds of silence
 
 				# Check for silence
 				rms = sum(x * x for x in audio_frame) / len(audio_frame)  # Root Mean Square
 				if rms < 500000:  # Silence threshold (adjustable)
 					silent_frames += 1
 				else:
+					timeout_time = 1.5
 					silent_frames = 0
 
 				if silent_frames > max_silent_frames:
@@ -133,8 +138,8 @@ class VoiceControl:
 					process.wait()
 					return intent_audio
 
-				# Stop after 8 seconds of audio regardless
-				if len(intent_audio) >= self.sample_rate * 8 * 2:
+				# Stop after 10 seconds of audio regardless
+				if len(intent_audio) >= self.sample_rate * 10 * 2:
 					print(f"Maximum recording duration reached. Silence frames: {silent_frames}")
 					process.terminate()
 					process.wait()
@@ -178,6 +183,7 @@ class VoiceControl:
 	def send_to_chatgpt(self, text):
 		"""Send text to ChatGPT and generate a response."""
 		print(f"Sending text to ChatGPT: {text}")
+		dispatcher.send(signal="voiceInputEvent", id="chatGPTSend", value=text)
 		try:
 			response = self.openai_client.chat.completions.create(
 				model="gpt-4",
@@ -187,6 +193,7 @@ class VoiceControl:
 				],
 			)
 			chat_response = response.choices[0].message.content
+			dispatcher.send(signal="voiceInputEvent", id="chatGPTReceive", value=chat_response)
 			print(f"ChatGPT Response: {chat_response}")
 
 			# Generate and play TTS audio
@@ -224,7 +231,7 @@ class VoiceControl:
 		except Exception as e:
 			print(f"Error generating or playing TTS audio: {e}")
 
-	def cleanup(self, *args):
+	def shutdown(self, *args):
 		"""Clean up resources and terminate gracefully."""
 		self.running = False  # Stop the thread's loop
 
@@ -287,12 +294,15 @@ class VoiceControl:
 					if inference.is_understood:
 						print(f"Intent detected: {inference.intent}")
 						print(f"Slots: {inference.slots}")
+						dispatcher.send(signal="voiceInputEvent", id="command", value=inference.intent)
 						return
 
 		print("No intent detected. Transcribing audio...")
 		transcription = self.transcribe_audio(intent_audio)
 		if transcription:
 			self.send_to_chatgpt(transcription)
+		else:
+			dispatcher.send(signal="voiceInputEvent", id="timeout")
 
 
 if __name__ == "__main__":
