@@ -2,6 +2,7 @@ import os
 import sys
 import signal
 import eventlet
+import pygame
 from pydispatch import dispatcher
 from web_io import WebServer
 from system_info import SystemInfo
@@ -9,21 +10,30 @@ from gpio import GPIO
 from animatronic_movements import Movement
 from gamepad_input import USBGamepadReader
 from show_player import ShowPlayer
-from voice_control import VoiceControl
+from voice_input_processor import VoiceInputProcessor
+from voice_event_handler import VoiceEventHandler
+from wifi_management import WifiManagement
 
 class Pasqually:
 	def __init__(self):
 		self.isRunning = True
+
+		# Initialize pygame for managing audio playback
+		pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=2048)
+		pygame.display.init()
+		pygame.display.set_mode((1, 1))
 
 		# Initialize components
 		self.setDispatchEvents()
 		self.gpio = GPIO()
 		self.movements = Movement(self.gpio)
 		self.webServer = WebServer()
+		self.wifiManagement = WifiManagement()
 		self.systemInfo = SystemInfo(self.webServer)
 		self.gamepad = USBGamepadReader()
-		self.showPlayer = ShowPlayer()
-		self.voiceControl = VoiceControl()
+		self.showPlayer = ShowPlayer(pygame)
+		self.voiceInputProcessor = VoiceInputProcessor()
+		self.voiceEventHandler = VoiceEventHandler(pygame)
 
 		# Handle SIGINT and SIGTERM for graceful shutdown
 		signal.signal(signal.SIGINT, self.shutdown_signal_handler)
@@ -31,6 +41,7 @@ class Pasqually:
 
 	def setDispatchEvents(self):
 		dispatcher.connect(self.onKeyEvent, signal='keyEvent', sender=dispatcher.Any)
+		dispatcher.connect(self.onVoiceInputEvent, signal='voiceInputEvent', sender=dispatcher.Any)
 		dispatcher.connect(self.onGamepadKeyEvent, signal='gamepadKeyEvent', sender=dispatcher.Any)
 		dispatcher.connect(self.onMirroredModeToggle, signal='mirrorModeToggle', sender=dispatcher.Any)
 		dispatcher.connect(self.onConnectEvent, signal='connectEvent', sender=dispatcher.Any)
@@ -39,6 +50,7 @@ class Pasqually:
 		dispatcher.connect(self.onShowPause, signal='showPause', sender=dispatcher.Any)
 		dispatcher.connect(self.onShowStop, signal='showStop', sender=dispatcher.Any)
 		dispatcher.connect(self.onShowPlaybackMidiEvent, signal='showPlaybackMidiEvent', sender=dispatcher.Any)
+		dispatcher.connect(self.onActivateWifiHotspot, signal='activateWifiHotspot', sender=dispatcher.Any)
 
 	def run(self):
 		try:
@@ -58,8 +70,8 @@ class Pasqually:
 		"""Clean up resources and terminate components."""
 		try:
 			# Shutdown child components
-			if self.voiceControl:
-				self.voiceControl.cleanup()
+			if self.voiceInputProcessor:
+				self.voiceInputProcessor.shutdown()
 			if self.webServer:
 				self.webServer.shutdown()
 			if self.showPlayer:
@@ -71,6 +83,9 @@ class Pasqually:
 			sys.exit(1)
 
 	# Event handling methods
+	def onVoiceInputEvent(self, id, value=None):
+		self.voiceEventHandler.triggerEvent(id, value)
+
 	def onShowListLoad(self, showList):
 		self.webServer.broadcast('showListLoaded', showList)
 
@@ -111,6 +126,11 @@ class Pasqually:
 		bNewMirrorMode = not self.movements.bMirrored
 		self.movements.setMirrored(bNewMirrorMode)
 
+	def onActivateWifiHotspot(self, bActivate):
+		if bActivate:
+			self.wifiManagement.activate_hotspot()
+		else:
+			self.wifiManagement.deactivate_hotspot_and_reconnect()
 
 if __name__ == "__main__":
 	animatronic = Pasqually()
