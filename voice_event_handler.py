@@ -3,11 +3,13 @@ import subprocess
 import pygame
 from pydispatch import dispatcher
 from wifi_management import WifiManagement
-
+from automated_puppeteering import AutomatedPuppeteering
 
 class VoiceEventHandler:
 	def __init__(self, pygame_instance):
 		self.pygame = pygame_instance
+		self.puppeteer = AutomatedPuppeteering(pygame_instance)
+
 		self.wifiManagement = WifiManagement()
 
 		self.audioPath = os.path.join(os.path.dirname(__file__), "miscAudioAssets")
@@ -48,13 +50,7 @@ class VoiceEventHandler:
 	def playAudioSequence(self, audio_files):
 		for file in audio_files:
 			try:
-				# Load the sound file
-				sound = self.pygame.mixer.Sound(file)
-				# Play the sound
-				sound.play()
-				# Wait until the sound finishes playing
-				while self.pygame.mixer.get_busy():
-					self.pygame.time.wait(10)
+				self.puppeteer.play_audio_with_puppeting(file)
 			except self.pygame.error as e:
 				print(f"Error playing {file}: {e}")
 

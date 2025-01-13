@@ -3,6 +3,9 @@ from google.cloud import speech
 from elevenlabs.client import ElevenLabs
 from elevenlabs import Voice, VoiceSettings, stream
 from pydispatch import dispatcher
+from pydub import AudioSegment
+from automated_puppeteering import AutomatedPuppeteering
+import pygame
 import openai
 import pvporcupine
 import pvrhino
@@ -16,9 +19,12 @@ import signal
 import sys
 import threading
 import time
+import io
 
 class VoiceInputProcessor:
-	def __init__(self, config_file="config.cfg"):
+	def __init__(self, pygame_instance, config_file="config.cfg"):
+		self.pygame = pygame_instance
+		self.puppeteer = AutomatedPuppeteering(pygame_instance)
 		self.config = self.load_config(config_file)
 
 		# PicoVoice and Google Speech-to-Text keys
@@ -204,8 +210,10 @@ class VoiceInputProcessor:
 			print(f"Failed to get response from ChatGPT: {e}")
 			return None
 
+
+
 	def generate_and_play_tts(self, text):
-		"""Generate audio using ElevenLabs TTS API."""
+		"""Generate audio using ElevenLabs TTS API and play from a saved file."""
 		try:
 			client = ElevenLabs(api_key=self.elevenlabs_key)
 
@@ -213,9 +221,10 @@ class VoiceInputProcessor:
 			similarity_boost = 0.8
 			style_exaggeration = 0.5
 
-			audio = client.generate(
+			# Generate the audio (stream=True to receive a generator)
+			audio_generator = client.generate(
 				text=text,
-				stream=True,
+				stream=True,  # Stream the audio as a generator
 				model="eleven_multilingual_v2",
 				voice=Voice(
 					voice_id=self.elevenlabs_voice_id,
@@ -227,7 +236,24 @@ class VoiceInputProcessor:
 					)
 				)
 			)
-			stream(audio)
+
+			# Collect the audio chunks into a byte array
+			audio_data = b''.join(audio_generator)
+
+			# Convert the audio using pydub
+			audio = AudioSegment.from_mp3(io.BytesIO(audio_data))
+			audio = audio.set_frame_rate(self.sample_rate)  # Set the sample rate (16000 Hz)
+			audio = audio.set_sample_width(2)  # 2 bytes for 16-bit audio
+			audio = audio.set_channels(1)  # Mono
+
+			# Save the audio to a temporary WAV file
+			temp_audio_file = os.path.join(self.temp_dir.name, "tts_audio.wav")
+			audio.export(temp_audio_file, format="wav")
+
+			# Play the audio from the temporary file
+			#subprocess.run(["aplay", temp_audio_file])
+			self.puppeteer.play_audio_with_puppeting(temp_audio_file)
+
 		except Exception as e:
 			print(f"Error generating or playing TTS audio: {e}")
 
