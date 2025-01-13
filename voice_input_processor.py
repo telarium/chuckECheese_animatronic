@@ -213,7 +213,7 @@ class VoiceInputProcessor:
 
 
 	def generate_and_play_tts(self, text):
-		"""Generate audio using ElevenLabs TTS API and play from a saved file."""
+		"""Generate audio using ElevenLabs TTS API and play directly as MP3."""
 		try:
 			client = ElevenLabs(api_key=self.elevenlabs_key)
 
@@ -240,20 +240,17 @@ class VoiceInputProcessor:
 			# Collect the audio chunks into a byte array
 			audio_data = b''.join(audio_generator)
 
-			# Convert the audio using pydub
-			audio = AudioSegment.from_mp3(io.BytesIO(audio_data))
-			audio = audio.set_frame_rate(22050)  # Set the sample rate (16000 Hz)
-			audio = audio.set_sample_width(2)  # 2 bytes for 16-bit audio
-			audio = audio.set_channels(1)  # Mono
+			# Save the audio as an MP3 file in the temporary directory
+			temp_audio_file = os.path.join(self.temp_dir.name, "tts_audio.mp3")
+			with open(temp_audio_file, "wb") as f:
+				f.write(audio_data)
 
-			# Save the audio to a temporary WAV file
-			temp_audio_file = os.path.join(self.temp_dir.name, "tts_audio.wav")
-			audio.export(temp_audio_file, format="wav")
-
+			# Use the AutomatedPuppeteering class to play the MP3 with puppeting
 			self.puppeteer.play_audio_with_puppeting(temp_audio_file)
 
 		except Exception as e:
 			print(f"Error generating or playing TTS audio: {e}")
+
 
 	def shutdown(self, *args):
 		"""Clean up resources and terminate gracefully."""
