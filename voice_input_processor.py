@@ -242,7 +242,7 @@ class VoiceInputProcessor:
 
 			# Convert the audio using pydub
 			audio = AudioSegment.from_mp3(io.BytesIO(audio_data))
-			audio = audio.set_frame_rate(self.sample_rate)  # Set the sample rate (16000 Hz)
+			audio = audio.set_frame_rate(22050)  # Set the sample rate (16000 Hz)
 			audio = audio.set_sample_width(2)  # 2 bytes for 16-bit audio
 			audio = audio.set_channels(1)  # Mono
 
@@ -250,8 +250,6 @@ class VoiceInputProcessor:
 			temp_audio_file = os.path.join(self.temp_dir.name, "tts_audio.wav")
 			audio.export(temp_audio_file, format="wav")
 
-			# Play the audio from the temporary file
-			#subprocess.run(["aplay", temp_audio_file])
 			self.puppeteer.play_audio_with_puppeting(temp_audio_file)
 
 		except Exception as e:
