@@ -32,7 +32,7 @@ class Pasqually:
 		self.systemInfo = SystemInfo(self.webServer)
 		self.gamepad = USBGamepadReader()
 		self.showPlayer = ShowPlayer(pygame)
-		self.voiceInputProcessor = VoiceInputProcessor()
+		self.voiceInputProcessor = VoiceInputProcessor(pygame)
 		self.voiceEventHandler = VoiceEventHandler(pygame)
 
 		# Handle SIGINT and SIGTERM for graceful shutdown
