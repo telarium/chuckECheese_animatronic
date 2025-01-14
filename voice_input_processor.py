@@ -321,7 +321,18 @@ class VoiceInputProcessor:
 		print("No intent detected. Transcribing audio...")
 		transcription = self.transcribe_audio(intent_audio)
 		if transcription:
-			self.send_to_chatgpt(transcription)
+			# Rhino is supposed to catch these keywords, but just in case it doesn't, try to catcht them here...
+			if "your ip address" in transcription.lower():
+				dispatcher.send(signal="voiceInputEvent", id="command", value="IPAddress")
+			elif "your Wi-Fi network" in transcription.lower():
+				dispatcher.send(signal="voiceInputEvent", id="command", value="WifiNetwork")
+			elif "activate hotspot" in transcription.lower():
+				dispatcher.send(signal="voiceInputEvent", id="command", value="HotspotStart")
+			elif "deactivate hotspot" in transcription.lower():
+				dispatcher.send(signal="voiceInputEvent", id="command", value="HotspotEnd")
+			else:
+				# If no command found, send to OpenAI
+				self.send_to_chatgpt(transcription)
 		else:
 			dispatcher.send(signal="voiceInputEvent", id="timeout")
 
