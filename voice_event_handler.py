@@ -37,6 +37,13 @@ class VoiceEventHandler:
 			print("RECEIVED FROM CHATGPT!")
 		elif id == "timeout":
 			print("TIME OUT!")
+		elif id == "noTranscription":
+			self.playAudioSequence([self.audioPath+"/no_transcription.ogg"])
+		elif id == "error":
+			if not self.wifiManagement.is_internet_available():
+				self.playAudioSequence([self.audioPath+"/no_connection.ogg"])
+			else:
+				self.playAudioSequence([self.audioPath+"/no_ai.ogg"])
 		else:
 			self.handleCommand(value)
 

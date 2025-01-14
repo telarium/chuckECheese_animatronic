@@ -49,15 +49,26 @@ class VoiceInputProcessor:
 			access_key=self.pv_access_key,
 			keyword_paths=[self.wakeword_path],
 		)
-		self.rhino = pvrhino.create(
-			access_key=self.pv_access_key,
-			context_path=self.rhino_context_path,
-		)
+
+		self.rhino = None
+
+		try:
+			self.rhino = pvrhino.create(
+				access_key=self.pv_access_key,
+				context_path=self.rhino_context_path,
+			)
+		except:
+			print("Rhino access key or path not set in config.cfg")
 
 		self.pre_wakeword_buffer = deque(maxlen=10)  # Store ~1 second of pre-wakeword audio
 		self.frame_length = self.porcupine.frame_length
 		self.frame_size = self.frame_length * 2
-		self.speech_client = speech.SpeechClient()
+		self.speech_client = None
+
+		try:
+			self.speech_client = speech.SpeechClient()
+		except:
+			print("Problem with GoogleCloudKeyPath in config.cfg")
 
 		# Create a temporary directory
 		self.temp_dir = tempfile.TemporaryDirectory()
@@ -180,10 +191,12 @@ class VoiceInputProcessor:
 				transcript = response.results[0].alternatives[0].transcript
 				return transcript
 			else:
+				dispatcher.send(signal="voiceInputEvent", id="noTranscription")
 				print("No transcription result from Google.")
 				return None
 		except Exception as e:
 			print(f"Error during transcription: {e}")
+			dispatcher.send(signal="voiceInputEvent", id="error")
 			return None
 
 	def send_to_chatgpt(self, text):
@@ -207,10 +220,9 @@ class VoiceInputProcessor:
 
 			return chat_response
 		except Exception as e:
+			dispatcher.send(signal="voiceInputEvent", id="error")
 			print(f"Failed to get response from ChatGPT: {e}")
 			return None
-
-
 
 	def generate_and_play_tts(self, text):
 		"""Generate audio using ElevenLabs TTS API and play directly as MP3."""
@@ -249,6 +261,7 @@ class VoiceInputProcessor:
 			self.puppeteer.play_audio_with_puppeting(temp_audio_file)
 
 		except Exception as e:
+			dispatcher.send(signal="voiceInputEvent", id="error")
 			print(f"Error generating or playing TTS audio: {e}")
 
 
@@ -302,21 +315,22 @@ class VoiceInputProcessor:
 
 		filepath = self.save_audio_to_file(intent_audio, "speech_trimmed.wav")
 
-		# Send intent audio to Rhino
-		frame_length = self.rhino.frame_length
-		frame_size = frame_length * 2
+		if self.rhino is not None:
+			# Send intent audio to Rhino
+			frame_length = self.rhino.frame_length
+			frame_size = frame_length * 2
 
-		for i in range(0, len(intent_audio), frame_size):
-			frame = intent_audio[i:i + frame_size]
-			if len(frame) == frame_size:
-				audio_frame = struct.unpack_from(f"{frame_length}h", frame)
-				if self.rhino.process(audio_frame):
-					inference = self.rhino.get_inference()
-					if inference.is_understood:
-						print(f"Intent detected: {inference.intent}")
-						print(f"Slots: {inference.slots}")
-						dispatcher.send(signal="voiceInputEvent", id="command", value=inference.intent)
-						return
+			for i in range(0, len(intent_audio), frame_size):
+				frame = intent_audio[i:i + frame_size]
+				if len(frame) == frame_size:
+					audio_frame = struct.unpack_from(f"{frame_length}h", frame)
+					if self.rhino.process(audio_frame):
+						inference = self.rhino.get_inference()
+						if inference.is_understood:
+							print(f"Intent detected: {inference.intent}")
+							print(f"Slots: {inference.slots}")
+							dispatcher.send(signal="voiceInputEvent", id="command", value=inference.intent)
+							return
 
 		print("No intent detected. Transcribing audio...")
 		transcription = self.transcribe_audio(intent_audio)
