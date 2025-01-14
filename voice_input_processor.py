@@ -1,9 +1,8 @@
 from collections import deque
 from google.cloud import speech
 from elevenlabs.client import ElevenLabs
-from elevenlabs import Voice, VoiceSettings, stream
+from elevenlabs import Voice, VoiceSettings
 from pydispatch import dispatcher
-from pydub import AudioSegment
 from automated_puppeteering import AutomatedPuppeteering
 import pygame
 import openai
@@ -16,10 +15,8 @@ import os
 import wave
 import tempfile
 import signal
-import sys
 import threading
 import time
-import io
 
 class VoiceInputProcessor:
 	def __init__(self, pygame_instance, config_file="config.cfg"):
@@ -45,10 +42,17 @@ class VoiceInputProcessor:
 		self.elevenlabs_voice_id = self.config["TextToSpeech"]["ElevenLabsVoiceID"]
 
 		self.sample_rate = 16000
-		self.porcupine = pvporcupine.create(
-			access_key=self.pv_access_key,
-			keyword_paths=[self.wakeword_path],
-		)
+
+		self.porcupine = None
+
+		try:
+			self.porcupine = pvporcupine.create(
+				access_key=self.pv_access_key,
+				keyword_paths=[self.wakeword_path],
+			)
+		except:
+			print("Porcupine wakeword path not set correctly in config.cfg. Voice control disabled.")
+			return
 
 		self.rhino = None
 
@@ -269,23 +273,26 @@ class VoiceInputProcessor:
 		"""Clean up resources and terminate gracefully."""
 		self.running = False  # Stop the thread's loop
 
-		# Stop the arecord subprocess if it's running
-		if hasattr(self, 'process') and self.process is not None:
-			self.process.terminate()
-			for _ in range(50):  # Wait up to 5 seconds for termination
-				if self.process.poll() is not None:
-					break
-				time.sleep(0.1)  # Non-blocking wait
-			else:
-				self.process.kill()
-			self.process = None
+		try:
+			# Stop the arecord subprocess if it's running
+			if hasattr(self, 'process') and self.process is not None:
+				self.process.terminate()
+				for _ in range(50):  # Wait up to 5 seconds for termination
+					if self.process.poll() is not None:
+						break
+					time.sleep(0.1)  # Non-blocking wait
+				else:
+					self.process.kill()
+				self.process = None
 
-		# Clean up PicoVoice resources
-		self.porcupine.delete()
-		self.rhino.delete()
+			# Clean up PicoVoice resources
+			self.porcupine.delete()
+			self.rhino.delete()
 
-		# Clean up temporary directory
-		self.temp_dir.cleanup()
+			# Clean up temporary directory
+			self.temp_dir.cleanup()
+		except:
+			pass
 
 	def run_thread(self):
 		"""Run the assistant's main loop in a separate thread."""
@@ -335,7 +342,7 @@ class VoiceInputProcessor:
 		print("No intent detected. Transcribing audio...")
 		transcription = self.transcribe_audio(intent_audio)
 		if transcription:
-			# Rhino is supposed to catch these keywords, but just in case it doesn't, try to catcht them here...
+			# Rhino is supposed to catch these keywords, but just in case it doesn't, try to catch them here...
 			if "your ip address" in transcription.lower():
 				dispatcher.send(signal="voiceInputEvent", id="command", value="IPAddress")
 			elif "your Wi-Fi network" in transcription.lower():
