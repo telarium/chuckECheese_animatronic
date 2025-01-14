@@ -69,9 +69,9 @@ class VoiceEventHandler:
 			audioFiles = [self.audioPath+"/ip_prefix.ogg"] # A voice intro
 			for char in ip:
 				if char == ".":
-					audioFiles.append(self.audioPath+"/dot.ogg")
+					audioFiles.append(self.audioPath+"/dot.wav")
 				else:
-					audioFiles.append(self.audioPath+"/numero_" + char + ".ogg")
+					audioFiles.append(self.audioPath+"/numero_" + char + ".wav")
 
 		self.playAudioSequence(audioFiles)
 
