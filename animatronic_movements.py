@@ -40,6 +40,8 @@ class Struct():
 	callbackFunc = None # A function to call when the value has changed (optional)
 	linkedKeys = [] # Instead of a unique movement, this movement can link two or more keys together as a combined movement (optional)
 	mirroredKey = None # If mirroring is enabled, we call this key instead (i.e. swapping left and right shoulders, optional)
+	bIsOriginalMovement = False # Whether or not this movement was on the original 1981 animatronic
+	bEnableOnRetroMode = False # If activating retro mode (original original 1981 movements), invert this movement
 
 class Movement:
 	all = []
@@ -84,9 +86,11 @@ class Movement:
 			self.setPin(self.eyesBlinkFull.outputPin2, 0, self.eyesBlinkFull)
 
 	def __init__(self, gpio):
+		self.bMirrored = False # Swap left/right body movement to mirror animation
+		self.bRetroModeActive = False # Retro mode disables any movement not part of the original Pasqually
+
 		self.gpio = gpio
 		self.bThreadStarted = False
-		self.bMirrored = False
 
 		# Define all of our movements here.
 		self.rightShoulder = Struct()
@@ -98,6 +102,7 @@ class Movement:
 		self.rightShoulder.outputPin1MaxTime = 5*60
 		self.rightShoulder.midiNote = 50
 		self.rightShoulder.mirroredKey = 'u'
+		self.rightShoulder.bIsOriginalMovement = True
 		self.all.append( self.rightShoulder )
        
 		self.leftShoulder = Struct()
@@ -109,6 +114,7 @@ class Movement:
 		self.leftShoulder.outputPin1MaxTime = 5*60
 		self.leftShoulder.midiNote = 51
 		self.leftShoulder.mirroredKey = 'o'
+		self.leftShoulder.bIsOriginalMovement = True
 		self.all.append( self.leftShoulder )
 
 		self.leftAndRightElbows = Struct()
@@ -155,6 +161,7 @@ class Movement:
 		self.mouth.outputPin1MaxTime = 0.75
 		#self.mouth.outputPin2MaxTime = 0.75
 		self.mouth.midiNote = 56
+		self.mouth.bIsOriginalMovement = True
 		self.all.append( self.mouth )
        
 		self.mustache = Struct()
@@ -163,6 +170,7 @@ class Movement:
 		self.mustache.outputPin1 = [0x20, 2]
 		self.mustache.outputPin1MaxTime = 60*5
 		self.mustache.midiNote = 57
+		self.mustache.bIsOriginalMovement = True
 		self.all.append( self.mustache )
 
 		self.mouthAndMustache = Struct()
@@ -180,6 +188,7 @@ class Movement:
 		self.eyesLeft.midiNote = 58
 		self.eyesLeft.callbackFunc = self.onEyeMove
 		self.eyesLeft.mirroredKey = 'e'
+		self.eyesLeft.bIsOriginalMovement = True
 		self.all.append( self.eyesLeft )
        
 		self.eyesRight = Struct()
@@ -190,6 +199,7 @@ class Movement:
 		self.eyesRight.midiNote = 59
 		self.eyesRight.callbackFunc = self.onEyeMove
 		self.eyesRight.mirroredKey = 'q'
+		self.eyesRight.bIsOriginalMovement = True
 		self.all.append( self.eyesRight )
        
 		self.eyesBlinkFull = Struct()
@@ -200,6 +210,7 @@ class Movement:
 		self.eyesBlinkFull.outputPin1MaxTime = 1
 		self.eyesBlinkFull.outputPin2MaxTime = 1
 		self.eyesBlinkFull.midiNote = 60
+		self.eyesBlinkFull.bIsOriginalMovement = True
 		self.all.append( self.eyesBlinkFull )
 
 		self.headLeft = Struct()
@@ -209,6 +220,7 @@ class Movement:
 		#self.headLeft.outputPin1MaxTime = 0.8
 		self.headLeft.midiNote = 61
 		self.headLeft.mirroredKey = 'd'
+		self.headLeft.bIsOriginalMovement = True
 		self.all.append( self.headLeft )
        
 		self.headRight = Struct()
@@ -218,6 +230,7 @@ class Movement:
 		#self.headRight.outputPin1MaxTime = 0.8
 		self.headRight.midiNote = 62
 		self.headRight.mirroredKey = 'a'
+		self.headRight.bIsOriginalMovement = True
 		self.all.append( self.headRight )
        
 		self.headDown = Struct()
@@ -226,6 +239,7 @@ class Movement:
 		self.headDown.outputPin1 = [0x21, 6] # Head up
 		self.headDown.outputPin2 = [0x20, 3] # Head down
 		self.headDown.midiNote = 63
+		self.headDown.bEnableOnRetroMode = True
 		self.all.append( self.headDown )
        
 		self.bodyLeanForward = Struct()
@@ -344,6 +358,14 @@ class Movement:
 
 						return True
 
+					# If RetroMode is active and this wasn't part of the original movement, don't set the pin.
+					if self.bRetroModeActive and not i.bIsOriginalMovement:
+						if i.bEnableOnRetroMode:
+							self.setPin(i.outputPin1, 1, i)
+							self.setPin(i.outputPin2, 0, i)
+
+						return True
+
 					if i.outputInverted == True:
 						val = 1 - val
 
@@ -385,7 +407,14 @@ class Movement:
 
 	def executeMidiNote(self, midiNote, val):
 		for movement in self.all:
-			if( movement.midiNote == midiNote):
+			if movement.midiNote == midiNote:
 				self.executeMovement(movement.key, val)
 				break
+
+	def setRetroMode(self, bEnable):
+		self.bRetroModeActive = bEnable
+		print(f"Set Retro Mode: {bEnable}")
+		for movement in self.all:
+			if not movement.bIsOriginalMovement:
+				self.executeMovement(movement.key, 0)
 			

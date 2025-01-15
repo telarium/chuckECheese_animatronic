@@ -49,6 +49,8 @@ class Pasqually:
 		dispatcher.connect(self.onShowPlay, signal='showPlay', sender=dispatcher.Any)
 		dispatcher.connect(self.onShowPause, signal='showPause', sender=dispatcher.Any)
 		dispatcher.connect(self.onShowStop, signal='showStop', sender=dispatcher.Any)
+		dispatcher.connect(self.onMirroredMode, signal='onMirroredMode', sender=dispatcher.Any)
+		dispatcher.connect(self.onRetroMode, signal='onRetroMode', sender=dispatcher.Any)
 		dispatcher.connect(self.onShowPlaybackMidiEvent, signal='showPlaybackMidiEvent', sender=dispatcher.Any)
 		dispatcher.connect(self.onActivateWifiHotspot, signal='activateWifiHotspot', sender=dispatcher.Any)
 
@@ -120,6 +122,13 @@ class Pasqually:
 				self.webServer.broadcast('gamepadKeyEvent', [str(key).lower(), val])
 		except Exception as e:
 			print(f"Invalid key: {e}")
+
+	def onRetroMode(self, val):
+		self.movements.setRetroMode(val)
+
+	def onMirroredMode(self, val):
+		bNewMirrorMode = val
+		self.movements.setMirrored(val)
 
 	def onMirroredModeToggle(self):
 		# Toggle animation mirrored mode (swapping left and right movements)
