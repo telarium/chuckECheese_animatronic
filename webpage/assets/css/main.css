@@ -635,3 +635,68 @@ button:disabled,
 		height: auto;
 	}
 }
+
+/* ======= New Styles for Retro and Mirrored Modes ======= */
+
+/* Retro Mode Styles Scoped to #main */
+#main.retro-mode-active {
+	background-color: #1a070b;
+	color: #ffffff;
+	transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
+}
+
+#main.retro-mode-active .box {
+	background: #321e28;
+}
+
+#main.retro-mode-active a {
+	color: #0000ff;
+}
+
+#main.retro-mode-active .poptrox-popup {
+	background: #ffe4b5; /* Moccasin popup background */
+}
+
+/* Flip Animation Keyframes */
+@keyframes flip-animation {
+	from {
+		transform: scaleX(1);
+	}
+	50% {
+		transform: scaleX(-1);
+	}
+	to {
+		transform: scaleX(1);
+	}
+}
+
+/* Flip Animation Class */
+.flip-animation {
+	animation: flip-animation 1s ease-in-out;
+}
+
+/* Mode Toggle Checkboxes */
+.mode-toggle {
+	display: flex;
+	align-items: center;
+	margin-top: 0.25em; /* Reduced from 0.5em to 0.25em */
+	margin-bottom: 0.25em; /* Adds a small margin below each checkbox */
+}
+
+.mode-toggle label {
+	display: flex;
+	align-items: center;
+	font-size: 1em;
+	cursor: pointer;
+	margin: 0; /* Removes any default margins */
+}
+
+.mode-toggle input[type="checkbox"] {
+	margin-right: 0.5em;
+	width: 1.2em;
+	height: 1.2em;
+	cursor: pointer;
+}
+
+/* Ensure that mirrored-mode styles are removed to prevent persistent flipping */
+/* (Already handled by removing #main.mirrored-mode-active styles above) */

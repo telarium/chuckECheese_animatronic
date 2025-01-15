@@ -1,3 +1,5 @@
+// pasqually.js
+
 // Determine the protocol (ws:// or wss://) based on the current page protocol
 const protocol = (window.location.protocol === 'https:') ? 'wss://' : 'ws://';
 const socketUrl = protocol + document.domain + ':' + location.port;
@@ -211,14 +213,14 @@ function onMIDIMessage(event) {
 
 function onMIDISuccess(midi) {
     // When we successfully initiate the MIDI interface...
-	midiAccess = midi
+    midiAccess = midi
     midiOutputs = midiAccess.outputs.values()
     console.log("init:",midiOutputs)
     for (var output = midiOutputs.next(); output && !output.done; output = midiOutputs.next()) {
-		console.log('output',output)
-		midiOutputPort = output.value.id
-	}
-	midiAccess.inputs.forEach( function(entry) {entry.onmidimessage = onMIDIMessage;});
+        console.log('output',output)
+        midiOutputPort = output.value.id
+    }
+    midiAccess.inputs.forEach( function(entry) {entry.onmidimessage = onMIDIMessage;});
 }
 
 function onMIDIFailure(e) {
@@ -266,3 +268,76 @@ $(document).ready(function() {
         }, 500);
     }
 });
+
+/* ======= New Code for Mirrored and Retro Modes ======= */
+
+// Function to perform flip animation
+function performFlipAnimation() {
+    const mainContent = document.getElementById('main');
+    mainContent.classList.add('flip-animation');
+
+    // Remove the class after animation completes to allow re-triggering
+    mainContent.addEventListener('animationend', function handler() {
+        mainContent.classList.remove('flip-animation');
+        mainContent.removeEventListener('animationend', handler);
+    });
+}
+
+// Add event listeners for Mirrored Mode and Retro Mode checkboxes
+document.addEventListener('DOMContentLoaded', function() {
+    const mirroredModeCheckbox = document.getElementById('mirroredModeCheckbox');
+    const retroModeCheckbox = document.getElementById('retroModeCheckbox');
+
+    if (mirroredModeCheckbox) {
+        // Initialize Mirrored Mode based on saved preference
+        const mirroredModeEnabled = localStorage.getItem('mirroredModeEnabled') === 'true';
+        mirroredModeCheckbox.checked = mirroredModeEnabled;
+
+        if (mirroredModeEnabled) {
+            // Optionally, perform initial flip or apply styles if needed
+            // Since the flip is transient, no persistent changes are applied
+            // If you wish to have a persistent mirrored state, additional styles would be required
+        }
+
+        // Add event listener for Mirrored Mode checkbox
+        mirroredModeCheckbox.addEventListener('change', function() {
+            performFlipAnimation();
+
+            // Save preference to localStorage
+            localStorage.setItem('mirroredModeEnabled', this.checked);
+            socket.emit('onMirroredMode', this.checked);
+        });
+    } else {
+        console.warn('Mirrored Mode Checkbox not found!');
+    }
+
+    if (retroModeCheckbox) {
+        // Initialize Retro Mode based on saved preference
+        const retroModeEnabled = localStorage.getItem('retroModeEnabled') === 'true';
+        retroModeCheckbox.checked = retroModeEnabled;
+
+        if (retroModeEnabled) {
+            const mainContent = document.getElementById('main');
+            mainContent.classList.add('retro-mode-active');
+        }
+
+        // Add event listener for Retro Mode checkbox
+        retroModeCheckbox.addEventListener('change', function() {
+            const mainContent = document.getElementById('main');
+            if (this.checked) {
+                mainContent.classList.add('retro-mode-active');
+                
+            } else {
+                mainContent.classList.remove('retro-mode-active');
+            }
+            socket.emit('onRetroMode', this.checked);
+
+            // Save preference to localStorage
+            localStorage.setItem('retroModeEnabled', this.checked);
+        });
+    } else {
+        console.warn('Retro Mode Checkbox not found!');
+    }
+});
+
+/* ======= End of Mirrored and Retro Modes Code ======= */

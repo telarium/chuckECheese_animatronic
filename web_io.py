@@ -67,6 +67,14 @@ class WebServer:
 	def showPauseEvent():
 		dispatcher.send(signal='showPause')
 
+	@socketio.on('onMirroredMode')
+	def mirroredModeEvent(bEnable):
+		dispatcher.send(signal='onMirroredMode', val=bEnable)
+
+	@socketio.on('onRetroMode')
+	def mirroredModeEvent(bEnable):
+		dispatcher.send(signal='onRetroMode', val=bEnable)
+
 	@socketio.on('onKeyPress')
 	def webKeyEvent(data):
 		dispatcher.send(signal="keyEvent", key=data["keyVal"], val=int(data["val"]))
