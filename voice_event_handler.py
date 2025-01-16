@@ -44,6 +44,8 @@ class VoiceEventHandler:
 				self.playAudioSequence([self.audioPath+"/no_connection.ogg"])
 			else:
 				self.playAudioSequence([self.audioPath+"/no_ai.ogg"])
+		elif id == "micNotFound":
+			return
 		else:
 			self.handleCommand(value)
 
