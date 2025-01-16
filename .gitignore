@@ -9,3 +9,7 @@ settings.txt
 *.lib
 *.pyc
 *.save*
+
+# Ignore Piper TTS models and binary files
+*.onnx
+*.json

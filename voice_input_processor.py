@@ -265,9 +265,27 @@ class VoiceInputProcessor:
 			self.puppeteer.play_audio_with_puppeting(temp_audio_file)
 
 		except Exception as e:
-			dispatcher.send(signal="voiceInputEvent", id="error")
-			print(f"Error generating or playing TTS audio: {e}")
+			print(f"Elevenlabs not set up. Using Piper instead for tts.")
+			# Get the directory of the current Python script
+			script_dir = os.path.dirname(os.path.realpath(__file__))
 
+			# Paths to Piper model and config files in the same directory as the script
+			piper_model = os.path.join(script_dir, "en_US-ryan-low.onnx")
+			piper_config = os.path.join(script_dir, "en_US-ryan-low.json")
+
+			# Temporary audio file for TTS output
+			temp_audio_file = os.path.join(self.temp_dir.name, "tts_audio.wav")
+
+			# Run Piper TTS using the pip-installed command
+			subprocess.run([
+				"piper",
+				"-m", piper_model,
+				"-c", piper_config,
+				"-f", temp_audio_file
+			], input=text, text=True, check=True)
+
+			# Play the generated audio
+			self.puppeteer.play_audio_with_puppeting(temp_audio_file)
 
 	def shutdown(self, *args):
 		"""Clean up resources and terminate gracefully."""
