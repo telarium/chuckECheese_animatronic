@@ -304,6 +304,21 @@ class VoiceInputProcessor:
 
 	def run(self):
 		"""Main loop to handle wakeword detection and audio processing."""
+		# Check if a microphone is available
+		mic_check_command = ["arecord", "-l"]
+		try:
+			result = subprocess.run(mic_check_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+			if "card" not in result.stdout.lower():
+				print("No microphone detected. Exiting voice assistant.")
+				dispatcher.send(signal="voiceInputEvent", id="micNotFound")
+				self.running = False
+				return
+		except Exception as e:
+			print(f"Error checking microphone: {e}")
+			dispatcher.send(signal="voiceInputEvent", id="micNotFound")
+			self.running = False
+			return
+
 		print("Waiting for 'Hey chef' wakeword...")
 		stream_process = self.record_audio_stream()
 		if not stream_process:
@@ -356,6 +371,7 @@ class VoiceInputProcessor:
 				self.send_to_chatgpt(transcription)
 		else:
 			dispatcher.send(signal="voiceInputEvent", id="timeout")
+
 
 
 if __name__ == "__main__":
