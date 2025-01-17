@@ -58,6 +58,7 @@ class Pasqually:
 		dispatcher.connect(self.onRetroMode, signal='onRetroMode', sender=dispatcher.Any)
 		dispatcher.connect(self.onShowPlaybackMidiEvent, signal='showPlaybackMidiEvent', sender=dispatcher.Any)
 		dispatcher.connect(self.onActivateWifiHotspot, signal='activateWifiHotspot', sender=dispatcher.Any)
+		dispatcher.connect(self.onWebTTSEvent, signal='webTTSEvent', sender=dispatcher.Any)
 
 	def run(self):
 		try:
@@ -153,6 +154,9 @@ class Pasqually:
 			self.wifiManagement.activate_hotspot()
 		else:
 			self.wifiManagement.deactivate_hotspot_and_reconnect()
+
+	def onWebTTSEvent(self, val):
+		self.voiceInputProcessor.generate_and_play_tts(val)
 
 if __name__ == "__main__":
 	animatronic = Pasqually()

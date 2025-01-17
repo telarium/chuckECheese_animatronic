@@ -13,91 +13,95 @@
     </head>
     <body id="top">
 
-            <!-- Banner -->
-            <!--
-                Video must be available in both .mp4 and .webm formats to work correctly.
-            -->
-                <section id="banner">
-                    <video autoplay muted loop>
-                        <source src="images/banner.mp4" type="video/mp4">
-                        Your browser does not support the video tag.
-                    </video>
-                    <img src="images/cec-header.png" alt="Pasqually Header">
-                </section>
+        <!-- Banner -->
+        <!--
+            Video must be available in both .mp4 and .webm formats to work correctly.
+        -->
+        <section id="banner">
+            <video autoplay muted loop>
+                <source src="images/banner.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+            <img src="images/cec-header.png" alt="Pasqually Header">
+        </section>
 
-            <!-- Main -->
-                <div id="main">
-                    <div class="inner">
+        <!-- Main -->
+        <div id="main">
+            <div class="inner">
 
-                    <!-- Boxes -->
-                        <div class="thumbnails">
+                <!-- Boxes -->
+                <div class="thumbnails">
 
-                            <div class="box">
-                                <img class="image keypad" src="images/keypad-l.png" alt="Left Keypad" />
+                    <div class="box">
+                        <img class="image keypad" src="images/keypad-l.png" alt="Left Keypad" />
+                    </div>
+
+                    <div class="box">
+                        <div class="inner">
+                            <div id="sysInfo">
+                                <p>---</p>
                             </div>
 
-                            <div class="box">
-                                
-                                <div class="inner">
-                                    <div id="sysInfo">
-                                        <p>---</p>
-                                    </div>
-                                    
-                                    <!-- Enable Mirrored Mode Checkbox -->
-                                    <div class="mode-toggle">
-                                        <label for="mirroredModeCheckbox">
-                                            <input type="checkbox" id="mirroredModeCheckbox" title="Swap animations on the right and left sides of the animatronic" />
-                                            Enable Mirrored Mode
-                                        </label>
-                                    </div>
-
-                                    <!-- Enable Retro Mode Checkbox -->
-                                    <div class="mode-toggle">
-                                        <label for="retroModeCheckbox">
-                                            <input type="checkbox" id="retroModeCheckbox" title="Enable/disable movements not on the original animatronic" />
-                                            Enable Retro Mode
-                                        </label>
-                                    </div>
-                                </div>
+                            <!-- Enable Mirrored Mode Checkbox -->
+                            <div class="mode-toggle">
+                                <label for="mirroredModeCheckbox">
+                                    <input type="checkbox" id="mirroredModeCheckbox" title="Swap animations on the right and left sides of the animatronic" />
+                                    Enable Mirrored Mode
+                                </label>
                             </div>
 
-                            <div class="box">
-                                <img class="image keypad" src="images/keypad-r.png" alt="Right Keypad" />
+                            <!-- Enable Retro Mode Checkbox -->
+                            <div class="mode-toggle">
+                                <label for="retroModeCheckbox">
+                                    <input type="checkbox" id="retroModeCheckbox" title="Enable/disable movements not on the original animatronic" />
+                                    Enable Retro Mode
+                                </label>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- New Voice Command Status Box -->
-                        <div class="voice-command-status box">
-                            <p id="voiceCommandStatus">Voice Command Status: <span>---</span></p>
-                        </div>
+                    <div class="box">
+                        <img class="image keypad" src="images/keypad-r.png" alt="Right Keypad" />
                     </div>
                 </div>
 
-            <!-- Footer -->
-                <footer id="footer">
-                    <div class="inner">
-                        <p>
-                            <form id="showForm" action="javascript:void(0);">
-                                <select id="showListDropdown" name="Show List">
-                                    <!-- Options will be dynamically inserted here -->
-                                </select>
-                                <button id="playButton" type="button">Play</button>
-                                <button id="pauseButton" type="button">Pause</button>
-                                <button id="stopButton" type="button">Stop</button>
-                            </form>
-                        </p>
-
+                <!-- Voice Command Status Box -->
+                <div class="voice-command-status box">
+                    <p id="voiceCommandStatus">Voice Command Status: <span>---</span></p>
+                    
+                    <!-- New Text Input and Submit Button -->
+                    <div id="ttsInputContainer">
+                        <input type="text" id="ttsInput" placeholder="Type what you want Pasqually to say..." />
+                        <button id="submitTTSButton" type="button">Speak</button>
                     </div>
-                </footer>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer id="footer">
+            <div class="inner">
+                <p>
+                    <form id="showForm" action="javascript:void(0);">
+                        <select id="showListDropdown" name="Show List">
+                            <!-- Options will be dynamically inserted here -->
+                        </select>
+                        <button id="playButton" type="button">Play</button>
+                        <button id="pauseButton" type="button">Pause</button>
+                        <button id="stopButton" type="button">Stop</button>
+                    </form>
+                </p>
+            </div>
+        </footer>
 
         <!-- Scripts -->
-            <script src="assets/js/jquery.min.js"></script>
-            <script src="assets/js/jquery.scrolly.min.js"></script>
-            <script src="assets/js/jquery.poptrox.min.js"></script>
-            <script src="assets/js/skel.min.js"></script>
-            <script src="assets/js/util.js"></script>
-            <script src="assets/js/socket.io.min.js"></script>
-            <script src="assets/js/pasqually.js"></script>
-            <script src="assets/js/main.js"></script>
+        <script src="assets/js/jquery.min.js"></script>
+        <script src="assets/js/jquery.scrolly.min.js"></script>
+        <script src="assets/js/jquery.poptrox.min.js"></script>
+        <script src="assets/js/skel.min.js"></script>
+        <script src="assets/js/util.js"></script>
+        <script src="assets/js/socket.io.min.js"></script>
+        <script src="assets/js/pasqually.js"></script>
+        <script src="assets/js/main.js"></script>
     </body>
 </html>
