@@ -337,6 +337,7 @@ class VoiceInputProcessor:
 			self.running = False
 			return
 
+		dispatcher.send(signal="voiceInputEvent", id="idle")
 		print("Waiting for 'Hey chef' wakeword...")
 		stream_process = self.record_audio_stream()
 		if not stream_process:
@@ -373,6 +374,7 @@ class VoiceInputProcessor:
 							return
 
 		print("No intent detected. Transcribing audio...")
+		dispatcher.send(signal="voiceInputEvent", id="transcribing")
 		transcription = self.transcribe_audio(intent_audio)
 		if transcription:
 			# Rhino is supposed to catch these keywords, but just in case it doesn't, try to catch them here...
