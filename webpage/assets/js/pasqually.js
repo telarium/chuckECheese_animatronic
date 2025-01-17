@@ -45,8 +45,12 @@ function updateVoiceCommandStatus(id, value) {
 	case "error":
 		statusText = "Disabled!";
 		break;
+	case "ttsSubmitted":
+		statusText = "Processing...";
+		break;
 	case "ttsComplete":
 			// Re-enable the Submit button
+			statusText = "Waiting...";
 			const submitButton = document.getElementById('submitTTSButton');
 			if (submitButton) {
 				submitButton.disabled = false; // Enable the button
@@ -411,6 +415,7 @@ function submitTTS() {
 		}
 
 		socket.emit('onWebTTSSubmit', inputText);
+		updateVoiceCommandStatus('ttsSubmitted');
 	} else {
 		console.warn('No text entered for TTS submission.');
 	}
