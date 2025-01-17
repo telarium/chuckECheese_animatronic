@@ -35,6 +35,11 @@ class Pasqually:
 		self.voiceInputProcessor = VoiceInputProcessor(pygame)
 		self.voiceEventHandler = VoiceEventHandler(pygame)
 
+		self.voiceEvent = {
+			'id': None,
+			'value': None,
+		}
+
 		# Handle SIGINT and SIGTERM for graceful shutdown
 		signal.signal(signal.SIGINT, self.shutdown_signal_handler)
 		signal.signal(signal.SIGTERM, self.shutdown_signal_handler)
@@ -57,6 +62,11 @@ class Pasqually:
 	def run(self):
 		try:
 			while self.isRunning:
+				if self.voiceEvent['id'] is not None:
+					self.webServer.broadcast('voiceCommandUpdate', self.voiceEvent)
+					self.voiceEvent['id'] = None
+					self.voiceEvent['value'] = None
+
 				eventlet.sleep(0.01)  # Eventlet-friendly sleep
 		except Exception as e:
 			print(f"Error in main loop: {e}")
@@ -86,6 +96,9 @@ class Pasqually:
 
 	# Event handling methods
 	def onVoiceInputEvent(self, id, value=None):
+		self.voiceEvent['id'] = id
+		self.voiceEvent['value'] = value
+
 		self.voiceEventHandler.triggerEvent(id, value)
 
 	def onShowListLoad(self, showList):
