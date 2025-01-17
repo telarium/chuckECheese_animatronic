@@ -1,12 +1,6 @@
 @charset "UTF-8";
 @import url("https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400|Passion+One:400");
 
-/*
-    Pasqually Chuck E Cheese Animatronic Restoration Project by Andrew Langley
-    HTML design based on "Full Motion" by TEMPLATED
-    Released for free under the Creative Commons Attribution 3.0 license (templated.co/license)
-*/
-
 /* Reset */
 
 html, body, div, span, applet, object, iframe,
@@ -75,7 +69,7 @@ body.is-loading *, body.is-loading *:before, body.is-loading *:after {
 body, input, select, textarea {
     color: rgba(255, 255, 255, 1);
     font-family: "Source Sans Pro", sans-serif;
-    font-size: 14pt;
+    font-size: 13pt;
     font-weight: 900;
     line-height: 1.65;
 }
@@ -103,7 +97,7 @@ em, i {
 }
 
 p {
-    margin: 0 0 2em 0;
+    margin: 0;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -219,37 +213,37 @@ header h6 + p {
 /* Thumbnails Container */
 .thumbnails {
     display: flex;
-    align-items: center; /* Vertically center the content */
-    justify-content: center; /* Horizontally center the boxes */
-    flex-wrap: nowrap; /* Prevent wrapping to maintain layout */
+    align-items: center;
+    justify-content: center;
+    flex-wrap: nowrap;
 }
 
 /* Individual Boxes */
 .thumbnails .box {
-    margin: 0 1em; /* Horizontal spacing between boxes */
-    flex: 0 0 auto; /* Prevent boxes from growing or shrinking */
+    margin: 0 1em;
+    flex: 0 0 auto;
 }
 
 /* Left and Right Boxes */
 .thumbnails .box:nth-child(1),
 .thumbnails .box:nth-child(3) {
-    width: 315px; /* Increased width to accommodate doubled padding */
-    padding: 20px; /* Doubled padding around the images */
-    box-sizing: border-box; /* Include padding and border in the width */
+    width: 315px;
+    padding: 20px;
+    box-sizing: border-box;
 }
 
 /* Middle Box */
 .thumbnails .box:nth-child(2) {
-    flex: 1 1 200px; /* Allow it to grow and shrink, with a base width */
-    max-width: 300px; /* Set a maximum width for the system info */
-    padding: 0; /* Remove padding if present */
-    box-sizing: border-box; /* Include padding and border in the width */
+    flex: 1 1 200px;
+    max-width: 300px;
+    padding: 0;
+    box-sizing: border-box;
 }
 
 /* Box */
 .box {
     border-radius: 4px;
-    margin-bottom: 2em;
+    margin-bottom: 0.3em !important;
     background: #291b22;
     text-align: center;
     opacity: 0.9;
@@ -269,15 +263,15 @@ header h6 + p {
 
 .box .image.keypad {
     margin: 0;
-    padding: 0; /* Remove padding to prevent scaling */
-    width: 275px; /* Fixed width matching the image's natural size */
-    max-width: none; /* Allow the image to maintain its size */
+    padding: 0;
+    width: 275px;
+    max-width: none;
 }
 
 .box .image.keypad img {
-    width: 275px; /* Ensure the image displays at natural size */
-    height: auto; /* Maintain aspect ratio */
-    display: block; /* Remove any inline spacing */
+    width: 275px;
+    height: auto;
+    display: block;
 }
 
 .box .image.img {
@@ -332,7 +326,7 @@ header h6 + p {
 /* Form */
 
 form {
-    margin: 0 0 2em 0;
+    margin: 0;
 }
 
 label {
@@ -402,8 +396,8 @@ button,
     display: inline-block;
     font-weight: 400;
     height: 2.85em;
-    line-height: 2.85em; /* Adjusted to match height */
-    padding: 0 1.5em; /* Consistent horizontal padding */
+    line-height: 2.85em;
+    padding: 0 1.5em;
     text-align: center;
     text-decoration: none;
     white-space: nowrap;
@@ -581,13 +575,32 @@ button:disabled,
 /* Main */
 
 #main {
-    padding: 2em 0;
+    padding: 2em 0 0.3em 0;
 }
 
 #main .inner {
     width: 100%;
     max-width: 80em;
     margin: 0 auto;
+    padding-bottom: 0.3em;
+}
+
+/* Voice Command Status Box */
+.voice-command-status {
+    width: 930px;
+    max-width: 930px;
+    margin: 2em auto 0.3em auto;
+    padding: 0.75em;
+    background: #291b22;
+    border-radius: 4px;
+    text-align: center;
+    opacity: 0.9;
+    z-index: 2;
+}
+
+.voice-command-status p {
+    margin: 0 0 0.3em 0;
+    font-size: 0.9em;
 }
 
 /* Footer */
@@ -596,38 +609,39 @@ button:disabled,
     padding: 1em 0 0em 0;
     background-color: rgba(0, 0, 0, 0);
     text-align: center;
+    margin-top: 0;
 }
 
 #footer .inner {
     width: 50%;
-    margin: 0 auto;
+    margin: 0 auto 0.5em auto;
 }
 
 /* Responsive Design */
 
 @media screen and (max-width: 480px) {
     .thumbnails {
-        flex-direction: column; /* Stack boxes vertically */
-        align-items: center; /* Center align the boxes */
+        flex-direction: column;
+        align-items: center;
     }
 
     .thumbnails .box {
-        width: 100%; /* Full width for each box */
-        max-width: none; /* Remove maximum width constraints */
-        margin: 1em 0; /* Vertical spacing between boxes */
+        width: 100%;
+        max-width: none;
+        margin: 1em 0;
     }
 
     .thumbnails .box:nth-child(1),
     .thumbnails .box:nth-child(3) {
-        width: 275px; /* Maintain image size */
+        width: 275px;
     }
 
     .thumbnails .box:nth-child(2) {
-        max-width: 90%; /* Adjust system info width for smaller screens */
+        max-width: 90%;
     }
 
     #footer .inner {
-        width: 90%; /* Adjust footer width */
+        width: 90%;
     }
 
     #banner img {
@@ -635,19 +649,17 @@ button:disabled,
         height: auto;
     }
 
-    /* Adjust Voice Command Status Box for small screens */
     .voice-command-status {
-        width: 275px; /* Maintain image size */
+        width: 275px;
         max-width: 275px;
-        padding: 1em; /* Reduced padding */
+        padding: 0.5em;
         margin: 1.5em auto 0 auto;
     }
 
     .voice-command-status p {
-        font-size: 0.75em; /* Further reduce font size for small screens */
+        font-size: 0.75em;
     }
 
-    /* Adjust TTS Input Container for small screens */
     #ttsInputContainer {
         flex-direction: column;
         gap: 0.5em;
@@ -661,11 +673,14 @@ button:disabled,
     #submitTTSButton {
         width: 100%;
     }
+
+    .voice-command-status p {
+        margin: 0 0 0.3em 0;
+    }
 }
 
-/* ======= New Styles for Retro and Mirrored Modes ======= */
+/* Retro and Mirrored Modes */
 
-/* Retro Mode Styles Scoped to #main */
 #main.retro-mode-active {
     background-color: #1a070b;
     color: #ffffff;
@@ -681,10 +696,9 @@ button:disabled,
 }
 
 #main.retro-mode-active .poptrox-popup {
-    background: #ffe4b5; /* Moccasin popup background */
+    background: #ffe4b5;
 }
 
-/* Flip Animation Keyframes */
 @keyframes flip-animation {
     from {
         transform: scaleX(1);
@@ -697,17 +711,15 @@ button:disabled,
     }
 }
 
-/* Flip Animation Class */
 .flip-animation {
     animation: flip-animation 1s ease-in-out;
 }
 
-/* Mode Toggle Checkboxes */
 .mode-toggle {
     display: flex;
     align-items: center;
-    margin-top: 0.25em; /* Reduced from 0.5em to 0.25em */
-    margin-bottom: 0.25em; /* Adds a small margin below each checkbox */
+    margin-top: 0.25em;
+    margin-bottom: 0.25em;
 }
 
 .mode-toggle label {
@@ -715,7 +727,7 @@ button:disabled,
     align-items: center;
     font-size: 1em;
     cursor: pointer;
-    margin: 0; /* Removes any default margins */
+    margin: 0;
 }
 
 .mode-toggle input[type="checkbox"] {
@@ -725,31 +737,27 @@ button:disabled,
     cursor: pointer;
 }
 
-/* Ensure that mirrored-mode styles are removed to prevent persistent flipping */
-/* (Already handled by removing #main.mirrored-mode-active styles above) */
-
-/* ======= New Styles for Voice Command Status ======= */
-
-/* Voice Command Status Box */
-.voice-command-status {
-    width: 930px; /* Combined width of three boxes: 315px + 300px + 315px = 930px */
-    max-width: 930px;
-    margin: 2em auto 0 auto; /* Top margin to separate from thumbnails and center horizontally */
-    padding: 0.75em; /* Reduced padding from 1.5em to 0.75em */
-    background: #291b22;
-    border-radius: 4px;
-    text-align: center;
-    opacity: 0.9;
-    z-index: 2;
+/* Disabled Button Styles */
+button.disabled,
+button:disabled,
+#submitTTSButton.disabled,
+#submitTTSButton:disabled {
+    background-color: rgba(255, 255, 255, 0.75) !important;
+    box-shadow: inset 0 -0.15em 0 0 rgba(0, 0, 0, 0.15);
+    color: #000000 !important;
+    cursor: default;
+    opacity: 0.25;
 }
 
-.voice-command-status p {
-    margin: 0;
-    font-size: 0.9em; /* Already reduced by 25% */
+#submitTTSButton {
+    height: 2.85em;
+    line-height: 2.85em;
 }
 
-/* New Styles for TTS Input and Submit Button */
-/* Removed custom styles to inherit existing button styles */
+.voice-command-status p span {
+    color: #70c7be;
+    font-weight: bold;
+}
 
 #ttsInputContainer {
     margin-top: 1em;
@@ -766,38 +774,4 @@ button:disabled,
     border-radius: 4px;
     font-size: 1em;
     color: #000;
-}
-
-/* Removed specific #submitTTSButton styles to inherit general button styles */
-
-/* Optional: Different styling for the status text */
-.voice-command-status p span {
-    color: #70c7be; /* Highlight color for status */
-    font-weight: bold;
-}
-
-/* Responsive Design for Voice Command Status */
-@media screen and (max-width: 480px) {
-    .voice-command-status {
-        width: 275px; /* Maintain image size */
-        max-width: 275px;
-        padding: 0.5em; /* Further reduced padding */
-        margin: 1.5em auto 0 auto;
-    }
-
-    .voice-command-status p {
-        font-size: 0.75em; /* Further reduce font size for small screens */
-    }
-}
-
-/* Disabled Button Styles */
-button.disabled,
-button:disabled,
-#submitTTSButton.disabled,
-#submitTTSButton:disabled {
-    background-color: rgba(255, 255, 255, 0.75) !important;
-    box-shadow: inset 0 -0.15em 0 0 rgba(0, 0, 0, 0.15);
-    color: #000000 !important;
-    cursor: default;
-    opacity: 0.25;
 }
