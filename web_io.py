@@ -80,6 +80,10 @@ class WebServer:
 		dispatcher.send(signal="keyEvent", key=data["keyVal"], val=int(data["val"]))
 		return data["keyVal"]
 
+	@socketio.on('onWebTTSSubmit')
+	def webTTSSubmit(inputText):
+		dispatcher.send(signal="webTTSEvent", val=inputText)
+
 	def __init__(self):
 		self.server = eventlet.spawn(self.run_server)
 

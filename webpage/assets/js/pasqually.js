@@ -17,7 +17,7 @@ socket.on('systemInfo', function(msg){
 });
 
 function updateVoiceCommandStatus(id, value) {
-	statusText = "";
+	let statusText = "";
 
 	switch (id) {
 	case "idle":
@@ -37,6 +37,7 @@ function updateVoiceCommandStatus(id, value) {
 		break;
 	case "chatGPTReceive":
 		statusText = "Responding...";
+		populateTTSInput(value);
 		break;
 	case "micNotFound":
 		statusText = "No microphone detected";
@@ -44,8 +45,16 @@ function updateVoiceCommandStatus(id, value) {
 	case "error":
 		statusText = "Disabled!";
 		break;
-	default:
-		statusText = "Unknown status";
+	case "ttsComplete":
+			// Re-enable the Submit button
+			const submitButton = document.getElementById('submitTTSButton');
+			if (submitButton) {
+				submitButton.disabled = false; // Enable the button
+				submitButton.classList.remove('disabled'); // Remove disabled styling
+			}
+			break;
+		default:
+			statusText = "Unknown status";
 	}
 
 	const statusElement = document.getElementById('voiceCommandStatus');
@@ -89,7 +98,7 @@ document.getElementById('playButton').addEventListener('click', function() {
 		if (dropdown.selectedIndex === 0) {
 			alert('Mama mia! Please select a show first!');
 		} else {
-			socket.emit('showPlay',selectedShow);
+			socket.emit('showPlay', selectedShow);
 			console.log(`Playing show: ${selectedShow}`);
 		}
 	} else {
@@ -122,11 +131,11 @@ socket.on('movementInfo', function(data){
 
 socket.on('gamepadKeyEvent', function(data){
 	// Data is a two dimensional array. First index is the assigned keyboard key, second is the value
-	key = data[0];
-	val = data[1];
+	let key = data[0];
+	let val = data[1];
 	for (var i = 0; i < movements.length; i++) {
 		if (movements[i].key == key.toLowerCase()) {
-			sendKey(key,val,false,false)
+			sendKey(key, val, false, false)
 		}
 	}
 });
@@ -154,6 +163,11 @@ function sendKey(key, num, bBroadcast, bMuteMidi) {
 var down = new Set(); // Use a Set to store pressed keys
 
 function doKeyDown(event) {
+	// Prevent handling if focus is on the TTS input
+	if (event.target.id === 'ttsInput') {
+		return;
+	}
+
 	var charCode = (typeof event.which == "number") ? event.which : event.keyCode;
 	if (!down.has(charCode)) { // first press
 		sendKey(String.fromCharCode(charCode), 1, true, false);
@@ -162,13 +176,17 @@ function doKeyDown(event) {
 }
 
 function doKeyUp(event) {
+	// Prevent handling if focus is on the TTS input
+	if (event.target.id === 'ttsInput') {
+		return;
+	}
+
 	var charCode = (typeof event.which == "number") ? event.which : event.keyCode;
 	if (down.has(charCode)) { // only send if key was previously pressed
 		sendKey(String.fromCharCode(charCode), 0, true, false);
 		down.delete(charCode); // Remove key from the Set
 	}
 }
-
 document.onkeydown = doKeyDown;
 document.onkeyup = doKeyUp;
 
@@ -375,5 +393,74 @@ document.addEventListener('DOMContentLoaded', function() {
 		});
 	} else {
 		console.warn('Retro Mode Checkbox not found!');
+	}
+});
+
+// Placeholder function to handle text submission
+function submitTTS() {
+	const inputField = document.getElementById('ttsInput');
+	const submitButton = document.getElementById('submitTTSButton'); // Get the Submit button
+	const inputText = inputField.value.trim();
+
+	if (inputText) {
+		console.log(`Submitted TTS Text: ${inputText}`);
+		// Disable the Submit button to prevent multiple submissions
+		if (submitButton) {
+			submitButton.disabled = true;
+			submitButton.classList.add('disabled');
+		}
+
+		socket.emit('onWebTTSSubmit', inputText);
+	} else {
+		console.warn('No text entered for TTS submission.');
+	}
+
+	// Clear the input field after submission
+	inputField.value = '';
+}
+
+// Placeholder function to populate the input box with a string
+function populateTTSInput(text) {
+	const inputField = document.getElementById('ttsInput');
+	inputField.value = text; // Replace any existing text
+	console.log(`Populated TTS Input with: ${text}`);
+}
+
+// Add an event listener to the Submit button
+document.addEventListener('DOMContentLoaded', function() {
+	const mirroredModeCheckbox = document.getElementById('mirroredModeCheckbox');
+	const retroModeCheckbox = document.getElementById('retroModeCheckbox');
+
+	if (mirroredModeCheckbox) {
+		// Existing mirrored mode initialization and event listener...
+	} else {
+		console.warn('Mirrored Mode Checkbox not found!');
+	}
+
+	if (retroModeCheckbox) {
+		// Existing retro mode initialization and event listener...
+	} else {
+		console.warn('Retro Mode Checkbox not found!');
+	}
+
+	// **Existing Event Listener for Submit Button**
+	const submitButton = document.getElementById('submitTTSButton');
+	if (submitButton) {
+		submitButton.addEventListener('click', submitTTS);
+	} else {
+		console.warn('Submit TTS Button not found!');
+	}
+
+	// **New Event Listener for Enter Key in TTS Input**
+	const ttsInput = document.getElementById('ttsInput');
+	if (ttsInput) {
+		ttsInput.addEventListener('keydown', function(event) {
+			if (event.key === 'Enter') {
+				event.preventDefault();
+				submitTTS();
+			}
+		});
+	} else {
+		console.warn('TTS Input field not found!');
 	}
 });

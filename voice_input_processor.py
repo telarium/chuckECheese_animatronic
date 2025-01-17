@@ -263,6 +263,7 @@ class VoiceInputProcessor:
 
 			# Use the AutomatedPuppeteering class to play the MP3 with puppeting
 			self.puppeteer.play_audio_with_puppeting(temp_audio_file)
+			dispatcher.send(signal="voiceInputEvent", id="ttsComplete")
 
 		except Exception as e:
 			print(f"Elevenlabs not set up. Using Piper instead for tts.")
