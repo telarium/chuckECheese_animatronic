@@ -122,6 +122,11 @@ class Pasqually:
 		self.showPlayer.getShowList()
 		self.webServer.broadcast('movementInfo', self.movements.getAllMovementInfo())
 
+		# Tell the web frontend what the current voice command status is.
+		command = self.voiceInputProcessor.getLastVoiceCommand()
+		self.voiceEvent['id'] = command['id']
+		self.voiceEvent['value'] = command['value']
+
 	def onKeyEvent(self, key, val):
 		# Receieve key events from the HTML front end and execute any specified movement
 		try:

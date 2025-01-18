@@ -95,6 +95,16 @@ class VoiceInputProcessor:
 		config.read(config_path)
 		return config
 
+	def setVoiceCommand(self, id, value=None):
+		self.voiceStatus = {
+			'id': id,
+			'value': value,
+		}
+		dispatcher.send(signal="voiceInputEvent", id=id, value=value)
+
+	def getLastVoiceCommand(self):
+		return self.voiceStatus
+
 	def record_audio_stream(self):
 		"""Start an audio recording stream."""
 		command = [
@@ -135,7 +145,7 @@ class VoiceInputProcessor:
 
 			if not wakeword_detected and self.porcupine.process(audio_frame) >= 0:
 				print("Wakeword detected!")
-				dispatcher.send(signal="voiceInputEvent", id="wakeWord")
+				self.setVoiceCommand("wakeWord")
 				timeout_time = 5
 				wakeword_detected = True
 				intent_audio.extend(b"".join(self.pre_wakeword_buffer))
@@ -195,18 +205,18 @@ class VoiceInputProcessor:
 				transcript = response.results[0].alternatives[0].transcript
 				return transcript
 			else:
-				dispatcher.send(signal="voiceInputEvent", id="noTranscription")
+				self.setVoiceCommand("noTranscription")
 				print("No transcription result from Google.")
 				return None
 		except Exception as e:
 			print(f"Error during transcription: {e}")
-			dispatcher.send(signal="voiceInputEvent", id="error")
+			self.setVoiceCommand("error")
 			return None
 
 	def send_to_chatgpt(self, text):
 		"""Send text to ChatGPT and generate a response."""
 		print(f"Sending text to ChatGPT: {text}")
-		dispatcher.send(signal="voiceInputEvent", id="chatGPTSend", value=text)
+		self.setVoiceCommand("chatGPTSend", text)
 		try:
 			response = self.openai_client.chat.completions.create(
 				model="gpt-4",
@@ -216,7 +226,7 @@ class VoiceInputProcessor:
 				],
 			)
 			chat_response = response.choices[0].message.content
-			dispatcher.send(signal="voiceInputEvent", id="chatGPTReceive", value=chat_response)
+			self.setVoiceCommand("chatGPTReceive", chat_response)
 			print(f"ChatGPT Response: {chat_response}")
 
 			# Generate and play TTS audio
@@ -224,7 +234,7 @@ class VoiceInputProcessor:
 
 			return chat_response
 		except Exception as e:
-			dispatcher.send(signal="voiceInputEvent", id="error")
+			self.setVoiceCommand("error")
 			print(f"Failed to get response from ChatGPT: {e}")
 			return None
 
@@ -263,7 +273,7 @@ class VoiceInputProcessor:
 
 			# Use the AutomatedPuppeteering class to play the MP3 with puppeting
 			self.puppeteer.play_audio_with_puppeting(temp_audio_file)
-			dispatcher.send(signal="voiceInputEvent", id="ttsComplete")
+			self.setVoiceCommand("ttsComplete")
 
 		except Exception as e:
 			print(f"Elevenlabs not set up. Using Piper instead for tts.")
@@ -329,16 +339,16 @@ class VoiceInputProcessor:
 			result = subprocess.run(mic_check_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 			if "card" not in result.stdout.lower():
 				print("No microphone detected. Exiting voice assistant.")
-				dispatcher.send(signal="voiceInputEvent", id="micNotFound")
+				self.setVoiceCommand("micNotFound")
 				self.running = False
 				return
 		except Exception as e:
 			print(f"Error checking microphone: {e}")
-			dispatcher.send(signal="voiceInputEvent", id="micNotFound")
+			self.setVoiceCommand("micNotFound")
 			self.running = False
 			return
 
-		dispatcher.send(signal="voiceInputEvent", id="idle")
+		self.setVoiceCommand("idle")
 		print("Waiting for 'Hey chef' wakeword...")
 		stream_process = self.record_audio_stream()
 		if not stream_process:
@@ -371,29 +381,27 @@ class VoiceInputProcessor:
 						if inference.is_understood:
 							print(f"Intent detected: {inference.intent}")
 							print(f"Slots: {inference.slots}")
-							dispatcher.send(signal="voiceInputEvent", id="command", value=inference.intent)
+							self.setVoiceCommand("command", inference.intent)
 							return
 
 		print("No intent detected. Transcribing audio...")
-		dispatcher.send(signal="voiceInputEvent", id="transcribing")
+		self.setVoiceCommand("transcribing")
 		transcription = self.transcribe_audio(intent_audio)
 		if transcription:
 			# Rhino is supposed to catch these keywords, but just in case it doesn't, try to catch them here...
 			if "your ip address" in transcription.lower():
-				dispatcher.send(signal="voiceInputEvent", id="command", value="IPAddress")
+				self.setVoiceCommand("command", "IPAddress")
 			elif "your Wi-Fi network" in transcription.lower():
-				dispatcher.send(signal="voiceInputEvent", id="command", value="WifiNetwork")
+				self.setVoiceCommand("command", "WifiNetwork")
 			elif "activate hotspot" in transcription.lower():
-				dispatcher.send(signal="voiceInputEvent", id="command", value="HotspotStart")
+				self.setVoiceCommand("command", "HotspotStart")
 			elif "deactivate hotspot" in transcription.lower():
-				dispatcher.send(signal="voiceInputEvent", id="command", value="HotspotEnd")
+				self.setVoiceCommand("command", "HotspotEnd")
 			else:
 				# If no command found, send to OpenAI
 				self.send_to_chatgpt(transcription)
 		else:
-			dispatcher.send(signal="voiceInputEvent", id="timeout")
-
-
+			self.setVoiceCommand("timeout")
 
 if __name__ == "__main__":
 	try:
