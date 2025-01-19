@@ -415,7 +415,6 @@ function submitTTS() {
 		}
 
 		socket.emit('onWebTTSSubmit', inputText);
-		updateVoiceCommandStatus('ttsSubmitted');
 	} else {
 		console.warn('No text entered for TTS submission.');
 	}
