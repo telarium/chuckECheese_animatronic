@@ -239,6 +239,7 @@ class VoiceInputProcessor:
 			return None
 
 	def generate_and_play_tts(self, text):
+		self.setVoiceCommand("ttsSubmitted")
 		"""Generate audio using ElevenLabs TTS API and play directly as MP3."""
 		try:
 			client = ElevenLabs(api_key=self.elevenlabs_key)

@@ -1,5 +1,7 @@
 import time
 import threading
+from pydispatch import dispatcher
+import random
 
 # Valve1  -> 0x20, GP0	-> Eye right
 # Valve2  -> 0x21, GP4	-> Eye left
@@ -104,7 +106,7 @@ class Movement:
 		self.rightShoulder.mirroredKey = 'u'
 		self.rightShoulder.bIsOriginalMovement = True
 		self.all.append( self.rightShoulder )
-       
+	   
 		self.leftShoulder = Struct()
 		self.leftShoulder.description = "Shoulder L"
 		self.leftShoulder.key = 'u'
@@ -134,7 +136,7 @@ class Movement:
 		self.rightElbow.midiNote = 53
 		self.rightElbow.mirroredKey = 'j'
 		self.all.append( self.rightElbow )
-       
+	   
 		self.leftElbow = Struct()
 		self.leftElbow.description = "Elbow L"
 		self.leftElbow.key = 'j'
@@ -163,7 +165,7 @@ class Movement:
 		self.mouth.midiNote = 56
 		self.mouth.bIsOriginalMovement = True
 		self.all.append( self.mouth )
-       
+	   
 		self.mustache = Struct()
 		self.mustache.description = "Mustache"
 		self.mustache.key = 'z'
@@ -179,7 +181,7 @@ class Movement:
 		self.mouthAndMustache.midiNote = 51
 		self.mouthAndMustache.linkedKeys = ['z','x']
 		self.all.append( self.mouthAndMustache )
-       
+	   
 		self.eyesLeft = Struct()
 		self.eyesLeft.description = "Eyes L"
 		self.eyesLeft.key = 'q'
@@ -190,7 +192,7 @@ class Movement:
 		self.eyesLeft.mirroredKey = 'e'
 		self.eyesLeft.bIsOriginalMovement = True
 		self.all.append( self.eyesLeft )
-       
+	   
 		self.eyesRight = Struct()
 		self.eyesRight.description = "Eyes R"
 		self.eyesRight.key = 'e'
@@ -201,7 +203,7 @@ class Movement:
 		self.eyesRight.mirroredKey = 'q'
 		self.eyesRight.bIsOriginalMovement = True
 		self.all.append( self.eyesRight )
-       
+	   
 		self.eyesBlinkFull = Struct()
 		self.eyesBlinkFull.description = "Eyes Blink"
 		self.eyesBlinkFull.key = 'w'
@@ -222,7 +224,7 @@ class Movement:
 		self.headLeft.mirroredKey = 'd'
 		self.headLeft.bIsOriginalMovement = True
 		self.all.append( self.headLeft )
-       
+	   
 		self.headRight = Struct()
 		self.headRight.description = "Head R"
 		self.headRight.key = 'd'
@@ -232,16 +234,16 @@ class Movement:
 		self.headRight.mirroredKey = 'a'
 		self.headRight.bIsOriginalMovement = True
 		self.all.append( self.headRight )
-       
-		self.headDown = Struct()
-		self.headDown.description = "Head Down"
-		self.headDown.key = 's'
-		self.headDown.outputPin1 = [0x21, 6] # Head up
-		self.headDown.outputPin2 = [0x20, 3] # Head down
-		self.headDown.midiNote = 63
-		self.headDown.bEnableOnRetroMode = True
-		self.all.append( self.headDown )
-       
+	   
+		self.headUp = Struct()
+		self.headUp.description = "Head Up"
+		self.headUp.key = 's'
+		self.headUp.outputPin1 = [0x21, 6] # Head up
+		self.headUp.outputPin2 = [0x20, 3] # Head down
+		self.headUp.midiNote = 63
+		self.headUp.bEnableOnRetroMode = True
+		self.all.append( self.headUp )
+	   
 		self.bodyLeanForward = Struct()
 		self.bodyLeanForward.description = "Lean Forward"
 		self.bodyLeanForward.key = 'm'
@@ -257,6 +259,11 @@ class Movement:
 		#self.bodyLeanDown.outputPin1MaxTime = 2
 		#self.bodyLeanDown.midiNote = 63
 		#self.all.append( self.bodyLeanDown )
+
+		self.animationThreadsActive = False
+		self.blinkAnimationThread = None # A thread that plays some random blinking
+		self.eyeLeftRightAnimationThread = None # A thread that moves Pasqually's eyes left/right as he's speaking
+		self.mustacheAnimationThread = None # A thread that moves Pasqually's mustache briefly
 
 		for i in self.all:
 			i.keyIsPressed = False
@@ -417,4 +424,92 @@ class Movement:
 		for movement in self.all:
 			if not movement.bIsOriginalMovement:
 				self.executeMovement(movement.key, 0)
+
+	def stopAllAnimationThreads(self):
+		self.animationThreadsActive = False
+
+		def animShutdown():
+			dispatcher.send(signal="keyEvent", key=self.headUp.key, val=0)
+			dispatcher.send(signal="keyEvent", key=self.mustache.key, val=0)
+
+			if self.blinkAnimationThread and self.blinkAnimationThread.is_alive():
+				self.blinkAnimationThread.join()
+
+			#if self.eyeLeftRightAnimationThread and self.eyeLeftRightAnimationThread.is_alive():
+			#	self.eyeLeftRightAnimationThread.join()
+
+			if not self.animationThreadsActive:
+				# Reset animated movements back to their default state.
+				dispatcher.send(signal="keyEvent", key=self.eyesBlinkFull.key, val=0)
+				dispatcher.send(signal="keyEvent", key=self.eyesLeft.key, val=0)
+				dispatcher.send(signal="keyEvent", key=self.eyesRight.key, val=0)
+				
+		animShutdownThread = threading.Thread(target=animShutdown, daemon=True)
+		animShutdownThread.start()
+		
+
+	def playWakewordAcknowledgement(self):
+		def mustacheShake():
+			dispatcher.send(signal="keyEvent", key=self.headUp.key, val=1)
+			dispatcher.send(signal="keyEvent", key=self.mustache.key, val=1)
+			time.sleep(0.2)
+			dispatcher.send(signal="keyEvent", key=self.mustache.key, val=0)
+			time.sleep(0.2)
+			dispatcher.send(signal="keyEvent", key=self.mustache.key, val=1)
+			time.sleep(0.2)
+			dispatcher.send(signal="keyEvent", key=self.mustache.key, val=0)
+			time.sleep(0.2)
+
+		self.mustacheAnimationThread = threading.Thread(target=mustacheShake, daemon=True)
+		self.mustacheAnimationThread.start()
+
+	def playBlinkAnimation(self):
+		self.animationThreadsActive = True
+		maxTimeBetweenBlinks = 3  # Seconds
+
+		def blink():
+			while self.animationThreadsActive:
+				dispatcher.send(signal="keyEvent", key=self.eyesBlinkFull.key, val=1)
+				time.sleep(random.uniform(0.1, 0.5))
+				dispatcher.send(signal="keyEvent", key=self.eyesBlinkFull.key, val=0)
+				time.sleep(random.uniform(0.25, maxTimeBetweenBlinks))
+			
+		# Use a thread for the blink animation
+		self.blinkAnimationThread = threading.Thread(target=blink, daemon=True)
+		self.blinkAnimationThread.start()
+
+	def playEyeLeftRightAnimation(self):
+		if self.eyeLeftRightAnimationThread and self.eyeLeftRightAnimationThread.is_alive():
+			return
+
+		self.animationThreadsActive = True
+
+		def eyes():
+			bMoveLeft = random.choice([True, False])
+			eyeMovement = None
+
+			while self.animationThreadsActive:
+				if bMoveLeft:
+					eyeMovement = self.eyesLeft.key
+				else:
+					eyeMovement = self.eyesRight.key
+
+				dispatcher.send(signal="keyEvent", key=eyeMovement, val=1)
+
+				if not self.animationThreadsActive:
+					return
+
+				time.sleep(random.uniform(0.5, 3))
+				dispatcher.send(signal="keyEvent", key=eyeMovement, val=0)
+
+				if not self.animationThreadsActive:
+					return
+
+				time.sleep(random.uniform(0.5, 3))
+
+				bMoveLeft = not bMoveLeft
+
+		# Use a thread for the blink animation
+		self.eyeLeftRightAnimationThread = threading.Thread(target=eyes, daemon=True)
+		self.eyeLeftRightAnimationThread.start()
 			

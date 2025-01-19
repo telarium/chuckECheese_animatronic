@@ -27,25 +27,13 @@ class VoiceEventHandler:
 	def triggerEvent(self, id, value):
 		print(f"VoiceEvent: {id}, {value}")
 
-		if id == "timeout":
-			print("TIMED OUT!")
-		elif id == "wakeWord":
-			print("WAKE WORD DETECTED!")
-		elif id == "chatGPTSend":
-			print("SENT TO CHATGPT!")
-		elif id == "chatGPTReceive":
-			print("RECEIVED FROM CHATGPT!")
-		elif id == "timeout":
-			print("TIME OUT!")
-		elif id == "noTranscription":
+		if id == "noTranscription":
 			self.playAudioSequence([self.audioPath+"/no_transcription.ogg"])
 		elif id == "error":
 			if not self.wifiManagement.is_internet_available():
 				self.playAudioSequence([self.audioPath+"/no_connection.ogg"])
 			else:
 				self.playAudioSequence([self.audioPath+"/no_ai.ogg"])
-		elif id == "micNotFound":
-			return
 		elif id == "command":
 			self.handleCommand(value)
 
