@@ -98,9 +98,24 @@ class Pasqually:
 	# Event handling methods
 	def onVoiceInputEvent(self, id, value=None):
 		self.voiceEvent['id'] = id
-		self.voiceEvent['value'] = value
+		self.voiceEvent['value'] = value\
 
 		self.voiceEventHandler.triggerEvent(id, value)
+
+		# Play various animations to show Pasqually is listening and processing voice commands.
+		if id == "idle" or id == "ttsComplete":
+			# Don't do any animations while he's not doing any voice processing.
+			self.movements.stopAllAnimationThreads()
+		elif id == "wakeWord":
+			# Twirls his mustache a bit to demonstrate wakeword acknowledgement.
+			self.movements.playWakewordAcknowledgement()
+		elif id == "transcribing":
+			# Start random blinking animation.
+			self.movements.playBlinkAnimation()
+		elif id == "command" or id == "ttsSubmitted":
+			# Add some eye left/right movement animation.
+			self.movements.playEyeLeftRightAnimation()
+			self.movements.playBlinkAnimation()		
 
 	def onShowListLoad(self, showList):
 		self.webServer.broadcast('showListLoaded', showList)
