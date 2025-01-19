@@ -78,7 +78,6 @@ class WebServer:
 	@socketio.on('onKeyPress')
 	def webKeyEvent(data):
 		dispatcher.send(signal="keyEvent", key=data["keyVal"], val=int(data["val"]))
-		return data["keyVal"]
 
 	@socketio.on('onWebTTSSubmit')
 	def webTTSSubmit(inputText):
