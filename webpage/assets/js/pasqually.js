@@ -11,8 +11,17 @@ socket.on('connect', function() {
 	socket.emit('onConnect', {data: 'I\'m connected!'});
 });
 
+function truncateString(str, maxLength) {
+    if (str.length > maxLength) {
+        return str.slice(0, maxLength - 3) + "...";
+    }
+    return str;
+}
+
 socket.on('systemInfo', function(msg){
-	const newMsg = '<p>CPU: ' + msg.cpu + '%<br>RAM: ' + msg.ram + '%<br>Disk Usage: ' + msg.disk + '%<br>Temp: ' + msg.temperature + '°C<br>Wifi Strength: ' + msg.wifi_signal + '%</p>';
+	msg.wifi_ssid = truncateString(msg.wifi_ssid, 20);
+
+	const newMsg = '<p>CPU: ' + msg.cpu + '%<br>RAM: ' + msg.ram + '%<br>Disk Usage: ' + msg.disk + '%<br>Temp: ' + msg.temperature + '°C<br>Wifi: ' + msg.wifi_ssid + '<br>Wifi Strength: ' + msg.wifi_signal + '%</p>';
 	document.getElementById("sysInfo").innerHTML = newMsg;
 });
 
@@ -118,6 +127,11 @@ document.getElementById('pauseButton').addEventListener('click', function() {
 document.getElementById('stopButton').addEventListener('click', function() {
 	socket.emit('showStop');
 	console.log('Stopping show');
+});
+
+var wifiSSIDs = [];
+socket.on('wifiScan', function(data){
+	wifiSSIDs = data
 });
 
 var movements = [];
@@ -400,7 +414,6 @@ document.addEventListener('DOMContentLoaded', function() {
 	}
 });
 
-// Placeholder function to handle text submission
 function submitTTS() {
 	const inputField = document.getElementById('ttsInput');
 	const submitButton = document.getElementById('submitTTSButton'); // Get the Submit button
@@ -468,3 +481,6 @@ document.addEventListener('DOMContentLoaded', function() {
 		console.warn('TTS Input field not found!');
 	}
 });
+
+function connectToWifi(ssid, password) {
+	socket.emit('connectToWifi', ssid, password);

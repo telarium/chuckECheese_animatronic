@@ -58,6 +58,7 @@ class Pasqually:
 		dispatcher.connect(self.onRetroMode, signal='onRetroMode', sender=dispatcher.Any)
 		dispatcher.connect(self.onShowPlaybackMidiEvent, signal='showPlaybackMidiEvent', sender=dispatcher.Any)
 		dispatcher.connect(self.onActivateWifiHotspot, signal='activateWifiHotspot', sender=dispatcher.Any)
+		dispatcher.connect(self.onConnectToWifiNetwork, signal='connectToWifi', sender=dispatcher.Any)
 		dispatcher.connect(self.onWebTTSEvent, signal='webTTSEvent', sender=dispatcher.Any)
 
 	def run(self):
@@ -136,6 +137,7 @@ class Pasqually:
 		print(f"Web client connected from IP: {client_ip}")
 		self.showPlayer.getShowList()
 		self.webServer.broadcast('movementInfo', self.movements.getAllMovementInfo())
+		self.webServer.broadcast('wifiScan', self.wifiManagement.get_wifi_access_points())
 
 		# Tell the web frontend what the current voice command status is.
 		command = self.voiceInputProcessor.getLastVoiceCommand()
@@ -174,6 +176,9 @@ class Pasqually:
 			self.wifiManagement.activate_hotspot()
 		else:
 			self.wifiManagement.deactivate_hotspot_and_reconnect()
+
+	def onConnectToWifiNetwork(self, ssid, password=None):
+		self.wifiManagement.connect_to_wifi(ssid,password)
 
 	def onWebTTSEvent(self, val):
 		self.voiceInputProcessor.generate_and_play_tts(val)

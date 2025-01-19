@@ -3,13 +3,13 @@ import os
 import subprocess
 import socket
 import requests
+import re
 
 
 class WifiManagement:
 	def __init__(self, interface="wlan0", config_file="config.cfg"):
 		self.config = self.load_config(config_file)
 
-		# PicoVoice and Google Speech-to-Text keys
 		self.ssid = self.config["Hotspot"]["HotspotSSID"]
 		self.password = self.config["Hotspot"]["HotspotPassword"]
 		self.channel = self.config["Hotspot"]["HotspotChannel"]
@@ -102,19 +102,45 @@ dhcp-range=192.168.4.2,192.168.4.20,255.255.255.0,24h
 		self.start_services()
 		print(f"Access point '{self.ssid}' is now running on {self.interface}.")
 
+	def is_hotspot_active(self):
+		"""Check if the hotspot is currently active."""
+		try:
+			# Check if hostapd service is active
+			hostapd_status = subprocess.run(
+				["systemctl", "is-active", "hostapd"],
+				stdout=subprocess.PIPE,
+				stderr=subprocess.PIPE,
+				text=True
+			)
+			dnsmasq_status = subprocess.run(
+				["systemctl", "is-active", "dnsmasq"],
+				stdout=subprocess.PIPE,
+				stderr=subprocess.PIPE,
+				text=True
+			)
+
+			# If both services are active, the hotspot is active
+			return hostapd_status.stdout.strip() == "active" and dnsmasq_status.stdout.strip() == "active"
+		except Exception as e:
+			print(f"Error checking hotspot status: {e}")
+			return False
+
 	def get_current_ssid(self):
 		"""Get the current SSID name of the connected Wi-Fi network."""
 		try:
+			if self.is_hotspot_active():
+				return self.ssid
+
 			result = subprocess.run(
 				['iwgetid', '--raw', self.interface],
 				stdout=subprocess.PIPE,
 				stderr=subprocess.PIPE,
 				text=True,
 			)
-			
+
 			if result.returncode == 0:
 				ssid = result.stdout.strip()
-				return ssid if ssid else None
+				return ssid if ssid else "None"
 			return None
 		except Exception as e:
 			print(f"Error getting SSID: {e}")
@@ -156,6 +182,139 @@ dhcp-range=192.168.4.2,192.168.4.20,255.255.255.0,24h
 		except requests.RequestException:
 			return False
 
+	def get_wifi_access_points(self, signal_threshold=30):
+		try:
+			# Run the scan command
+			result = subprocess.run(
+				['sudo', 'iwlist', self.interface, 'scan'],
+				capture_output=True,
+				text=True
+			)
+			output = result.stdout
+
+			if result.returncode != 0:
+				raise RuntimeError(f"Error scanning for Wi-Fi networks: {result.stderr.strip()}")
+
+			# Define the range for dBm values
+			min_dbm = -100  # Very weak signal
+			max_dbm = -30   # Excellent signal
+
+			# Parse the output
+			access_points = []
+			ssid = None
+			signal_dbm = None
+
+			for line in output.splitlines():
+				line = line.strip()
+				if "ESSID:" in line:
+					ssid = line.split("ESSID:")[1].strip('"')
+				if "Signal level=" in line:
+					match = re.search(r"Signal level=(-?\d+)", line)
+					if match:
+						signal_dbm = int(match.group(1))
+						# Convert dBm to percentage
+						signal_strength = max(
+							0,
+							min(100, int(((signal_dbm - min_dbm) / (max_dbm - min_dbm)) * 100))
+						)
+
+				# If both SSID and signal strength are found, save the access point
+				if ssid is not None and ssid != '' and signal_dbm is not None:
+					if signal_strength > signal_threshold:  # Only include strong signals
+						access_points.append({"ssid": ssid, "signal_strength": signal_strength})
+					ssid = None  # Reset for the next AP
+					signal_dbm = None
+
+			return access_points
+		except Exception as e:
+			print(f"Error getting Wi-Fi access points: {e}")
+			return []
+
+	def connect_to_wifi(self, ssid, password):
+		try:
+			wpa_supplicant_path = "/etc/wpa_supplicant/wpa_supplicant.conf"
+
+			# Create a temporary network configuration
+			temp_config = f"""
+	network={{
+		ssid="{ssid}"
+		psk="{password}"
+		key_mgmt=WPA-PSK
+	}}
+			"""
+
+			# Test the connection with wpa_cli directly (does not modify wpa_supplicant.conf)
+			subprocess.run(["sudo", "wpa_cli", "-i", self.interface, "disconnect"], check=True)
+			subprocess.run(["sudo", "wpa_cli", "-i", self.interface, "add_network"], check=True)
+			subprocess.run(["sudo", "wpa_cli", "-i", self.interface, f"set_network", "0", f'ssid "{ssid}"'], check=True)
+			subprocess.run(["sudo", "wpa_cli", "-i", self.interface, f"set_network", "0", f'psk "{password}"'], check=True)
+			subprocess.run(["sudo", "wpa_cli", "-i", self.interface, "enable_network", "0"], check=True)
+			subprocess.run(["sudo", "wpa_cli", "-i", self.interface, "reconnect"], check=True)
+
+			# Check if connected to the SSID
+			connected_ssid = self.get_current_ssid()
+			if connected_ssid == ssid:
+				print(f"Successfully connected to {ssid}.")
+
+				# Read and update wpa_supplicant.conf
+				with open(wpa_supplicant_path, "r") as f:
+					lines = f.readlines()
+
+				# Remove existing entry for the SSID
+				new_lines = []
+				in_network_block = False
+				for line in lines:
+					if line.strip().startswith("network={"):
+						in_network_block = True
+						current_block = []
+					if in_network_block:
+						current_block.append(line)
+						if line.strip().endswith("}"):
+							in_network_block = False
+							if not any(f'ssid="{ssid}"' in block_line for block_line in current_block):
+								new_lines.extend(current_block)
+					else:
+						new_lines.append(line)
+
+				# Add the new network block
+				new_lines.append(temp_config.strip() + "\n")
+
+				# Write back the updated configuration
+				with open(wpa_supplicant_path, "w") as f:
+					f.writelines(new_lines)
+
+				return True
+			else:
+				print(f"Failed to connect to {ssid}.")
+				return False
+		except Exception as e:
+			print(f"Error connecting to Wi-Fi: {e}")
+			return False
+
+	def get_signal_strength(self):
+		"""Get the WiFi signal strength as a percentage."""
+		try:
+			if self.is_hotspot_active():
+				return 100
+
+			result = subprocess.run(['iwconfig', 'wlan0'], capture_output=True, text=True)
+			output = result.stdout
+
+			# Use regex to find the signal level
+			match = re.search(r'Signal level=(-?\d+)', output)
+			if match:
+				signal_dbm = int(match.group(1))
+
+				# Define the range for dBm values
+				min_dbm = -100  # Minimum signal level (very weak)
+				max_dbm = -30   # Maximum signal level (excellent)
+
+				# Calculate percentage
+				percentage = max(0, min(100, int(((signal_dbm - min_dbm) / (max_dbm - min_dbm)) * 100)))
+				return percentage
+		except Exception as e:
+			print(f"Exception getting WiFi signal strength: {e}")
+		return "--"
 
 # Example usage
 if __name__ == "__main__":
