@@ -1,12 +1,13 @@
+from wifi_management import WifiManagement
 import os
 import psutil
 import eventlet
 import subprocess
-import re
 
 class SystemInfo:
 	def __init__(self, webServer):
 		self.webServer = webServer
+		self.wifiManagement = WifiManagement()
 		self.update_thread = eventlet.spawn(self.update)
 
 	def update(self):
@@ -19,7 +20,8 @@ class SystemInfo:
 					'ram': int(psutil.virtual_memory().percent),
 					'disk': self.get_disk_usage(),
 					'temperature': self.get_temperature(),
-					'wifi_signal': self.get_signal_strength()
+					'wifi_ssid': self.wifiManagement.get_current_ssid(),
+					'wifi_signal': self.wifiManagement.get_signal_strength()
 				}
 
 				self.webServer.broadcast('systemInfo', info)
@@ -44,17 +46,3 @@ class SystemInfo:
 			print(f"Exception getting temperature: {e}")
 		return None
 
-	def get_signal_strength(self):
-		"""Get the WiFi signal strength."""
-		try:
-			# Replace 'wlan0' with your actual WiFi interface name if different
-			result = subprocess.run(['iwconfig', 'wlan0'], capture_output=True, text=True)
-			output = result.stdout
-
-			# Use regex to find the signal level
-			match = re.search(r'Signal level=(-?\d+)', output)
-			if match:
-				return int(match.group(1))
-		except Exception as e:
-			print(f"Exception getting WiFi signal strength: {e}")
-		return None
