@@ -94,6 +94,22 @@
             </div>
         </footer>
 
+        <!-- WiFi Selection Popup -->
+        <div id="wifiPopup" class="popup-overlay" style="display: none;">
+            <div class="popup-content">
+                <button id="closeWifiPopup" class="close-button">&times;</button>
+                <h2>Select a WiFi Network</h2>
+                <div id="wifiList" class="wifi-list">
+                    <!-- Available WiFi networks will be populated here -->
+                </div>
+                <div class="wifi-connect">
+                    <label for="wifiPassword">Password:</label>
+                    <input type="password" id="wifiPassword" placeholder="Enter WiFi password" />
+                    <button id="connectWifiButton">Connect</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Scripts -->
         <script src="assets/js/jquery.min.js"></script>
         <script src="assets/js/jquery.scrolly.min.js"></script>

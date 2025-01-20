@@ -560,6 +560,118 @@ button:disabled,
     cursor: pointer;
 }
 
+/* --- WiFi Selection Popup Styles --- */
+
+.popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.popup-content {
+    background-color: #291b22;
+    padding: 25px 20px 20px 20px; /* Adjusted top padding to prevent overlap */
+    border-radius: 4px;
+    width: 90%;
+    max-width: 400px;
+    position: relative;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.close-button {
+    position: absolute;
+    top: 15px; /* Adjusted from 10px to 15px */
+    right: 20px; /* Adjusted from 15px to 20px */
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 1.2em; /* Reduced from 1.5em to 1.2em */
+    cursor: pointer;
+    padding: 5px; /* Added padding to increase clickable area */
+    line-height: 1; /* Centers the close symbol vertically */
+}
+
+.popup-content h2 {
+    color: #fff;
+    margin: 0 0 15px 0; /* Ensures no top margin */
+    text-align: center;
+    padding-top: 10px; /* Adds space between the top and the heading */
+}
+
+.wifi-list {
+    max-height: 200px;
+    overflow-y: auto;
+    margin-bottom: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    padding: 10px;
+    background-color: #3a2a33;
+}
+
+.wifi-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 5px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.wifi-item:last-child {
+    border-bottom: none;
+}
+
+.wifi-item:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.wifi-connect label {
+    color: #fff;
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 400;
+}
+
+.wifi-connect input {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+#wifiPassword {
+    color: #000;
+}
+
+#connectWifiButton {
+    width: 100%;
+}
+
+@media screen and (max-width: 480px) {
+    .popup-content {
+        width: 95%;
+        padding: 15px; /* Adjusted padding for smaller screens */
+    }
+
+    .wifi-list {
+        max-height: 150px;
+    }
+}
+
 button.disabled,
 button:disabled,
 #submitTTSButton.disabled,
