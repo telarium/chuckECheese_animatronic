@@ -4,6 +4,10 @@ import subprocess
 import socket
 import requests
 import re
+import threading
+import pywifi
+import time
+from pywifi import const
 
 
 class WifiManagement:
@@ -18,6 +22,10 @@ class WifiManagement:
 		self.hostapd_conf_path = "/etc/hostapd/hostapd.conf"
 		self.dnsmasq_conf_path = "/etc/dnsmasq.conf"
 
+		# Initialize PyWiFi and retrieve the interface
+		self.wifi = pywifi.PyWiFi()
+		self.iface = self._get_interface()
+
 	def load_config(self, config_file):
 		config_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), config_file)
 		if not os.path.exists(config_path):
@@ -25,6 +33,16 @@ class WifiManagement:
 		config = configparser.ConfigParser()
 		config.read(config_path)
 		return config
+
+	def _get_interface(self):
+		"""Retrieve the Wi-Fi interface using PyWiFi."""
+		interfaces = self.wifi.interfaces()
+		if not interfaces:
+			raise RuntimeError("No Wi-Fi interfaces detected. Ensure the interface is enabled and in managed mode.")
+		for iface in interfaces:
+			if iface.name() == self.interface:
+				return iface
+		raise ValueError(f"Interface {self.interface} not found.")
 
 	def create_hostapd_conf(self):
 		"""Create a hostapd configuration file."""
@@ -183,113 +201,122 @@ dhcp-range=192.168.4.2,192.168.4.20,255.255.255.0,24h
 			return False
 
 	def get_wifi_access_points(self, signal_threshold=30):
+		"""Retrieve available Wi-Fi access points above a signal threshold using PyWiFi."""
 		try:
-			# Run the scan command
-			result = subprocess.run(
-				['sudo', 'iwlist', self.interface, 'scan'],
-				capture_output=True,
-				text=True
-			)
-			output = result.stdout
-
-			if result.returncode != 0:
-				raise RuntimeError(f"Error scanning for Wi-Fi networks: {result.stderr.strip()}")
+			# Start scanning for Wi-Fi networks
+			self.iface.scan()
+			time.sleep(2)  # Allow time for scanning
+			results = self.iface.scan_results()
 
 			# Define the range for dBm values
 			min_dbm = -100  # Very weak signal
 			max_dbm = -30   # Excellent signal
 
-			# Parse the output
-			access_points = []
-			ssid = None
-			signal_dbm = None
+			# Parse the scan results
+			access_points = {}
+			for ap in results:
+				# Skip networks with no name (hidden SSIDs)
+				if not ap.ssid.strip():
+					continue
 
-			for line in output.splitlines():
-				line = line.strip()
-				if "ESSID:" in line:
-					ssid = line.split("ESSID:")[1].strip('"')
-				if "Signal level=" in line:
-					match = re.search(r"Signal level=(-?\d+)", line)
-					if match:
-						signal_dbm = int(match.group(1))
-						# Convert dBm to percentage
-						signal_strength = max(
-							0,
-							min(100, int(((signal_dbm - min_dbm) / (max_dbm - min_dbm)) * 100))
-						)
+				# Convert dBm to percentage
+				signal_strength = max(
+					0,
+					min(100, int(((ap.signal - min_dbm) / (max_dbm - min_dbm)) * 100))
+				)
 
-				# If both SSID and signal strength are found, save the access point
-				if ssid is not None and ssid != '' and signal_dbm is not None:
-					if signal_strength > signal_threshold:  # Only include strong signals
-						access_points.append({"ssid": ssid, "signal_strength": signal_strength})
-					ssid = None  # Reset for the next AP
-					signal_dbm = None
+				# Only include strong signals above the threshold
+				if signal_strength >= signal_threshold:
+					if ap.ssid not in access_points:
+						# Add new SSID to the dictionary
+						access_points[ap.ssid] = {"ssid": ap.ssid, "signal_strength": signal_strength}
+					else:
+						# Update if the new signal is stronger
+						if signal_strength > access_points[ap.ssid]["signal_strength"]:
+							access_points[ap.ssid] = {"ssid": ap.ssid, "signal_strength": signal_strength}
 
-			return access_points
+			# Convert dictionary to sorted list
+			sorted_access_points = sorted(
+				access_points.values(),
+				key=lambda x: x["signal_strength"],
+				reverse=True
+			)
+
+			return sorted_access_points
+
 		except Exception as e:
 			print(f"Error getting Wi-Fi access points: {e}")
 			return []
 
+	def _get_interface(self):
+		"""Retrieve the Wi-Fi interface using PyWiFi."""
+		interfaces = self.wifi.interfaces()
+		if not interfaces:
+			raise RuntimeError("No Wi-Fi interfaces detected. Ensure the interface is enabled and in managed mode.")
+		for iface in interfaces:
+			if iface.name() == self.interface:
+				return iface
+		raise ValueError(f"Interface {self.interface} not found.")
+
 	def connect_to_wifi(self, ssid, password):
-		try:
-			wpa_supplicant_path = "/etc/wpa_supplicant/wpa_supplicant.conf"
+		"""Connect to a Wi-Fi network, ensuring the hotspot is deactivated if running."""
+		def wifi_task():
+			try:
+				# Check if already connected to the desired SSID
+				current_ssid = self.get_current_ssid()
+				if current_ssid == ssid:
+					return True
 
-			# Create a temporary network configuration
-			temp_config = f"""
-	network={{
-		ssid="{ssid}"
-		psk="{password}"
-		key_mgmt=WPA-PSK
-	}}
-			"""
+				# Deactivate hotspot if it's active
+				if self.is_hotspot_active():
+					print("Hotspot is active. Deactivating it before connecting to Wi-Fi...")
+					self.deactivate_hotspot_and_reconnect()
 
-			# Test the connection with wpa_cli directly (does not modify wpa_supplicant.conf)
-			subprocess.run(["sudo", "wpa_cli", "-i", self.interface, "disconnect"], check=True)
-			subprocess.run(["sudo", "wpa_cli", "-i", self.interface, "add_network"], check=True)
-			subprocess.run(["sudo", "wpa_cli", "-i", self.interface, f"set_network", "0", f'ssid "{ssid}"'], check=True)
-			subprocess.run(["sudo", "wpa_cli", "-i", self.interface, f"set_network", "0", f'psk "{password}"'], check=True)
-			subprocess.run(["sudo", "wpa_cli", "-i", self.interface, "enable_network", "0"], check=True)
-			subprocess.run(["sudo", "wpa_cli", "-i", self.interface, "reconnect"], check=True)
+				# Wait for the interface to stabilize after transition
+				print("Waiting for interface to stabilize...")
+				time.sleep(5)  # Adjust if needed based on system behavior
 
-			# Check if connected to the SSID
-			connected_ssid = self.get_current_ssid()
-			if connected_ssid == ssid:
-				print(f"Successfully connected to {ssid}.")
+				# Reinitialize PyWiFi to ensure it detects the interface
+				self.wifi = pywifi.PyWiFi()
+				self.iface = self._get_interface()
 
-				# Read and update wpa_supplicant.conf
-				with open(wpa_supplicant_path, "r") as f:
-					lines = f.readlines()
+				# Initialize connection process
+				print(f"Attempting to connect to Wi-Fi network: {ssid}")
+				self.iface.disconnect()
+				time.sleep(1)
 
-				# Remove existing entry for the SSID
-				new_lines = []
-				in_network_block = False
-				for line in lines:
-					if line.strip().startswith("network={"):
-						in_network_block = True
-						current_block = []
-					if in_network_block:
-						current_block.append(line)
-						if line.strip().endswith("}"):
-							in_network_block = False
-							if not any(f'ssid="{ssid}"' in block_line for block_line in current_block):
-								new_lines.extend(current_block)
-					else:
-						new_lines.append(line)
+				# Create a new Wi-Fi profile
+				profile = pywifi.Profile()
+				profile.ssid = ssid
+				profile.auth = const.AUTH_ALG_OPEN
+				profile.akm.append(const.AKM_TYPE_WPA2PSK)
+				profile.cipher = const.CIPHER_TYPE_CCMP
+				profile.key = password
 
-				# Add the new network block
-				new_lines.append(temp_config.strip() + "\n")
+				self.iface.remove_all_network_profiles()
+				tmp_profile = self.iface.add_network_profile(profile)
 
-				# Write back the updated configuration
-				with open(wpa_supplicant_path, "w") as f:
-					f.writelines(new_lines)
+				# Attempt to connect
+				self.iface.connect(tmp_profile)
+				start_time = time.time()
 
-				return True
-			else:
-				print(f"Failed to connect to {ssid}.")
+				while time.time() - start_time < 10:  # Timeout after 10 seconds
+					if self.iface.status() == const.IFACE_CONNECTED:
+						print(f"Successfully connected to {ssid}")
+						return True
+					time.sleep(1)
+
+				print(f"Failed to connect to {ssid}")
 				return False
-		except Exception as e:
-			print(f"Error connecting to Wi-Fi: {e}")
-			return False
+
+			except Exception as e:
+				print(f"Error connecting to Wi-Fi: {e}")
+				return False
+
+		# Run Wi-Fi connection logic in a separate thread
+		thread = threading.Thread(target=wifi_task)
+		thread.start()
+		thread.join()
 
 	def get_signal_strength(self):
 		"""Get the WiFi signal strength as a percentage."""
