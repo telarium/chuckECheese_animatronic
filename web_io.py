@@ -80,8 +80,8 @@ class WebServer:
 		dispatcher.send(signal="keyEvent", key=data["keyVal"], val=int(data["val"]))
 
 	@socketio.on('onConnectToWifi')
-	def connectToWifi(ssid,password):
-		dispatcher.send(signal="connectToWifi", ssid=ssid, password=password)
+	def connectToWifi(data):
+		dispatcher.send(signal="connectToWifi", ssid=data["ssid"], password=data["password"])
 
 	@socketio.on('onWebTTSSubmit')
 	def webTTSSubmit(inputText):

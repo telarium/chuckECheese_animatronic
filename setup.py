@@ -24,7 +24,7 @@ class Setup:
 
 		# Install Python dependencies via pip with --break-system-packages
 		self.install_python_packages([
-			"pvporcupine", "pvrhino", "openai", "google-cloud-speech", "elevenlabs", "piper-tts"
+			"pvporcupine", "pvrhino", "openai", "google-cloud-speech", "elevenlabs", "piper-tts", "pywifi"
 		])
 		
 		# Clone the flask-uploads repository
