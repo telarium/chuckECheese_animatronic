@@ -3,6 +3,7 @@ import mido
 import time
 import pygame
 import eventlet
+import random
 from pydispatch import dispatcher
 
 class ShowPlayer:
@@ -69,6 +70,10 @@ class ShowPlayer:
 	def loadShow(self, showName):
 		if self.show_dir is None:
 			return
+
+		if showName == "":
+			print("Play random show...")
+			showName = random.choice(self.showList)
 
 		if self.active_showName != showName:
 			# Supported file extensions
