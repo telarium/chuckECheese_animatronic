@@ -17,6 +17,7 @@ class VoiceEventHandler:
 		self.commands = {
 			"PlaySong": self.playSong,
 			"WhoAreYou": self.whoAreYou,
+			"HowDoYouWork": self.howDoYouWork,
 			"IPAddress": self.ipAddress,
 			"HotspotStart": self.hotspotStart,
 			"HotspotEnd": self.hotspotEnd,
@@ -53,9 +54,13 @@ class VoiceEventHandler:
 
 	def playSong(self):
 		self.playAudioSequence([self.audioPath+"/song_start.ogg"]) # Voice audio to announce playing a song.
+		dispatcher.send(signal="showPlay", showName="") # Empty show name means play something random
 
 	def whoAreYou(self):
 		self.playAudioSequence([self.audioPath+"/who_are_you.ogg"]) # Voice audio for a brief introduction.
+
+	def howDoYouWork(self):
+		self.playAudioSequence([self.audioPath+"/how_do_you_work.ogg"]) # Voice audio for a brief introduction.
 
 	def ipAddress(self):
 		# Play sequential audio to read out the current IP address.
