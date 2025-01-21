@@ -23,12 +23,11 @@ socket.on('systemInfo', function(msg){
 
     const newMsg = `
         <p>
+            Wifi: <a href="#" id="wifiSSIDLink">${msg.wifi_ssid}</a><i>(${msg.wifi_signal}%)</i><br>
             CPU: ${msg.cpu}%<br>
             RAM: ${msg.ram}%<br>
             Disk Usage: ${msg.disk}%<br>
             Temp: ${msg.temperature}°C<br>
-            Wifi: <a href="#" id="wifiSSIDLink">${msg.wifi_ssid}</a><br>
-            Wifi Strength: ${msg.wifi_signal}%
         </p>
     `;
     document.getElementById("sysInfo").innerHTML = newMsg;
