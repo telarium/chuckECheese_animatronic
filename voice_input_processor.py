@@ -398,6 +398,8 @@ class VoiceInputProcessor:
 				self.setVoiceCommand("command", "HotspotStart")
 			elif "deactivate hotspot" in transcription.lower():
 				self.setVoiceCommand("command", "HotspotEnd")
+			elif transcription.lower() == "stop" or transcription.lower() == "stop singing" or transcription.lower() == "stop show":
+				dispatcher.send(signal="showStop")
 			else:
 				# If no command found, send to OpenAI
 				self.send_to_chatgpt(transcription)
