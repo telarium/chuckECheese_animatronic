@@ -110,6 +110,7 @@ class Pasqually:
 		elif id == "wakeWord":
 			# Twirls his mustache a bit to demonstrate wakeword acknowledgement.
 			self.movements.playWakewordAcknowledgement()
+			self.showPlayer.stopShow() # Stop any playing shows
 		elif id == "transcribing":
 			# Start random blinking animation.
 			self.movements.playBlinkAnimation()
