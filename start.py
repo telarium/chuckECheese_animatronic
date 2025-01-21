@@ -175,7 +175,7 @@ class Pasqually:
 	def onActivateWifiHotspot(self, bActivate):
 		if bActivate:
 			self.wifiManagement.activate_hotspot()
-		else:
+		elif bActivate == False and self.wifiManagement.is_hotspot_active():
 			self.wifiManagement.deactivate_hotspot_and_reconnect()
 
 	def onConnectToWifiNetwork(self, ssid, password=None):
