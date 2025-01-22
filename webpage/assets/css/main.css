@@ -402,7 +402,7 @@ button:disabled,
     position: fixed;
     top: 0px;
     right: 0px;
-    width: auto;
+    width: 100%;
     height: auto;
     opacity: 0.8;
     overflow: hidden;
@@ -519,7 +519,8 @@ button:disabled,
 }
 
 #main.retro-mode-active a {
-    color: #0000ff;
+    color: inherit; /* Ensures links keep the parent element's color */
+    text-decoration: none; /* Keeps styling consistent */
 }
 
 @keyframes flip-animation {
@@ -540,24 +541,23 @@ button:disabled,
 
 .mode-toggle {
     display: flex;
-    align-items: center;
-    margin-top: 0.25em;
-    margin-bottom: 0.25em;
+    justify-content: center; /* Center the checkboxes and labels */
+    align-items: center; /* Vertically align the checkboxes with labels */
+    margin: 0.5em 0; /* Add consistent vertical spacing */
+    gap: 0.5em; /* Reduce horizontal spacing between checkboxes */
 }
 
+/* Control spacing between the checkbox and its label text */
 .mode-toggle label {
-    display: flex;
-    align-items: center;
-    font-size: 1em;
-    cursor: pointer;
-    margin: 0;
+    display: inline-flex;
+    align-items: center; /* Align text and checkbox vertically */
+    margin: 0; /* Remove extra margin */
 }
 
 .mode-toggle input[type="checkbox"] {
-    margin-right: 0.5em;
-    width: 1.2em;
-    height: 1.2em;
-    cursor: pointer;
+    margin-right: 0.25em; /* Minimal spacing between checkbox and text */
+    width: 1em; /* Adjust checkbox size */
+    height: 1em; /* Adjust checkbox size */
 }
 
 /* --- WiFi Selection Popup Styles --- */
