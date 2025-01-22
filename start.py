@@ -23,22 +23,22 @@ class Pasqually:
 		pygame.display.init()
 		pygame.display.set_mode((1, 1))
 
+		self.voiceEvent = {
+			'id': None,
+			'value': None,
+		}
+
 		# Initialize components
 		self.setDispatchEvents()
 		self.gpio = GPIO()
 		self.movements = Movement(self.gpio)
 		self.webServer = WebServer()
 		self.wifiManagement = WifiManagement()
-		self.systemInfo = SystemInfo(self.webServer)
+		self.systemInfo = SystemInfo()
 		self.gamepad = USBGamepadReader()
 		self.showPlayer = ShowPlayer(pygame)
-		self.voiceInputProcessor = VoiceInputProcessor(pygame)
 		self.voiceEventHandler = VoiceEventHandler(pygame)
-
-		self.voiceEvent = {
-			'id': None,
-			'value': None,
-		}
+		self.voiceInputProcessor = VoiceInputProcessor(pygame)
 
 		# Handle SIGINT and SIGTERM for graceful shutdown
 		signal.signal(signal.SIGINT, self.shutdown_signal_handler)
@@ -46,6 +46,7 @@ class Pasqually:
 
 	def setDispatchEvents(self):
 		dispatcher.connect(self.onKeyEvent, signal='keyEvent', sender=dispatcher.Any)
+		dispatcher.connect(self.onSystemInfoUpdate, signal='systemInfoUpdate', sender=dispatcher.Any)
 		dispatcher.connect(self.onVoiceInputEvent, signal='voiceInputEvent', sender=dispatcher.Any)
 		dispatcher.connect(self.onGamepadKeyEvent, signal='gamepadKeyEvent', sender=dispatcher.Any)
 		dispatcher.connect(self.onMirroredModeToggle, signal='mirrorModeToggle', sender=dispatcher.Any)
@@ -96,10 +97,13 @@ class Pasqually:
 			print(f"Error during shutdown: {e}")
 			sys.exit(1)
 
+	def onSystemInfoUpdate(self):
+		self.webServer.broadcast('systemInfo', self.systemInfo.get())
+
 	# Event handling methods
 	def onVoiceInputEvent(self, id, value=None):
 		self.voiceEvent['id'] = id
-		self.voiceEvent['value'] = value\
+		self.voiceEvent['value'] = value
 
 		self.voiceEventHandler.triggerEvent(id, value)
 
@@ -136,14 +140,16 @@ class Pasqually:
 
 	def onConnectEvent(self, client_ip):
 		print(f"Web client connected from IP: {client_ip}")
-		self.showPlayer.getShowList()
-		self.webServer.broadcast('movementInfo', self.movements.getAllMovementInfo())
-		self.webServer.broadcast('wifiScan', self.wifiManagement.get_wifi_access_points())
 
 		# Tell the web frontend what the current voice command status is.
 		command = self.voiceInputProcessor.getLastVoiceCommand()
 		self.voiceEvent['id'] = command['id']
 		self.voiceEvent['value'] = command['value']
+
+		self.onSystemInfoUpdate()
+		self.showPlayer.getShowList()
+		self.webServer.broadcast('movementInfo', self.movements.getAllMovementInfo())
+		self.webServer.broadcast('wifiScan', self.wifiManagement.get_wifi_access_points())
 
 	def onKeyEvent(self, key, val):
 		# Receieve key events from the HTML front end and execute any specified movement
