@@ -6,8 +6,9 @@ from wifi_management import WifiManagement
 from automated_puppeteering import AutomatedPuppeteering
 
 class VoiceEventHandler:
-	def __init__(self, pygame_instance):
+	def __init__(self, pygame_instance, voice_input_instance):
 		self.pygame = pygame_instance
+		self.voiceInputProcessor = voice_input_instance
 		self.puppeteer = AutomatedPuppeteering(pygame_instance)
 
 		self.wifiManagement = WifiManagement()
@@ -87,15 +88,13 @@ class VoiceEventHandler:
 
 	def wifiNetwork(self):
 		ssid = self.wifiManagement.get_current_ssid()
-		print(ssid)
 		if ssid is None:
 			self.playAudioSequence([self.audioPath+"/no_connection.ogg"])
 		else:
-			output_path = "/tmp/output.wav"
-
-			# Use pico2wave to generate the speech
-			subprocess.run(['pico2wave', '--lang=en-US', '--wave=' + output_path, ssid], check=True)
-			self.playAudioSequence([self.audioPath+"/ssid.ogg",output_path])
+			print(1)
+			self.playAudioSequence([self.audioPath+"/ssid.ogg"])
+			print(2)
+			self.voiceInputProcessor.generate_and_play_tts(ssid)
 
 	def psi(self):
 		self.playAudioSequence([self.audioPath+"/psi_prefix.ogg", self.audioPath+"/psi_postfix.ogg"])

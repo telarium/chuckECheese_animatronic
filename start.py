@@ -37,8 +37,8 @@ class Pasqually:
 		self.systemInfo = SystemInfo()
 		self.gamepad = USBGamepadReader()
 		self.showPlayer = ShowPlayer(pygame)
-		self.voiceEventHandler = VoiceEventHandler(pygame)
 		self.voiceInputProcessor = VoiceInputProcessor(pygame)
+		self.voiceEventHandler = VoiceEventHandler(pygame, self.voiceInputProcessor)
 
 		# Handle SIGINT and SIGTERM for graceful shutdown
 		signal.signal(signal.SIGINT, self.shutdown_signal_handler)
@@ -188,6 +188,7 @@ class Pasqually:
 		self.wifiManagement.connect_to_wifi(ssid,password)
 
 	def onWebTTSEvent(self, val):
+		print(val)
 		self.voiceInputProcessor.generate_and_play_tts(val)
 
 if __name__ == "__main__":
