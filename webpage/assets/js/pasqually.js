@@ -1,58 +1,59 @@
 // pasqually.js
 
 // Determine the protocol (ws:// or wss://) based on the current page protocol
-const protocol = (window.location.protocol === 'https:') ? 'wss://' : 'ws://';
-const socketUrl = protocol + document.domain + ':' + location.port;
+const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+const socketUrl = `${protocol}${document.domain}:${location.port}`;
 
 // Connect to the WebSocket
-var socket = io.connect(socketUrl);
+const socket = io.connect(socketUrl);
 
-socket.on('connect', function() {
-    socket.emit('onConnect', {data: 'I\'m connected!'});
+socket.on('connect', () => {
+    socket.emit('onConnect', { data: "I'm connected!" });
 });
 
+/**
+ * Truncate a string to a specified maximum length, adding ellipsis if truncated.
+ * @param {string} str - The string to truncate.
+ * @param {number} maxLength - The maximum allowed length of the string.
+ * @returns {string} - The truncated string with ellipsis if needed.
+ */
 function truncateString(str, maxLength) {
-    if (str.length > maxLength) {
-        return str.slice(0, maxLength - 3) + "...";
-    }
-    return str;
+    return str.length > maxLength ? `${str.slice(0, maxLength - 3)}...` : str;
 }
 
-// Simple mobile detection for Android/iOS
+/**
+ * Detect if the current device is a mobile device (Android/iOS).
+ * @returns {boolean} - True if mobile device, else false.
+ */
 function isMobileDevice() {
     const ua = navigator.userAgent.toLowerCase();
-    return (
-        ua.includes('android') ||
-        ua.includes('iphone') ||
-        ua.includes('ipad') ||
-        ua.includes('ipod')
-    );
+    return /android|iphone|ipad|ipod/.test(ua);
 }
 
-document.addEventListener('DOMContentLoaded', function () {
-    // If mobile device, hide left and right keypad images
-    if (isMobileDevice()) {
-        // Hide the left keypad box
-        const leftKeypadBox = document.querySelector('img[src="images/keypad-l.png"]');
-        if (leftKeypadBox) {
-            const leftBoxContainer = leftKeypadBox.closest('.box');
-            if (leftBoxContainer) {
-                leftBoxContainer.style.display = 'none';
-            }
-        }
-
-        // Hide the right keypad box
-        const rightKeypadBox = document.querySelector('img[src="images/keypad-r.png"]');
-        if (rightKeypadBox) {
-            const rightBoxContainer = rightKeypadBox.closest('.box');
-            if (rightBoxContainer) {
-                rightBoxContainer.style.display = 'none';
-            }
-        }
-    }
+document.addEventListener('DOMContentLoaded', () => {
+    handleMobileKeypadVisibility();
+    setupWifiPopupEvents();
+    setupModeCheckboxes();
+    setupSubmitTTS();
+    setupShowControlButtons();
 });
 
-socket.on('systemInfo', function(msg){
+// Handle visibility of keypad images on mobile devices
+function handleMobileKeypadVisibility() {
+    if (!isMobileDevice()) return;
+
+    const keypadImages = ['images/keypad-l.png', 'images/keypad-r.png'];
+    keypadImages.forEach(src => {
+        const img = document.querySelector(`img[src="${src}"]`);
+        if (img) {
+            const container = img.closest('.box');
+            if (container) container.style.display = 'none';
+        }
+    });
+}
+
+// Update system information displayed on the page
+socket.on('systemInfo', (msg) => {
     msg.wifi_ssid = truncateString(msg.wifi_ssid, 20);
 
     const newMsg = `
@@ -64,18 +65,28 @@ socket.on('systemInfo', function(msg){
             Temp: ${msg.temperature}°C<br>
         </p>
     `;
-    document.getElementById("sysInfo").innerHTML = newMsg;
+    const sysInfoElement = document.getElementById("sysInfo");
+    if (sysInfoElement) {
+        sysInfoElement.innerHTML = newMsg;
 
-    // Add event listener to the WiFi SSID link
-    const wifiLink = document.getElementById('wifiSSIDLink');
-    if (wifiLink) {
-        wifiLink.addEventListener('click', function(e) {
-            e.preventDefault();
-            openWifiPopup();
-        });
+        // Add event listener to the WiFi SSID link
+        const wifiLink = document.getElementById('wifiSSIDLink');
+        if (wifiLink) {
+            wifiLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                openWifiPopup();
+            });
+        }
+    } else {
+        console.warn('System Info element not found!');
     }
 });
 
+/**
+ * Update the voice command status displayed on the page.
+ * @param {string} id - The status identifier.
+ * @param {string} value - The value associated with the status.
+ */
 function updateVoiceCommandStatus(id, value) {
     let statusText = "";
 
@@ -87,10 +98,10 @@ function updateVoiceCommandStatus(id, value) {
             statusText = "Listening...";
             break;
         case "command":
-            statusText = "Executing command '" + value + "'";
+            statusText = `Executing command '${value}'`;
             break;
         case "chatGPTSend":
-            statusText = "Heard '" + value + "'";
+            statusText = `Heard '${value}'`;
             break;
         case "transcribing":
             statusText = "Transcribing...";
@@ -109,7 +120,6 @@ function updateVoiceCommandStatus(id, value) {
             statusText = "Processing...";
             break;
         case "ttsComplete":
-            // Re-enable the Submit button
             statusText = "Waiting...";
             const submitButton = document.getElementById('submitTTSButton');
             if (submitButton) {
@@ -129,103 +139,116 @@ function updateVoiceCommandStatus(id, value) {
     }
 }
 
-socket.on('voiceCommandUpdate', function(data){
-    updateVoiceCommandStatus(data.id, data.value);
-});
+socket.on('voiceCommandUpdate', ({ id, value }) => updateVoiceCommandStatus(id, value));
 
-var showList = [];
-socket.on('showListLoaded', function(data) {
-    showList = ["-- Select A Show! --"]; // Clear the current list
-    for (var i = 0; i < data.length; i++) {
-        showList.push(data[i]);
-    }
+// Handle show list loading
+let showList = [];
+socket.on('showListLoaded', (data) => {
+    showList = ["-- Select A Show! --", ...data];
 
-    // Populate the dropdown
     const dropdown = document.querySelector('select[name="Show List"]');
-    dropdown.innerHTML = ''; // Clear existing options
+    if (dropdown) {
+        dropdown.innerHTML = ''; // Clear existing options
 
-    showList.forEach(item => {
-        const option = document.createElement('option');
-        option.value = item; // Use the value from the showList
-        option.textContent = item; // Display the value in the dropdown
-        dropdown.appendChild(option);
-    });
-});
-
-document.getElementById('playButton').addEventListener('click', function() {
-    const dropdown = document.getElementById('showListDropdown');
-    const selectedShow = dropdown.value;
-    
-    if (selectedShow) {
-        if (dropdown.selectedIndex === 0) {
-            alert('Mama mia! Please select a show first!');
-        } else {
-            socket.emit('showPlay', selectedShow);
-            console.log(`Playing show: ${selectedShow}`);
-        }
+        showList.forEach(item => {
+            const option = document.createElement('option');
+            option.value = item;
+            option.textContent = item;
+            dropdown.appendChild(option);
+        });
     } else {
-        console.warn('No show selected.');
+        console.warn('Show List dropdown not found!');
     }
 });
 
-document.getElementById('pauseButton').addEventListener('click', function() {
-    socket.emit('showPause');
-    console.log('Pausing show');
-});
+// Handle play, pause, and stop buttons for shows
+function setupShowControlButtons() {
+    const playButton = document.getElementById('playButton');
+    const pauseButton = document.getElementById('pauseButton');
+    const stopButton = document.getElementById('stopButton');
 
-document.getElementById('stopButton').addEventListener('click', function() {
-    socket.emit('showStop');
-    console.log('Stopping show');
-});
+    if (playButton) {
+        playButton.addEventListener('click', () => {
+            const dropdown = document.getElementById('showListDropdown');
+            const selectedShow = dropdown ? dropdown.value : null;
 
-var wifiSSIDs = [];
-socket.on('wifiScan', function(data){
+            if (selectedShow) {
+                if (dropdown.selectedIndex === 0) {
+                    alert('Mama mia! Please select a show first!');
+                } else {
+                    socket.emit('showPlay', selectedShow);
+                    console.log(`Playing show: ${selectedShow}`);
+                }
+            } else {
+                console.warn('No show selected.');
+            }
+        });
+    } else {
+        console.warn('Play Button not found!');
+    }
+
+    if (pauseButton) {
+        pauseButton.addEventListener('click', () => {
+            socket.emit('showPause');
+            console.log('Pausing show');
+        });
+    } else {
+        console.warn('Pause Button not found!');
+    }
+
+    if (stopButton) {
+        stopButton.addEventListener('click', () => {
+            socket.emit('showStop');
+            console.log('Stopping show');
+        });
+    } else {
+        console.warn('Stop Button not found!');
+    }
+}
+
+// Handle WiFi scans
+let wifiSSIDs = [];
+socket.on('wifiScan', (data) => {
     wifiSSIDs = data;
 });
 
-var movements = [];
-socket.on('movementInfo', function(data){
-    // Data is a two dimensional array. First index is assigned keyboard key, second is assigned MIDI note
-    for (var i = 0; i < data.length; i++) {
-        var movement = {
-            key: data[i][0],
-            midiNote: data[i][1],
-            lastTime: 0
-        };
-        movements.push(movement);
-    }
+// Handle movement information (related to MIDI and key presses)
+let movements = [];
+socket.on('movementInfo', (data) => {
+    // Data is a two-dimensional array. First index is assigned keyboard key, second is assigned MIDI note
+    movements = data.map(item => ({
+        key: item[0].toLowerCase(),
+        midiNote: item[1],
+        lastTime: 0
+    }));
 });
 
-socket.on('gamepadKeyEvent', function(data){
-    // Data is a two dimensional array: [key, value]
-    let key = data[0];
-    let val = data[1];
-    for (var i = 0; i < movements.length; i++) {
-        if (movements[i].key == key.toLowerCase()) {
-            sendKey(key, val, false, false);
-        }
-    }
-});
+/**
+ * Send a key event.
+ * @param {string} key - The key pressed.
+ * @param {number} value - The value associated with the key event (e.g., 1 for keydown, 0 for keyup).
+ * @param {boolean} broadcast - Whether to broadcast this key event.
+ * @param {boolean} muteMidi - Whether to mute MIDI playback for this key event.
+ */
+function sendKey(key, value, broadcast, muteMidi) {
+    const currentTime = window.performance.now();
 
-function sendKey(key, num, bBroadcast, bMuteMidi) {
-    for (var i = 0; i < movements.length; i++) {
-        if (!movements[i].lastTime) {
-            movements[i].lastTime = 0;
-        }
-        if (movements[i].key == key.toLowerCase() && (window.performance.now() - movements[i].lastTime > 1)) {
-            if (bBroadcast) {
-                socket.emit('onKeyPress', {keyVal: key, val: num});
+    for (const movement of movements) {
+        if (movement.key === key.toLowerCase() && (currentTime - movement.lastTime > 1)) {
+            if (broadcast) {
+                socket.emit('onKeyPress', { keyVal: key, val: value });
             }
-            if (!bMuteMidi) {
-                playMIDINote(movements[i].midiNote, num);
+            if (!muteMidi) {
+                playMIDINote(movement.midiNote, value);
             }
-            movements[i].lastTime = window.performance.now();
-            break;  
+            movement.lastTime = currentTime;
+            break;
         }
     }
 }
 
-var down = new Set(); // Use a Set to store pressed keys
+// Handle keyboard events
+const down = new Set();
 
 function doKeyDown(event) {
     // Prevent handling if focus is on the TTS input or WiFi password input
@@ -233,7 +256,7 @@ function doKeyDown(event) {
         return;
     }
 
-    var charCode = (typeof event.which == "number") ? event.which : event.keyCode;
+    const charCode = event.which || event.keyCode;
     if (!down.has(charCode)) { // first press
         sendKey(String.fromCharCode(charCode), 1, true, false);
         down.add(charCode); // Add key to the Set
@@ -246,36 +269,41 @@ function doKeyUp(event) {
         return;
     }
 
-    var charCode = (typeof event.which == "number") ? event.which : event.keyCode;
+    const charCode = event.which || event.keyCode;
     if (down.has(charCode)) { // only send if key was previously pressed
         sendKey(String.fromCharCode(charCode), 0, true, false);
         down.delete(charCode); // Remove key from the Set
     }
 }
 
-document.onkeydown = doKeyDown;
-document.onkeyup = doKeyUp;
+document.addEventListener('keydown', doKeyDown);
+document.addEventListener('keyup', doKeyUp);
 
-var midiAccess = null;
-var midiOutputPort = null;
+// MIDI Handling
+let midiAccess = null;
+let midiOutputPort = null;
 
-// request MIDI access
+// Request MIDI access
 if (navigator.requestMIDIAccess) {
-    navigator.requestMIDIAccess({
-        sysex: false
-    }).then(onMIDISuccess, onMIDIFailure);
+    navigator.requestMIDIAccess({ sysex: false })
+        .then(onMIDISuccess)
+        .catch(onMIDIFailure);
 } else {
     console.log("No MIDI support in your browser. Try using HTTPS");
 }
 
 // Object to keep track of the state (on/off) of each MIDI note
-var noteState = {};
+const noteState = {};
 
+/**
+ * Play or stop a MIDI note.
+ * @param {number} midiNote - The MIDI note number.
+ * @param {number} val - 1 to play, 0 to stop.
+ */
 function playMIDINote(midiNote, val) {
-    if (midiOutputPort) {
-        var velocity = 0x40; // Default release velocity
-        var isOn = (val === 1);
-        var newState = isOn ? 'on' : 'off';
+    if (midiOutputPort && midiAccess) {
+        const isOn = val === 1;
+        const newState = isOn ? 'on' : 'off';
 
         // Check if the state has changed
         if (noteState[midiNote] === newState) {
@@ -284,10 +312,10 @@ function playMIDINote(midiNote, val) {
         noteState[midiNote] = newState;
 
         // Prepare the MIDI message
-        var status = isOn ? 0x90 : 0x80; // Note-On (0x90) or Note-Off (0x80)
-        velocity = isOn ? 0x7f : velocity; // Full velocity for Note-On
+        const status = isOn ? 0x90 : 0x80; // Note-On (0x90) or Note-Off (0x80)
+        const velocity = isOn ? 0x7F : 0x40; // Full velocity for Note-On, default release velocity for Note-Off
 
-        var output = midiAccess.outputs.get(midiOutputPort);
+        const output = midiAccess.outputs.get(midiOutputPort);
         if (output) {
             console.log(`Sending MIDI ${newState.toUpperCase()} event for note ${midiNote} to port: ${output.name} (ID: ${output.id})`);
             output.send([status, midiNote, velocity]);
@@ -299,14 +327,14 @@ function playMIDINote(midiNote, val) {
     }
 }
 
+/**
+ * Handle incoming MIDI messages.
+ * @param {MIDIMessageEvent} event - The MIDI message event.
+ */
 function onMIDIMessage(event) {
-    var data = event.data; // MIDI data [statusByte, dataByte1, dataByte2]
-    var statusByte = data[0];
-    var noteNumber = data[1]; // MIDI note number
-    var velocity = data[2];   // Note velocity
-
-    var command = statusByte >> 4;
-    var portName = event.target.name; // Name of the MIDI port
+    const [statusByte, noteNumber, velocity] = event.data;
+    const command = statusByte >> 4;
+    const portName = event.target.name; // Name of the MIDI port
 
     // When using LoopBe30, MIDI ports with "01" in the name are reserved only for output
     if (portName.startsWith("01. ")) {
@@ -314,125 +342,52 @@ function onMIDIMessage(event) {
     }
 
     // Find any keyboard value that is assigned to this MIDI note
-    for (var i = 0; i < movements.length; i++) {
-        if (movements[i].midiNote == noteNumber) {
+    movements.forEach(movement => {
+        if (movement.midiNote === noteNumber) {
             if (command === 9 && velocity > 0) {
                 // Note On
-                sendKey(movements[i].key, 1, true, true);
+                sendKey(movement.key, 1, true, true);
             } else if (command === 8 || (command === 9 && velocity === 0)) {
                 // Note Off
-                sendKey(movements[i].key, 0, true, true);
+                sendKey(movement.key, 0, true, true);
             }
         }
-    }
+    });
 }
 
+/**
+ * Handle successful MIDI access.
+ * @param {MIDIAccess} midi - The MIDI access object.
+ */
 function onMIDISuccess(midi) {
-    // When we successfully initiate the MIDI interface...
     midiAccess = midi;
-    midiOutputs = midiAccess.outputs.values();
-    console.log("init:", midiOutputs);
-    for (var output = midiOutputs.next(); output && !output.done; output = midiOutputs.next()) {
-        console.log('output', output);
-        midiOutputPort = output.value.id;
+    const outputs = Array.from(midiAccess.outputs.values());
+    console.log("Available MIDI Outputs:", outputs);
+
+    if (outputs.length > 0) {
+        midiOutputPort = outputs[0].id; // Select the first available MIDI output port
+        console.log(`Selected MIDI Output: ${outputs[0].name} (ID: ${outputs[0].id})`);
+    } else {
+        console.warn('No MIDI output ports available.');
     }
-    midiAccess.inputs.forEach(function(entry) {
-        entry.onmidimessage = onMIDIMessage;
+
+    midiAccess.inputs.forEach(input => {
+        input.onmidimessage = onMIDIMessage;
     });
 }
 
+/**
+ * Handle MIDI access failure.
+ * @param {Error} e - The error object.
+ */
 function onMIDIFailure(e) {
-    console.log("No access to MIDI devices or your browser doesn't support WebMIDI API. Please use WebMIDIAPIShim " + e);
+    console.log("No access to MIDI devices or your browser doesn't support WebMIDI API. Please use WebMIDIAPIShim", e);
 }
 
-var bGamepadActive = false;
-var gamepadState = [];
-var updateInterval;
+// Setup Gamepad Code Removed Here
 
-function findGamepad() {
-    return "getGamepads" in navigator;
-}
-
-function evalGamepadState() {
-    var gp = navigator.getGamepads()[0];
-    if (!gp) return;
-
-    for (var i = 0; i < gp.buttons.length; i++) {
-        if (gamepadState[i] !== gp.buttons[i].pressed) {
-            gamepadState[i] = gp.buttons[i].pressed;
-            var num = gp.buttons[i].pressed ? 1 : 0;
-            socket.emit('onGamepadButton', {buttonVal: i + 1, val: num});
-        }
-    }
-}
-
-$(document).ready(function() {
-    if (findGamepad()) {
-        $(window).on("gamepadconnected", function() {
-            bGamepadActive = true;
-            console.log("Gamepad detected!");
-            updateInterval = window.setInterval(evalGamepadState, 75);
-        });
-
-        $(window).on("gamepaddisconnected", function() {
-            console.log("Gamepad disconnected!");
-            window.clearInterval(updateInterval);
-        });
-
-        // Setup an interval for Chrome to detect gamepad
-        var checkGP = window.setInterval(function() {
-            if (navigator.getGamepads()[0]) {
-                if (!bGamepadActive) $(window).trigger("gamepadconnected");
-                window.clearInterval(checkGP);
-            }
-        }, 500);
-    }
-
-    // Close popup when close button is clicked
-    const closePopupButton = document.getElementById('closeWifiPopup');
-    if (closePopupButton) {
-        closePopupButton.addEventListener('click', closeWifiPopup);
-    }
-
-    // Handle Connect button click
-    const connectButton = document.getElementById('connectWifiButton');
-    if (connectButton) {
-        connectButton.addEventListener('click', function() {
-            const password = document.getElementById('wifiPassword').value.trim();
-            if (selectedSSID && password) {
-                connectToWifi(selectedSSID, password);
-                closeWifiPopup();
-            } else {
-                alert('Please select a WiFi network and enter the password.');
-            }
-        });
-    }
-
-    // Optional: Close popup when clicking outside the popup content
-    const popupOverlay = document.getElementById('wifiPopup');
-    if (popupOverlay) {
-        popupOverlay.addEventListener('click', function(e) {
-            if (e.target === popupOverlay) {
-                closeWifiPopup();
-            }
-        });
-    }
-});
-
-// Function to perform flip animation
-function performFlipAnimation() {
-    const mainContent = document.getElementById('main');
-    mainContent.classList.add('flip-animation');
-
-    // Remove the class after animation completes to allow re-triggering
-    mainContent.addEventListener('animationend', function handler() {
-        mainContent.classList.remove('flip-animation');
-        mainContent.removeEventListener('animationend', handler);
-    });
-}
-
-// Add event listeners for Mirrored Mode and Retro Mode checkboxes
-document.addEventListener('DOMContentLoaded', function() {
+// Mode Handling (Mirrored & Retro)
+function setupModeCheckboxes() {
     const mirroredModeCheckbox = document.getElementById('mirroredModeCheckbox');
     const retroModeCheckbox = document.getElementById('retroModeCheckbox');
 
@@ -442,7 +397,7 @@ document.addEventListener('DOMContentLoaded', function() {
         mirroredModeCheckbox.checked = mirroredModeEnabled;
 
         // Add event listener for Mirrored Mode checkbox
-        mirroredModeCheckbox.addEventListener('change', function() {
+        mirroredModeCheckbox.addEventListener('change', function () {
             performFlipAnimation();
             // Save preference to localStorage
             localStorage.setItem('mirroredModeEnabled', this.checked);
@@ -459,38 +414,67 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (retroModeEnabled) {
             const mainContent = document.getElementById('main');
-            mainContent.classList.add('retro-mode-active');
+            if (mainContent) {
+                mainContent.classList.add('retro-mode-active');
+            }
         }
 
         // Add event listener for Retro Mode checkbox
-        retroModeCheckbox.addEventListener('change', function() {
+        retroModeCheckbox.addEventListener('change', function () {
             const mainContent = document.getElementById('main');
-            if (this.checked) {
-                mainContent.classList.add('retro-mode-active');
-            } else {
-                mainContent.classList.remove('retro-mode-active');
-            }
-            socket.emit('onRetroMode', this.checked);
+            if (mainContent) {
+                if (this.checked) {
+                    mainContent.classList.add('retro-mode-active');
+                } else {
+                    mainContent.classList.remove('retro-mode-active');
+                }
+                socket.emit('onRetroMode', this.checked);
 
-            // Save preference to localStorage
-            localStorage.setItem('retroModeEnabled', this.checked);
+                // Save preference to localStorage
+                localStorage.setItem('retroModeEnabled', this.checked);
+            } else {
+                console.warn('Main content element not found!');
+            }
         });
     } else {
         console.warn('Retro Mode Checkbox not found!');
     }
+}
 
-    // **Existing Event Listener for Submit Button**
+/**
+ * Perform flip animation on the main content.
+ */
+function performFlipAnimation() {
+    const mainContent = document.getElementById('main');
+    if (!mainContent) {
+        console.warn('Main content element not found!');
+        return;
+    }
+
+    mainContent.classList.add('flip-animation');
+
+    // Remove the class after animation completes to allow re-triggering
+    const removeAnimation = () => {
+        mainContent.classList.remove('flip-animation');
+        mainContent.removeEventListener('animationend', removeAnimation);
+    };
+
+    mainContent.addEventListener('animationend', removeAnimation);
+}
+
+// Submit TTS Handling
+function setupSubmitTTS() {
     const submitButton = document.getElementById('submitTTSButton');
+    const ttsInput = document.getElementById('ttsInput');
+
     if (submitButton) {
         submitButton.addEventListener('click', submitTTS);
     } else {
         console.warn('Submit TTS Button not found!');
     }
 
-    // **New Event Listener for Enter Key in TTS Input**
-    const ttsInput = document.getElementById('ttsInput');
     if (ttsInput) {
-        ttsInput.addEventListener('keydown', function(event) {
+        ttsInput.addEventListener('keydown', function (event) {
             if (event.key === 'Enter') {
                 event.preventDefault();
                 submitTTS();
@@ -499,13 +483,15 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
         console.warn('TTS Input field not found!');
     }
-});
+}
 
-// Function to submit TTS
+/**
+ * Submit the TTS input to the backend.
+ */
 function submitTTS() {
     const inputField = document.getElementById('ttsInput');
     const submitButton = document.getElementById('submitTTSButton'); // Get the Submit button
-    const inputText = inputField.value.trim();
+    const inputText = inputField ? inputField.value.trim() : '';
 
     if (inputText) {
         console.log(`Submitted TTS Text: ${inputText}`);
@@ -521,108 +507,161 @@ function submitTTS() {
     }
 
     // Clear the input field after submission
-    inputField.value = '';
+    if (inputField) {
+        inputField.value = '';
+    }
 }
 
-// Placeholder function to populate the input box with a string
+/**
+ * Populate the TTS input box with a given string.
+ * @param {string} text - The text to populate in the TTS input.
+ */
 function populateTTSInput(text) {
     const inputField = document.getElementById('ttsInput');
-    inputField.value = text; // Replace any existing text
-    console.log(`Populated TTS Input with: ${text}`);
+    if (inputField) {
+        inputField.value = text; // Replace any existing text
+        console.log(`Populated TTS Input with: ${text}`);
+    } else {
+        console.warn('TTS Input field not found!');
+    }
 }
 
-// Function to open the WiFi selection popup
+// WiFi Popup Handling
+function setupWifiPopupEvents() {
+    const closePopupButton = document.getElementById('closeWifiPopup');
+    const connectButton = document.getElementById('connectWifiButton');
+    const popupOverlay = document.getElementById('wifiPopup');
+
+    // Close popup when close button is clicked
+    if (closePopupButton) {
+        closePopupButton.addEventListener('click', closeWifiPopup);
+    } else {
+        console.warn('Close WiFi Popup button not found!');
+    }
+
+    // Handle Connect button click
+    if (connectButton) {
+        connectButton.addEventListener('click', () => {
+            const passwordInput = document.getElementById('wifiPassword');
+            const password = passwordInput ? passwordInput.value.trim() : '';
+
+            if (selectedSSID && password) {
+                connectToWifi(selectedSSID, password);
+                closeWifiPopup();
+            } else {
+                alert('Please select a WiFi network and enter the password.');
+            }
+        });
+    } else {
+        console.warn('Connect WiFi Button not found!');
+    }
+
+    // Optional: Close popup when clicking outside the popup content
+    if (popupOverlay) {
+        popupOverlay.addEventListener('click', (e) => {
+            if (e.target === popupOverlay) {
+                closeWifiPopup();
+            }
+        });
+    } else {
+        console.warn('WiFi Popup overlay not found!');
+    }
+}
+
+/**
+ * Open the WiFi selection popup.
+ */
 function openWifiPopup() {
     populateWifiList(); // Populate the list before showing
     const popup = document.getElementById('wifiPopup');
     if (popup) {
         popup.style.display = 'flex';
+    } else {
+        console.warn('WiFi Popup element not found!');
     }
 }
 
-// Function to close the WiFi selection popup
+/**
+ * Close the WiFi selection popup.
+ */
 function closeWifiPopup() {
     const popup = document.getElementById('wifiPopup');
     if (popup) {
         popup.style.display = 'none';
+    } else {
+        console.warn('WiFi Popup element not found!');
     }
 }
 
-// Function to populate the WiFi networks list in the popup
+/**
+ * Populate the WiFi networks list in the popup.
+ */
 function populateWifiList() {
     const wifiListDiv = document.getElementById('wifiList');
-    if (wifiListDiv) {
-        wifiListDiv.innerHTML = ''; // Clear existing list
-
-        if (wifiSSIDs.length === 0) {
-            wifiListDiv.innerHTML = '<p style="color: #fff; text-align: center;">No WiFi networks found.</p>';
-            return;
-        }
-
-        wifiSSIDs.forEach(function(ap) {
-            const wifiItem = document.createElement('div');
-            wifiItem.classList.add('wifi-item');
-            wifiItem.dataset.ssid = ap.ssid;
-            wifiItem.innerHTML = `
-                <span>${ap.ssid}</span>
-                <span>${ap.signal_strength}%</span>
-            `;
-            wifiItem.addEventListener('click', function() {
-                selectWifi(ap.ssid);
-            });
-            wifiListDiv.appendChild(wifiItem);
-        });
+    if (!wifiListDiv) {
+        console.warn('WiFi List container not found!');
+        return;
     }
+
+    wifiListDiv.innerHTML = ''; // Clear existing list
+
+    if (wifiSSIDs.length === 0) {
+        wifiListDiv.innerHTML = '<p style="color: #fff; text-align: center;">No WiFi networks found.</p>';
+        return;
+    }
+
+    wifiSSIDs.forEach(ap => {
+        const wifiItem = document.createElement('div');
+        wifiItem.classList.add('wifi-item');
+        wifiItem.dataset.ssid = ap.ssid;
+        wifiItem.innerHTML = `
+            <span>${ap.ssid}</span>
+            <span>${ap.signal_strength}%</span>
+        `;
+        wifiItem.addEventListener('click', () => selectWifi(ap.ssid));
+        wifiListDiv.appendChild(wifiItem);
+    });
 }
 
 let selectedSSID = null;
 
-// Function to handle WiFi selection
+/**
+ * Handle WiFi network selection.
+ * @param {string} ssid - The SSID of the selected WiFi network.
+ */
 function selectWifi(ssid) {
     selectedSSID = ssid;
-    // Highlight the selected WiFi item
     const wifiItems = document.querySelectorAll('.wifi-item');
-    wifiItems.forEach(function(item) {
-        if (item.dataset.ssid === ssid) {
-            item.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
-        } else {
-            item.style.backgroundColor = '';
-        }
+    wifiItems.forEach(item => {
+        item.style.backgroundColor = item.dataset.ssid === ssid ? 'rgba(255, 255, 255, 0.2)' : '';
     });
 }
 
-// Handle Connect button click
-const connectWifiButton = document.getElementById('connectWifiButton');
-if (connectWifiButton) {
-    connectWifiButton.addEventListener('click', function() {
-        const password = document.getElementById('wifiPassword').value.trim();
-        if (selectedSSID && password) {
-            connectToWifi(selectedSSID, password);
-            closeWifiPopup();
-        } else {
-            alert('Please select a WiFi network and enter the password.');
-        }
-    });
-}
-
-// Handle Close button click
-const closeWifiPopupButton = document.getElementById('closeWifiPopup');
-if (closeWifiPopupButton) {
-    closeWifiPopupButton.addEventListener('click', closeWifiPopup);
-}
-
-// Optional: Close popup when clicking outside the popup content
-const popupOverlay = document.getElementById('wifiPopup');
-if (popupOverlay) {
-    popupOverlay.addEventListener('click', function(e) {
-        if (e.target === popupOverlay) {
-            closeWifiPopup();
-        }
-    });
-}
-
-// Function to connect to WiFi
+/**
+ * Connect to the selected WiFi network with the provided password.
+ * @param {string} ssid - The SSID of the WiFi network.
+ * @param {string} password - The password for the WiFi network.
+ */
 function connectToWifi(ssid, password) {
-    socket.emit('onConnectToWifi', { ssid: ssid, password: password });
+    socket.emit('onConnectToWifi', { ssid, password });
     console.log(`Connecting to WiFi SSID: ${ssid}`);
+}
+
+// Function to perform flip animation
+function performFlipAnimation() {
+    const mainContent = document.getElementById('main');
+    if (!mainContent) {
+        console.warn('Main content element not found!');
+        return;
+    }
+
+    mainContent.classList.add('flip-animation');
+
+    // Remove the class after animation completes to allow re-triggering
+    const removeAnimation = () => {
+        mainContent.classList.remove('flip-animation');
+        mainContent.removeEventListener('animationend', removeAnimation);
+    };
+
+    mainContent.addEventListener('animationend', removeAnimation);
 }
