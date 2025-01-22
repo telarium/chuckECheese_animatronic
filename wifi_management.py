@@ -31,7 +31,7 @@ class WifiManagement:
 		if not os.path.exists(config_path):
 			raise FileNotFoundError(f"Configuration file not found: {config_path}")
 		config = configparser.ConfigParser()
-		config.read(config_path)
+		config.read(config_file)
 		return config
 
 	def _get_interface(self):
@@ -112,6 +112,10 @@ dhcp-range=192.168.4.2,192.168.4.20,255.255.255.0,24h
 		subprocess.run(["systemctl", "restart", "wpa_supplicant"], check=True)
 		subprocess.run(["systemctl", "restart", "NetworkManager"], check=True)
 
+		# Re-initialize pywifi in managed mode
+		self.wifi = pywifi.PyWiFi()
+		self.iface = self._get_interface()
+
 	def activate_hotspot(self):
 		"""Activate the access point."""
 		self.create_hostapd_conf()
@@ -120,10 +124,28 @@ dhcp-range=192.168.4.2,192.168.4.20,255.255.255.0,24h
 		self.start_services()
 		print(f"Access point '{self.ssid}' is now running on {self.interface}.")
 
-	def is_hotspot_active(self):
-		"""Check if the hotspot is currently active."""
+	def is_interface_in_ap_mode(self):
+		"""
+		Returns True if self.interface is currently in AP mode
+		based on 'iw dev <interface> info'.
+		"""
 		try:
-			# Check if hostapd service is active
+			result = subprocess.run(
+				["iw", "dev", self.interface, "info"],
+				stdout=subprocess.PIPE,
+				stderr=subprocess.PIPE,
+				text=True,
+				check=True
+			)
+			return "type AP" in result.stdout
+		except subprocess.CalledProcessError as e:
+			print(f"Error checking interface mode: {e}")
+			return False
+
+	def is_hotspot_active(self):
+		"""Check if the hotspot is currently active: both services running and interface in AP mode."""
+		try:
+			# Check if hostapd and dnsmasq services are active
 			hostapd_status = subprocess.run(
 				["systemctl", "is-active", "hostapd"],
 				stdout=subprocess.PIPE,
@@ -137,8 +159,15 @@ dhcp-range=192.168.4.2,192.168.4.20,255.255.255.0,24h
 				text=True
 			)
 
-			# If both services are active, the hotspot is active
-			return hostapd_status.stdout.strip() == "active" and dnsmasq_status.stdout.strip() == "active"
+			services_active = (
+				hostapd_status.stdout.strip() == "active" and
+				dnsmasq_status.stdout.strip() == "active"
+			)
+
+			# Check if interface is in AP mode
+			interface_is_ap = self.is_interface_in_ap_mode()
+
+			return services_active and interface_is_ap
 		except Exception as e:
 			print(f"Error checking hotspot status: {e}")
 			return False
@@ -155,7 +184,6 @@ dhcp-range=192.168.4.2,192.168.4.20,255.255.255.0,24h
 				stderr=subprocess.PIPE,
 				text=True,
 			)
-
 			if result.returncode == 0:
 				ssid = result.stdout.strip()
 				return ssid if ssid else "None"
@@ -201,62 +229,109 @@ dhcp-range=192.168.4.2,192.168.4.20,255.255.255.0,24h
 			return False
 
 	def get_wifi_access_points(self, signal_threshold=30):
-		"""Retrieve available Wi-Fi access points above a signal threshold using PyWiFi."""
+		"""
+		Retrieve available Wi-Fi access points above a signal threshold
+		by calling 'iw dev <interface> scan' directly. We parse the results,
+		skip hidden SSIDs, keep only the strongest signal per SSID, and
+		sort by signal strength descending.
+		"""
 		try:
-			# Start scanning for Wi-Fi networks
-			self.iface.scan()
-			time.sleep(2)  # Allow time for scanning
-			results = self.iface.scan_results()
+			cmd = ["iw", "dev", self.interface, "scan"]
+			proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+			if proc.returncode != 0:
+				print(f"Error scanning WiFi on {self.interface}: {proc.stderr.strip()}")
+				return []
 
-			# Define the range for dBm values
-			min_dbm = -100  # Very weak signal
-			max_dbm = -30   # Excellent signal
+			lines = proc.stdout.splitlines()
 
-			# Parse the scan results
+			# Temporary storage for each AP
+			ap_list = []
+			current_ap = {}
+
+			for line in lines:
+				line = line.strip()
+				# Start of a new BSS block: "BSS <bssid>(on <interface>)"
+				bss_match = re.match(r"^BSS ([0-9A-Fa-f:]+)\(on", line)
+				if bss_match:
+					# If we already have an AP dict in progress, add it first
+					if current_ap:
+						ap_list.append(current_ap)
+					current_ap = {
+						"bssid": bss_match.group(1),
+						"freq": None,
+						"signal_dbm": None,
+						"ssid": None
+					}
+
+				# Frequency line: "freq: 2412"
+				freq_match = re.match(r"freq: (\d+)", line)
+				if freq_match and current_ap:
+					current_ap["freq"] = int(freq_match.group(1))
+
+				# Signal line: "signal: -52.00 dBm"
+				signal_match = re.match(r"signal: ([-\d\.]+) dBm", line)
+				if signal_match and current_ap:
+					try:
+						current_ap["signal_dbm"] = float(signal_match.group(1))
+					except ValueError:
+						current_ap["signal_dbm"] = None
+
+				# SSID line: "SSID: SomeNetwork"
+				ssid_match = re.match(r"SSID: (.+)", line)
+				if ssid_match and current_ap:
+					current_ap["ssid"] = ssid_match.group(1)
+
+			# After the loop, add the last AP if present
+			if current_ap:
+				ap_list.append(current_ap)
+
+			# We'll store the best AP (by signal) per SSID in a dict
 			access_points = {}
-			for ap in results:
-				# Skip networks with no name (hidden SSIDs)
-				if not ap.ssid.strip():
+
+			# dBm range for conversion to percentage
+			min_dbm = -100  # Very weak
+			max_dbm = -30   # Excellent
+
+			for ap in ap_list:
+				ssid = ap["ssid"] or ""
+				ssid = ssid.strip()
+				if not ssid:  # Skip hidden SSIDs
+					continue
+
+				if ap["signal_dbm"] is None:
 					continue
 
 				# Convert dBm to percentage
-				signal_strength = max(
-					0,
-					min(100, int(((ap.signal - min_dbm) / (max_dbm - min_dbm)) * 100))
-				)
+				dbm = ap["signal_dbm"]
+				signal_strength = int(((dbm - min_dbm) / (max_dbm - min_dbm)) * 100)
+				signal_strength = max(0, min(100, signal_strength))
 
-				# Only include strong signals above the threshold
-				if signal_strength >= signal_threshold:
-					if ap.ssid not in access_points:
-						# Add new SSID to the dictionary
-						access_points[ap.ssid] = {"ssid": ap.ssid, "signal_strength": signal_strength}
-					else:
-						# Update if the new signal is stronger
-						if signal_strength > access_points[ap.ssid]["signal_strength"]:
-							access_points[ap.ssid] = {"ssid": ap.ssid, "signal_strength": signal_strength}
+				# Apply threshold
+				if signal_strength < signal_threshold:
+					continue
 
-			# Convert dictionary to sorted list
+				# If this SSID not in dict or found a stronger signal, update
+				if (ssid not in access_points or 
+						signal_strength > access_points[ssid]["signal_strength"]):
+					access_points[ssid] = {
+						"ssid": ssid,
+						"signal_strength": signal_strength,
+						"bssid": ap["bssid"],
+						"freq": ap["freq"],
+						"signal_dbm": dbm
+					}
+
+			# Convert dict to a list and sort
 			sorted_access_points = sorted(
 				access_points.values(),
 				key=lambda x: x["signal_strength"],
 				reverse=True
 			)
-
 			return sorted_access_points
 
 		except Exception as e:
 			print(f"Error getting Wi-Fi access points: {e}")
 			return []
-
-	def _get_interface(self):
-		"""Retrieve the Wi-Fi interface using PyWiFi."""
-		interfaces = self.wifi.interfaces()
-		if not interfaces:
-			raise RuntimeError("No Wi-Fi interfaces detected. Ensure the interface is enabled and in managed mode.")
-		for iface in interfaces:
-			if iface.name() == self.interface:
-				return iface
-		raise ValueError(f"Interface {self.interface} not found.")
 
 	def connect_to_wifi(self, ssid, password):
 		"""Connect to a Wi-Fi network, ensuring the hotspot is deactivated if running."""
@@ -322,6 +397,7 @@ dhcp-range=192.168.4.2,192.168.4.20,255.255.255.0,24h
 		"""Get the WiFi signal strength as a percentage."""
 		try:
 			if self.is_hotspot_active():
+				# If the hotspot is running, we consider signal strength as 100% for the AP
 				return 100
 
 			result = subprocess.run(['iwconfig', 'wlan0'], capture_output=True, text=True)
@@ -333,8 +409,8 @@ dhcp-range=192.168.4.2,192.168.4.20,255.255.255.0,24h
 				signal_dbm = int(match.group(1))
 
 				# Define the range for dBm values
-				min_dbm = -100  # Minimum signal level (very weak)
-				max_dbm = -30   # Maximum signal level (excellent)
+				min_dbm = -100  # Very weak
+				max_dbm = -30   # Excellent
 
 				# Calculate percentage
 				percentage = max(0, min(100, int(((signal_dbm - min_dbm) / (max_dbm - min_dbm)) * 100)))
@@ -343,15 +419,23 @@ dhcp-range=192.168.4.2,192.168.4.20,255.255.255.0,24h
 			print(f"Exception getting WiFi signal strength: {e}")
 		return "--"
 
+
 # Example usage
 if __name__ == "__main__":
 	ap_manager = WifiManagement()
 	try:
-		#ap_manager.activate_hotspot()
+		# ap_manager.activate_hotspot()
 		print(f"Connected SSID: {ap_manager.get_current_ssid()}")
 		print(f"Current IP: {ap_manager.get_current_ip()}")
 		print("Internet is available." if ap_manager.is_internet_available() else "No internet access.")
-		#input("Hotspot is running. Press Enter to deactivate and reconnect to Wi-Fi...")
-		#ap_manager.deactivate_hotspot_and_reconnect()
+		# input("Hotspot is running. Press Enter to deactivate and reconnect to Wi-Fi...")
+		# ap_manager.deactivate_hotspot_and_reconnect()
+
+		# Example: scanning with the new 'iw' approach
+		nets = ap_manager.get_wifi_access_points(signal_threshold=30)
+		print("Found networks:")
+		for net in nets:
+			print(net)
+
 	except KeyboardInterrupt:
 		ap_manager.deactivate_hotspot_and_reconnect()
