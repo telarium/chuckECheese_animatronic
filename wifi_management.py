@@ -13,6 +13,7 @@ from pywifi import const
 class WifiManagement:
 	def __init__(self, interface="wlan0", config_file="config.cfg"):
 		self.config = self.load_config(config_file)
+		self.cached_access_point = None
 
 		self.ssid = self.config["Hotspot"]["HotspotSSID"]
 		self.password = self.config["Hotspot"]["HotspotPassword"]
@@ -239,8 +240,8 @@ dhcp-range=192.168.4.2,192.168.4.20,255.255.255.0,24h
 			cmd = ["iw", "dev", self.interface, "scan"]
 			proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 			if proc.returncode != 0:
-				print(f"Error scanning WiFi on {self.interface}: {proc.stderr.strip()}")
-				return []
+				print(f"Error scanning WiFi on {self.interface}: {proc.stderr.strip()}. Using cached list.")
+				return self.cached_access_point
 
 			lines = proc.stdout.splitlines()
 
@@ -327,11 +328,12 @@ dhcp-range=192.168.4.2,192.168.4.20,255.255.255.0,24h
 				key=lambda x: x["signal_strength"],
 				reverse=True
 			)
+			self.cached_access_point = sorted_access_points
 			return sorted_access_points
 
 		except Exception as e:
 			print(f"Error getting Wi-Fi access points: {e}")
-			return []
+			return self.cached_access_point
 
 	def connect_to_wifi(self, ssid, password):
 		"""Connect to a Wi-Fi network, ensuring the hotspot is deactivated if running."""
