@@ -62,7 +62,7 @@ body.is-loading *, body.is-loading *:before, body.is-loading *:after {
 
 body, input, select, textarea {
     color: rgba(255, 255, 255, 1);
-    font-family: sans-serif; /* Replaced "Source Sans Pro" with default system sans-serif */
+    font-family: sans-serif;
     font-size: 12pt;
     font-weight: 600;
     line-height: 1.65;
@@ -192,7 +192,7 @@ hr {
 .box {
     border-radius: 4px;
     margin-bottom: 0.3em !important;
-    background: #291b22;
+    background: #24160b;
     text-align: center;
     opacity: 0.9;
     z-index: 2;
@@ -287,7 +287,7 @@ button,
 .button {
     appearance: none;
     transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
-    background-color: #70c7be;
+    background-color: #7a4135;
     border-radius: 4px;
     border: 0;
     color: #ffffff !important;
@@ -307,7 +307,7 @@ input[type="reset"]:hover,
 input[type="button"]:hover,
 button:hover,
 .button:hover {
-    background-color: #82cec6;
+    background-color: #b8835b;
 }
 
 input[type="submit"]:active,
@@ -315,7 +315,7 @@ input[type="reset"]:active,
 input[type="button"]:active,
 button:active,
 .button:active {
-    background-color: #5ec0b6;
+    background-color: #783c3b;
 }
 
 input[type="submit"].fit,
@@ -424,7 +424,7 @@ button:disabled,
     max-width: 930px;
     margin: 2em auto 0.3em auto;
     padding: 0.75em;
-    background: #291b22;
+    background: #24160b;
     border-radius: 4px;
     text-align: center;
     opacity: 0.9;
@@ -509,13 +509,13 @@ button:disabled,
 }
 
 #main.retro-mode-active {
-    background-color: #1a070b;
+    background-color: #080805;
     color: #ffffff;
     transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
 }
 
 #main.retro-mode-active .box {
-    background: #321e28;
+    background: #3e2715;
 }
 
 #main.retro-mode-active a {
@@ -576,7 +576,7 @@ button:disabled,
 }
 
 .popup-content {
-    background-color: #291b22;
+    background-color: #24160b;
     padding: 25px 20px 20px 20px; /* Adjusted top padding to prevent overlap */
     border-radius: 4px;
     width: 90%;
@@ -618,7 +618,7 @@ button:disabled,
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 4px;
     padding: 10px;
-    background-color: #3a2a33;
+    background-color: #2d2b20;
 }
 
 .wifi-item {
@@ -689,7 +689,7 @@ button:disabled,
 }
 
 .voice-command-status p span {
-    color: #70c7be;
+    color: #f36446;
     font-weight: bold;
 }
 
