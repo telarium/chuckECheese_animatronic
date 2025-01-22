@@ -78,12 +78,12 @@ class VoiceEventHandler:
 		self.playAudioSequence(audioFiles)
 
 	def hotspotStart(self):
-		dispatcher.send(signal="activateWifiHotspot", bActivate=True)
 		self.playAudioSequence([self.audioPath+"/hotspot_activate.ogg"])
+		dispatcher.send(signal="activateWifiHotspot", bActivate=True)
 
 	def hotspotEnd(self):
-		dispatcher.send(signal="activateWifiHotspot", bActivate=False)
 		self.playAudioSequence([self.audioPath+"/hotspot_deactivate.ogg"])
+		dispatcher.send(signal="activateWifiHotspot", bActivate=False)
 
 	def wifiNetwork(self):
 		ssid = self.wifiManagement.get_current_ssid()
