@@ -18,6 +18,40 @@ function truncateString(str, maxLength) {
     return str;
 }
 
+// Simple mobile detection for Android/iOS
+function isMobileDevice() {
+    const ua = navigator.userAgent.toLowerCase();
+    return (
+        ua.includes('android') ||
+        ua.includes('iphone') ||
+        ua.includes('ipad') ||
+        ua.includes('ipod')
+    );
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    // If mobile device, hide left and right keypad images
+    if (isMobileDevice()) {
+        // Hide the left keypad box
+        const leftKeypadBox = document.querySelector('img[src="images/keypad-l.png"]');
+        if (leftKeypadBox) {
+            const leftBoxContainer = leftKeypadBox.closest('.box');
+            if (leftBoxContainer) {
+                leftBoxContainer.style.display = 'none';
+            }
+        }
+
+        // Hide the right keypad box
+        const rightKeypadBox = document.querySelector('img[src="images/keypad-r.png"]');
+        if (rightKeypadBox) {
+            const rightBoxContainer = rightKeypadBox.closest('.box');
+            if (rightBoxContainer) {
+                rightBoxContainer.style.display = 'none';
+            }
+        }
+    }
+});
+
 socket.on('systemInfo', function(msg){
     msg.wifi_ssid = truncateString(msg.wifi_ssid, 20);
 
@@ -46,41 +80,41 @@ function updateVoiceCommandStatus(id, value) {
     let statusText = "";
 
     switch (id) {
-    case "idle":
-        statusText = "Waiting for 'Hey chef'...";
-        break;
-    case "wakeWord":
-        statusText = "Listening...";
-        break;
-    case "command":
-        statusText = "Executing command '" + value + "'";
-        break;
-    case "chatGPTSend":
-        statusText = "Heard '" + value + "'";
-        break;
-    case "transcribing":
-        statusText = "Transcribing...";
-        break;
-    case "chatGPTReceive":
-        statusText = "Responding...";
-        populateTTSInput(value);
-        break;
-    case "micNotFound":
-        statusText = "No microphone detected";
-        break;
-    case "error":
-        statusText = "Disabled!";
-        break;
-    case "ttsSubmitted":
-        statusText = "Processing...";
-        break;
-    case "ttsComplete":
+        case "idle":
+            statusText = "Waiting for 'Hey chef'...";
+            break;
+        case "wakeWord":
+            statusText = "Listening...";
+            break;
+        case "command":
+            statusText = "Executing command '" + value + "'";
+            break;
+        case "chatGPTSend":
+            statusText = "Heard '" + value + "'";
+            break;
+        case "transcribing":
+            statusText = "Transcribing...";
+            break;
+        case "chatGPTReceive":
+            statusText = "Responding...";
+            populateTTSInput(value);
+            break;
+        case "micNotFound":
+            statusText = "No microphone detected";
+            break;
+        case "error":
+            statusText = "Disabled!";
+            break;
+        case "ttsSubmitted":
+            statusText = "Processing...";
+            break;
+        case "ttsComplete":
             // Re-enable the Submit button
             statusText = "Waiting...";
             const submitButton = document.getElementById('submitTTSButton');
             if (submitButton) {
-                submitButton.disabled = false; // Enable the button
-                submitButton.classList.remove('disabled'); // Remove disabled styling
+                submitButton.disabled = false;
+                submitButton.classList.remove('disabled');
             }
             break;
         default:
@@ -88,7 +122,6 @@ function updateVoiceCommandStatus(id, value) {
     }
 
     const statusElement = document.getElementById('voiceCommandStatus');
-
     if (statusElement) {
         statusElement.innerHTML = `Voice Command Status: <span>${statusText}</span>`;
     } else {
@@ -97,9 +130,8 @@ function updateVoiceCommandStatus(id, value) {
 }
 
 socket.on('voiceCommandUpdate', function(data){
-    updateVoiceCommandStatus(data.id, data.value)
+    updateVoiceCommandStatus(data.id, data.value);
 });
-
 
 var showList = [];
 socket.on('showListLoaded', function(data) {
@@ -122,7 +154,7 @@ socket.on('showListLoaded', function(data) {
 
 document.getElementById('playButton').addEventListener('click', function() {
     const dropdown = document.getElementById('showListDropdown');
-    const selectedShow = dropdown.value; // Get the selected dropdown value
+    const selectedShow = dropdown.value;
     
     if (selectedShow) {
         if (dropdown.selectedIndex === 0) {
@@ -148,12 +180,12 @@ document.getElementById('stopButton').addEventListener('click', function() {
 
 var wifiSSIDs = [];
 socket.on('wifiScan', function(data){
-    wifiSSIDs = data
+    wifiSSIDs = data;
 });
 
 var movements = [];
 socket.on('movementInfo', function(data){
-    // Data is a two dimensional array. First index is the assigned keyboard key, second is the assigned MIDI note
+    // Data is a two dimensional array. First index is assigned keyboard key, second is assigned MIDI note
     for (var i = 0; i < data.length; i++) {
         var movement = {
             key: data[i][0],
@@ -165,12 +197,12 @@ socket.on('movementInfo', function(data){
 });
 
 socket.on('gamepadKeyEvent', function(data){
-    // Data is a two dimensional array. First index is the assigned keyboard key, second is the value
+    // Data is a two dimensional array: [key, value]
     let key = data[0];
     let val = data[1];
     for (var i = 0; i < movements.length; i++) {
         if (movements[i].key == key.toLowerCase()) {
-            sendKey(key, val, false, false)
+            sendKey(key, val, false, false);
         }
     }
 });
@@ -181,16 +213,14 @@ function sendKey(key, num, bBroadcast, bMuteMidi) {
             movements[i].lastTime = 0;
         }
         if (movements[i].key == key.toLowerCase() && (window.performance.now() - movements[i].lastTime > 1)) {
-            if( bBroadcast) // Do we broadcast this event over the web socket?
-            {
+            if (bBroadcast) {
                 socket.emit('onKeyPress', {keyVal: key, val: num});
             }
-            if( !bMuteMidi )
-            {
+            if (!bMuteMidi) {
                 playMIDINote(movements[i].midiNote, num);
             }
             movements[i].lastTime = window.performance.now();
-            break;  // Stop further iterations once the key event is sent
+            break;  
         }
     }
 }
@@ -226,9 +256,8 @@ function doKeyUp(event) {
 document.onkeydown = doKeyDown;
 document.onkeyup = doKeyUp;
 
-
-var midiAccess = null
-var midiOutputPort = null
+var midiAccess = null;
+var midiOutputPort = null;
 
 // request MIDI access
 if (navigator.requestMIDIAccess) {
@@ -245,17 +274,13 @@ var noteState = {};
 function playMIDINote(midiNote, val) {
     if (midiOutputPort) {
         var velocity = 0x40; // Default release velocity
-
-        // Determine the intended state (on or off)
-        var isOn = val === 1;
+        var isOn = (val === 1);
         var newState = isOn ? 'on' : 'off';
 
         // Check if the state has changed
         if (noteState[midiNote] === newState) {
-            return; // No change, skip sending the MIDI message
+            return; // No change, skip
         }
-
-        // Update the noteState object with the new state
         noteState[midiNote] = newState;
 
         // Prepare the MIDI message
@@ -274,7 +299,6 @@ function playMIDINote(midiNote, val) {
     }
 }
 
-
 function onMIDIMessage(event) {
     var data = event.data; // MIDI data [statusByte, dataByte1, dataByte2]
     var statusByte = data[0];
@@ -284,38 +308,37 @@ function onMIDIMessage(event) {
     var command = statusByte >> 4;
     var portName = event.target.name; // Name of the MIDI port
 
-    // When using LoopBe30, MIDI ports with "01" in the name are reserved only for output to a MIDI sequencer.
+    // When using LoopBe30, MIDI ports with "01" in the name are reserved only for output
     if (portName.startsWith("01. ")) {
-        //console.warn(`Ignoring MIDI event from unexpected port: ${portName}`);
         return;
     }
 
     // Find any keyboard value that is assigned to this MIDI note
     for (var i = 0; i < movements.length; i++) {
-        if (movements[i].midiNote == noteNumber)
-        {
+        if (movements[i].midiNote == noteNumber) {
             if (command === 9 && velocity > 0) {
-                // Note On message
+                // Note On
                 sendKey(movements[i].key, 1, true, true);
             } else if (command === 8 || (command === 9 && velocity === 0)) {
-                // Note Off message
+                // Note Off
                 sendKey(movements[i].key, 0, true, true);
             }
         }
     }
 }
 
-
 function onMIDISuccess(midi) {
     // When we successfully initiate the MIDI interface...
-    midiAccess = midi
-    midiOutputs = midiAccess.outputs.values()
-    console.log("init:",midiOutputs)
+    midiAccess = midi;
+    midiOutputs = midiAccess.outputs.values();
+    console.log("init:", midiOutputs);
     for (var output = midiOutputs.next(); output && !output.done; output = midiOutputs.next()) {
-        console.log('output',output)
-        midiOutputPort = output.value.id
+        console.log('output', output);
+        midiOutputPort = output.value.id;
     }
-    midiAccess.inputs.forEach( function(entry) {entry.onmidimessage = onMIDIMessage;});
+    midiAccess.inputs.forEach(function(entry) {
+        entry.onmidimessage = onMIDIMessage;
+    });
 }
 
 function onMIDIFailure(e) {
@@ -325,22 +348,24 @@ function onMIDIFailure(e) {
 var bGamepadActive = false;
 var gamepadState = [];
 var updateInterval;
-    
+
 function findGamepad() {
     return "getGamepads" in navigator;
 }
 
 function evalGamepadState() {
     var gp = navigator.getGamepads()[0];
+    if (!gp) return;
+
     for (var i = 0; i < gp.buttons.length; i++) {
-        if (gamepadState[i] != gp.buttons[i].pressed) {
+        if (gamepadState[i] !== gp.buttons[i].pressed) {
             gamepadState[i] = gp.buttons[i].pressed;
             var num = gp.buttons[i].pressed ? 1 : 0;
             socket.emit('onGamepadButton', {buttonVal: i + 1, val: num});
-        }    
+        }
     }
 }
-    
+
 $(document).ready(function() {
     if (findGamepad()) {
         $(window).on("gamepadconnected", function() {
@@ -354,7 +379,7 @@ $(document).ready(function() {
             window.clearInterval(updateInterval);
         });
 
-        // Setup an interval for Chrome
+        // Setup an interval for Chrome to detect gamepad
         var checkGP = window.setInterval(function() {
             if (navigator.getGamepads()[0]) {
                 if (!bGamepadActive) $(window).trigger("gamepadconnected");
@@ -416,16 +441,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const mirroredModeEnabled = localStorage.getItem('mirroredModeEnabled') === 'true';
         mirroredModeCheckbox.checked = mirroredModeEnabled;
 
-        if (mirroredModeEnabled) {
-            // Optionally, perform initial flip or apply styles if needed
-            // Since the flip is transient, no persistent changes are applied
-            // If you wish to have a persistent mirrored state, additional styles would be required
-        }
-
         // Add event listener for Mirrored Mode checkbox
         mirroredModeCheckbox.addEventListener('change', function() {
             performFlipAnimation();
-
             // Save preference to localStorage
             localStorage.setItem('mirroredModeEnabled', this.checked);
             socket.emit('onMirroredMode', this.checked);
@@ -449,7 +467,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const mainContent = document.getElementById('main');
             if (this.checked) {
                 mainContent.classList.add('retro-mode-active');
-                
             } else {
                 mainContent.classList.remove('retro-mode-active');
             }
