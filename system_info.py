@@ -1,33 +1,38 @@
 from wifi_management import WifiManagement
+from pydispatch import dispatcher
 import os
 import psutil
 import eventlet
 import subprocess
 
 class SystemInfo:
-	def __init__(self, webServer):
-		self.webServer = webServer
+	def __init__(self):
 		self.wifiManagement = WifiManagement()
 		self.update_thread = eventlet.spawn(self.update)
+		self.latestInfo = None
+
+	def get(self):
+		return self.latestInfo
+
+	def processInfo(self):
+		try:
+			self.latestInfo = {
+				'cpu': int(psutil.cpu_percent()),
+				'ram': int(psutil.virtual_memory().percent),
+				'disk': self.get_disk_usage(),
+				'temperature': self.get_temperature(),
+				'wifi_ssid': self.wifiManagement.get_current_ssid(),
+				'wifi_signal': self.wifiManagement.get_signal_strength()
+			}
+		except:
+			print("Failed to get system info!")
 
 	def update(self):
+		# Broadcast the system info on a set interval
 		while True:
-			try:
-				eventlet.sleep(3)
-
-				info = {
-					'cpu': int(psutil.cpu_percent()),
-					'ram': int(psutil.virtual_memory().percent),
-					'disk': self.get_disk_usage(),
-					'temperature': self.get_temperature(),
-					'wifi_ssid': self.wifiManagement.get_current_ssid(),
-					'wifi_signal': self.wifiManagement.get_signal_strength()
-				}
-
-				self.webServer.broadcast('systemInfo', info)
-
-			except Exception as e:
-				print(f"Exception in update thread: {e}")
+			self.processInfo()
+			dispatcher.send(signal="systemInfoUpdate")
+			eventlet.sleep(2)
 
 	def get_disk_usage(self):
 		"""Get the disk usage percentage."""
