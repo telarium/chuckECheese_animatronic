@@ -30,12 +30,15 @@ function isMobileDevice() {
     return /android|iphone|ipad|ipod/.test(ua);
 }
 
+// Consolidated DOMContentLoaded Event Listener
 document.addEventListener('DOMContentLoaded', () => {
     handleMobileKeypadVisibility();
     setupWifiPopupEvents();
     setupModeCheckboxes();
     setupSubmitTTS();
     setupShowControlButtons();
+    setupHotspotLink(); // Initialize hotspot link functionality
+    setupPasswordEnterKey(); // Initialize Enter key functionality for password input
 });
 
 // Handle visibility of keypad images on mobile devices
@@ -52,8 +55,16 @@ function handleMobileKeypadVisibility() {
     });
 }
 
+let bHotspotActive = false;
+
 // Update system information displayed on the page
 socket.on('systemInfo', (msg) => {
+    bHotspotActive = msg.hotspot_status;
+    if (bHotspotActive === true) {
+        setHotspotLinkText("Deactivate Hotspot");
+    } else {
+        setHotspotLinkText("Activate Hotspot");
+    }
     msg.wifi_ssid = truncateString(msg.wifi_ssid, 20);
 
     const newMsg = `
@@ -384,8 +395,6 @@ function onMIDIFailure(e) {
     console.log("No access to MIDI devices or your browser doesn't support WebMIDI API. Please use WebMIDIAPIShim", e);
 }
 
-// Setup Gamepad Code Removed Here
-
 // Mode Handling (Mirrored & Retro)
 function setupModeCheckboxes() {
     const mirroredModeCheckbox = document.getElementById('mirroredModeCheckbox');
@@ -398,10 +407,20 @@ function setupModeCheckboxes() {
 
         // Add event listener for Mirrored Mode checkbox
         mirroredModeCheckbox.addEventListener('change', function () {
-            performFlipAnimation();
+            // Toggle the mirroredModeEnabled boolean
+            bMirroredModeEnabled = this.checked;
             // Save preference to localStorage
             localStorage.setItem('mirroredModeEnabled', this.checked);
             socket.emit('onMirroredMode', this.checked);
+
+            // Perform actions based on the new state
+            if (this.checked) {
+                performFlipAnimation();
+            } else {
+                reverseFlipAnimation(); // Define this function if needed
+            }
+
+            console.log(`Mirrored Mode is now ${this.checked ? 'Enabled' : 'Disabled'}`);
         });
     } else {
         console.warn('Mirrored Mode Checkbox not found!');
@@ -460,6 +479,22 @@ function performFlipAnimation() {
     };
 
     mainContent.addEventListener('animationend', removeAnimation);
+}
+
+/**
+ * Reverse the flip animation on the main content.
+ * @note: You need to define this function based on your animation requirements.
+ */
+function reverseFlipAnimation() {
+    const mainContent = document.getElementById('main');
+    if (mainContent) {
+        // If you have a specific reverse animation, trigger it here.
+        // For example, toggling a class or manipulating styles.
+        // This is a placeholder for your reverse animation logic.
+        console.log('Reverse flip animation triggered.');
+    } else {
+        console.warn('Main content element not found!');
+    }
 }
 
 // Submit TTS Handling
@@ -645,23 +680,86 @@ function selectWifi(ssid) {
 function connectToWifi(ssid, password) {
     socket.emit('onConnectToWifi', { ssid, password });
     console.log(`Connecting to WiFi SSID: ${ssid}`);
+    alert('Attempting to connect to WiFi network. Please wait...');
 }
 
-// Function to perform flip animation
-function performFlipAnimation() {
-    const mainContent = document.getElementById('main');
-    if (!mainContent) {
-        console.warn('Main content element not found!');
-        return;
+// Second DOMContentLoaded Listener Removed
+// Removed the duplicate DOMContentLoaded listener to prevent multiple event listeners
+
+/**
+ * Sets the text of the hotspot hyperlink.
+ * @param {string} text - The text to display for the hotspot link.
+ */
+function setHotspotLinkText(text) {
+    const hotspotLink = document.getElementById('hotspotLink');
+    if (hotspotLink) {
+        hotspotLink.textContent = text;
+    } else {
+        console.warn('Hotspot Link element not found!');
+    }
+}
+
+/**
+ * Handles the hotspot setup when the hyperlink is clicked.
+ */
+function setHotspot() {
+    // Placeholder for hotspot setup logic
+    bHotspotActive = !bHotspotActive;
+
+    socket.emit('onSetHotspot', bHotspotActive);
+
+    if (bHotspotActive === true) {
+        alert("Hotspot activating...");
+    } else {
+        alert("Hotspot deactivating. Attempting to reconnect to WiFi...");
     }
 
-    mainContent.classList.add('flip-animation');
+    // Optionally, update the hotspot link text based on the new state
+    if (bHotspotActive) {
+        setHotspotLinkText("Deactivate Hotspot");
+    } else {
+        setHotspotLinkText("Activate Hotspot");
+    }
+}
 
-    // Remove the class after animation completes to allow re-triggering
-    const removeAnimation = () => {
-        mainContent.classList.remove('flip-animation');
-        mainContent.removeEventListener('animationend', removeAnimation);
-    };
+/**
+ * Initializes the event listener for the hotspot hyperlink.
+ */
+function setupHotspotLink() {
+    const hotspotLink = document.getElementById('hotspotLink');
+    if (hotspotLink) {
+        hotspotLink.addEventListener('click', (e) => {
+            e.preventDefault(); // Prevent default hyperlink behavior
+            setHotspot(); // Call the hotspot setup function
+            closeWifiPopup(); // Close the WiFi popup
+        });
+    } else {
+        console.warn('Hotspot Link element not found!');
+    }
+}
 
-    mainContent.addEventListener('animationend', removeAnimation);
+/**
+ * Initializes the Enter key functionality for the WiFi password input.
+ * When Enter is pressed, it triggers the Connect button if conditions are met.
+ */
+function setupPasswordEnterKey() {
+    const wifiPasswordInput = document.getElementById('wifiPassword');
+    const connectButton = document.getElementById('connectWifiButton');
+
+    if (wifiPasswordInput && connectButton) {
+        wifiPasswordInput.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') {
+                event.preventDefault(); // Prevent form submission or default behavior
+
+                // Check if a WiFi network is selected and password is entered
+                if (selectedSSID && wifiPasswordInput.value.trim() !== '') {
+                    connectButton.click(); // Trigger the Connect button click
+                } else {
+                    alert('Please select a WiFi network and enter the password.');
+                }
+            }
+        });
+    } else {
+        console.warn('WiFi Password input or Connect button not found!');
+    }
 }

@@ -661,6 +661,26 @@ button:disabled,
     width: 100%;
 }
 
+/* --- Hotspot Hyperlink Styles --- */
+
+.hotspot-link-container {
+    margin-top: 15px; /* Existing margin */
+    text-align: center; /* Centers the hyperlink horizontally */
+}
+
+.hotspot-link-container a {
+    color: rgba(255, 255, 255, 0.75);
+    text-decoration: none;
+    font-size: 0.9em;
+    cursor: pointer;
+    transition: color 0.2s ease-in-out;
+}
+
+.hotspot-link-container a:hover {
+    color: #FFF;
+    text-decoration: underline; /* Optional: Adds underline on hover */
+}
+
 @media screen and (max-width: 480px) {
     .popup-content {
         width: 95%;

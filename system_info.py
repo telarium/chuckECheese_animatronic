@@ -22,7 +22,8 @@ class SystemInfo:
 				'disk': self.get_disk_usage(),
 				'temperature': self.get_temperature(),
 				'wifi_ssid': self.wifiManagement.get_current_ssid(),
-				'wifi_signal': self.wifiManagement.get_signal_strength()
+				'wifi_signal': self.wifiManagement.get_signal_strength(),
+				'hotspot_status': self.wifiManagement.is_hotspot_active()
 			}
 		except:
 			print("Failed to get system info!")
