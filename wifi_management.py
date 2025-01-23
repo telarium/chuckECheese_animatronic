@@ -35,15 +35,30 @@ class WifiManagement:
 		config.read(config_file)
 		return config
 
+	import subprocess
+
 	def _get_interface(self):
-		"""Retrieve the Wi-Fi interface using PyWiFi."""
-		interfaces = self.wifi.interfaces()
+		"""Retrieve the Wi-Fi interface without using PyWiFi."""
+		try:
+			# Execute the 'iw dev' command to list wireless interfaces
+			output = subprocess.check_output(['iw', 'dev'], universal_newlines=True)
+		except FileNotFoundError:
+			raise RuntimeError("The 'iw' command is not found. Please install wireless tools.")
+
+		interfaces = []
+		current_iface = None
+		for line in output.split('\n'):
+			if line.strip().startswith('Interface'):
+				current_iface = line.strip().split()[1]
+				interfaces.append(current_iface)
+
 		if not interfaces:
 			raise RuntimeError("No Wi-Fi interfaces detected. Ensure the interface is enabled and in managed mode.")
-		for iface in interfaces:
-			if iface.name() == self.interface:
-				return iface
-		raise ValueError(f"Interface {self.interface} not found.")
+
+		if self.interface in interfaces:
+			return self.interface  # Return the interface name as a string
+		else:
+			raise ValueError(f"Interface '{self.interface}' not found among available interfaces: {interfaces}")
 
 	def create_hostapd_conf(self):
 		"""Create a hostapd configuration file."""

@@ -83,6 +83,11 @@ class WebServer:
 	def connectToWifi(data):
 		dispatcher.send(signal="connectToWifi", ssid=data["ssid"], password=data["password"])
 
+	@socketio.on('onSetHotspot')
+	def setHotspot(bEnable):
+		print("LKJWLEKJER")
+		dispatcher.send(signal="activateWifiHotspot", bActivate=bEnable)
+
 	@socketio.on('onWebTTSSubmit')
 	def webTTSSubmit(inputText):
 		dispatcher.send(signal="webTTSEvent", val=inputText)
