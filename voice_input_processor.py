@@ -17,6 +17,7 @@ import tempfile
 import signal
 import threading
 import time
+import requests
 
 class VoiceInputProcessor:
 	def __init__(self, pygame_instance, config_file="config.cfg"):
@@ -31,11 +32,22 @@ class VoiceInputProcessor:
 		self.google_cloud_key_path = self.config["SpeechToText"]["GoogleCloudKeyPath"]
 		os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = self.google_cloud_key_path
 
-		# OpenAI ChatGPT key and context
-		self.openai_api_key = self.config["ChatGPT"]["OpenAIKey"]
-		self.chatgpt_context = self.config["ChatGPT"]["ChatGPTContext"]
-		openai.api_key = self.openai_api_key
-		self.openai_client = openai.Client(api_key=self.openai_api_key)
+		# OpenAI ChatGPT key
+		try:
+			self.openai_api_key = self.config["ChatGPT"]["OpenAIKey"]
+			openai.api_key = self.openai_api_key
+			self.openai_client = openai.Client(api_key=self.openai_api_key)
+		except:
+			self.openai_api_key = None
+
+		try:
+			# DeepSeek API key and model
+			self.deepseek_api_key = self.config["DeepSeek"]["DeepSeekAPIKey"]
+			self.deepseek_model = self.config["DeepSeek"]["DeepSeekModel"]
+		except:
+			self.deepseek_api_key = None
+
+		self.ai_context = self.config["AI"]["Context"]
 
 		# ElevenLabs TTS keys
 		self.elevenlabs_key = self.config["TextToSpeech"]["ElevenLabsKey"]
@@ -221,7 +233,7 @@ class VoiceInputProcessor:
 			response = self.openai_client.chat.completions.create(
 				model="gpt-4",
 				messages=[
-					{"role": "system", "content": self.chatgpt_context},
+					{"role": "system", "content": self.ai_context},
 					{"role": "user", "content": text},
 				],
 			)
@@ -236,6 +248,43 @@ class VoiceInputProcessor:
 		except Exception as e:
 			self.setVoiceCommand("error")
 			print(f"Failed to get response from ChatGPT: {e}")
+			return None
+
+	def send_to_deepseek(self, text):
+		"""Send text to DeepSeek and generate a response."""
+		print(f"Sending text to DeepSeek: {text}")
+		self.setVoiceCommand("deepseekSend", text)
+		try:
+			headers = {
+				"Authorization": f"Bearer {self.deepseek_api_key}",
+				"Content-Type": "application/json",
+			}
+			data = {
+				"model": self.deepseek_model,
+				"messages": [
+					{"role": "system", "content": self.ai_context},
+					{"role": "user", "content": text},
+				],
+			}
+			
+			response = requests.post(
+				"https://api.deepseek.com/v1/chat/completions",
+				headers=headers,
+				json=data,
+			)
+			response.raise_for_status()
+
+			deepseek_response = response.json()["choices"][0]["message"]["content"]
+			self.setVoiceCommand("deepseekReceive", deepseek_response)
+			print(f"DeepSeek Response: {deepseek_response}")
+
+			# Generate and play TTS audio
+			self.generate_and_play_tts(deepseek_response)
+
+			return deepseek_response
+		except Exception as e:
+			self.setVoiceCommand("error")
+			print(f"Failed to get response from DeepSeek: {e}")
 			return None
 
 	def generate_and_play_tts(self, text):
@@ -401,8 +450,11 @@ class VoiceInputProcessor:
 			elif transcription.lower() == "stop" or transcription.lower() == "stop singing" or transcription.lower() == "stop show":
 				dispatcher.send(signal="showStop")
 			else:
-				# If no command found, send to OpenAI
-				self.send_to_chatgpt(transcription)
+				# If no command found, send to OpenAI or DeepSeek, depending on if either have been configured.
+				if self.openai_api_key and "your" not in self.openai_api_key:
+					self.send_to_chatgpt(transcription)
+				elif self.deepseek_api_key and "your" not in self.deepseek_api_key:
+					self.send_to_deepseek(transcription)
 		else:
 			self.setVoiceCommand("timeout")
 
