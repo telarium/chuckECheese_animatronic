@@ -114,10 +114,17 @@ function updateVoiceCommandStatus(id, value) {
         case "chatGPTSend":
             statusText = `Heard '${value}'`;
             break;
+        case "deepseekSend":
+            statusText = `Heard '${value}'`;
+            break;
         case "transcribing":
             statusText = "Transcribing...";
             break;
         case "chatGPTReceive":
+            statusText = "Responding...";
+            populateTTSInput(value);
+            break;
+        case "deepseekReceive":
             statusText = "Responding...";
             populateTTSInput(value);
             break;
