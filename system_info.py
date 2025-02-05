@@ -7,10 +7,11 @@ import subprocess
 import spidev
 
 class SystemInfo:
-	def __init__(self):
+	def __init__(self, bStartThread=True):
 		self.wifiManagement = WifiManagement()
-		self.update_thread = eventlet.spawn(self.update)
-		self.latestInfo = None
+		if bStartThread:
+			self.update_thread = eventlet.spawn(self.update)
+			self.latestInfo = None
 
 	def get(self):
 		return self.latestInfo
