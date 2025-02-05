@@ -4,6 +4,7 @@ import os
 import psutil
 import eventlet
 import subprocess
+import spidev
 
 class SystemInfo:
 	def __init__(self):
@@ -21,6 +22,7 @@ class SystemInfo:
 				'ram': int(psutil.virtual_memory().percent),
 				'disk': self.get_disk_usage(),
 				'temperature': self.get_temperature(),
+				'psi': self.get_psi(),
 				'wifi_ssid': self.wifiManagement.get_current_ssid(),
 				'wifi_signal': self.wifiManagement.get_signal_strength(),
 				'hotspot_status': self.wifiManagement.is_hotspot_active()
@@ -34,6 +36,30 @@ class SystemInfo:
 			self.processInfo()
 			dispatcher.send(signal="systemInfoUpdate")
 			eventlet.sleep(2)
+
+	def get_psi(self):
+		# Read PSI from the ABPDANV150PGSA3 sensor
+		try:
+			spi = spidev.SpiDev()
+			spi.open(0, 0)
+
+			spi.max_speed_hz = 500000      # Adjust the speed as needed
+			spi.mode = 0b00                # SPI mode (clock polarity and phase)
+
+			response = spi.xfer2([0x00, 0x00])
+
+			raw_value = (response[0] << 8) | response[1]
+			full_scale_psi = 150.0
+
+			# Convert the raw value to PSI.
+			# For a linear sensor where 0 => 0 PSI and 65535 => 150 PSI:
+			full_scale_psi = 150.0
+			psi = (raw_value / 65535.0) * full_scale_psi
+
+			spi.close()
+			return int(psi)
+		except:
+			return "--"
 
 	def get_disk_usage(self):
 		"""Get the disk usage percentage."""
