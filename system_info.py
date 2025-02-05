@@ -47,19 +47,19 @@ class SystemInfo:
 			spi.mode = 0b00                # SPI mode (clock polarity and phase)
 
 			response = spi.xfer2([0x00, 0x00])
-
 			raw_value = (response[0] << 8) | response[1]
-			full_scale_psi = 150.0
-
-			# Convert the raw value to PSI.
-			# For a linear sensor where 0 => 0 PSI and 65535 => 150 PSI:
-			full_scale_psi = 150.0
-			psi = (raw_value / 65535.0) * full_scale_psi
-
 			spi.close()
-			return int(psi)
-		except:
-			return "--"
+
+			offset = 1600
+			span = 9339 - offset  # 9339 - 1600 = 7739 counts
+			scale = 90.0 / span   # ≈ 0.01163 PSI per count
+
+			psi = (raw_value - offset) * scale
+
+			return int(round(psi))
+		except Exception as e:
+			print(f"Exception getting temperature: {e}")
+			return "---"
 
 	def get_disk_usage(self):
 		"""Get the disk usage percentage."""
