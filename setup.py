@@ -26,17 +26,7 @@ class Setup:
 		self.install_python_packages([
 			"pvporcupine", "pvrhino", "openai", "google-cloud-speech", "elevenlabs", "piper-tts", "pywifi", "requests"
 		])
-		
-		# Clone the flask-uploads repository
-		self.run_command("git clone https://github.com/maxcountryman/flask-uploads.git")
-		
-		# Change directory, run setup, and clean up
-		self.run_command("cd flask-uploads && sudo python3 setup.py install")
-		self.run_command("sudo rm -rf flask-uploads")
 
-		# Clone Chuck E. Cheese Git repository
-		self.run_command("git clone https://github.com/YourGitRepo/ChuckE.git chuck_e_git")
-		
 		# Set up Piper TTS models
 		self.setup_piper_models()
 
