@@ -70,6 +70,7 @@ socket.on('systemInfo', (msg) => {
     const newMsg = `
         <p>
             Wifi: <a href="#" id="wifiSSIDLink">${msg.wifi_ssid}</a><i>(${msg.wifi_signal}%)</i><br>
+            Pressure: ${msg.psi} PSI<br>
             CPU: ${msg.cpu}%<br>
             RAM: ${msg.ram}%<br>
             Disk Usage: ${msg.disk}%<br>
