@@ -58,7 +58,7 @@ class AutomatedPuppeteering:
 		return sample_rate, data
 
 	def monitor_audio(self, file_path):
-		"""Monitor the audio levels during playback."""
+		"""Monitor the audio levels during playback with improved synchronization."""
 		try:
 			# Load audio data
 			sample_rate, data = self.load_audio_data(file_path)
@@ -70,26 +70,32 @@ class AutomatedPuppeteering:
 			self.pygame.mixer.music.load(file_path)
 			self.pygame.mixer.music.play()
 
-			# Monitor the RMS values while the sound is playing
-			start_time = time.time()
+			# Use a monotonic clock for scheduling to prevent drift
+			start_time = time.monotonic()
+			iteration = 0
+			duration = len(data) / sample_rate  # Audio duration in seconds
+
 			for rms in rms_values:
-				# Ensure we're within the audio duration
-				if time.time() - start_time > len(data) / sample_rate:
-					break  # Stop monitoring if playback is over
+				# If playback duration is exceeded, break out of the loop
+				if time.monotonic() - start_time > duration:
+					break
 
-				#print(f"Current RMS: {rms}, Threshold: {self.threshold}")
-				
+				# Trigger mouth movement based on the RMS threshold
 				if rms > self.threshold:
-					dispatcher.send(signal="keyEvent", key='x', val=1) # Mouth open event
+					dispatcher.send(signal="keyEvent", key='x', val=1)  # Mouth open event
 				else:
-					dispatcher.send(signal="keyEvent", key='x', val=0) # Mouth close event
+					dispatcher.send(signal="keyEvent", key='x', val=0)  # Mouth close event
 
-				# Sleep less time to reduce the gap between monitoring intervals
-				time.sleep(self.interval_ms / 1000.0)  # Wait for the next interval
+				iteration += 1
+				# Calculate target time for the next update
+				target_time = start_time + iteration * (self.interval_ms / 1000.0)
+				sleep_duration = target_time - time.monotonic()
+				if sleep_duration > 0:
+					time.sleep(sleep_duration)
 
-			# Wait for the music to finish without adding too much delay
+			# Wait for the music to finish without busy-waiting
 			while self.pygame.mixer.music.get_busy():
-				self.pygame.time.wait(10)  # Small wait to avoid busy loop
+				self.pygame.time.wait(10)  # Small wait to avoid a busy loop
 
 		except Exception as e:
 			print(f"Error processing audio file {file_path}: {e}")
