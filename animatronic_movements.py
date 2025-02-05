@@ -431,6 +431,7 @@ class Movement:
 		def animShutdown():
 			dispatcher.send(signal="keyEvent", key=self.headUp.key, val=0)
 			dispatcher.send(signal="keyEvent", key=self.mustache.key, val=0)
+			dispatcher.send(signal="keyEvent", key=self.mouth.key, val=0)
 
 			if self.blinkAnimationThread and self.blinkAnimationThread.is_alive():
 				self.blinkAnimationThread.join()
@@ -467,10 +468,12 @@ class Movement:
 		self.animationThreadsActive = True
 		maxTimeBetweenBlinks = 3  # Seconds
 
+		dispatcher.send(signal="keyEvent", key=self.headUp.key, val=1)
+
 		def blink():
 			while self.animationThreadsActive:
 				dispatcher.send(signal="keyEvent", key=self.eyesBlinkFull.key, val=1)
-				time.sleep(random.uniform(0.1, 0.5))
+				time.sleep(random.uniform(0.05, 0.2))
 				dispatcher.send(signal="keyEvent", key=self.eyesBlinkFull.key, val=0)
 				time.sleep(random.uniform(0.25, maxTimeBetweenBlinks))
 			
@@ -499,13 +502,13 @@ class Movement:
 				if not self.animationThreadsActive:
 					return
 
-				time.sleep(random.uniform(0.5, 3))
+				time.sleep(random.uniform(0.25, 2.5))
 				dispatcher.send(signal="keyEvent", key=eyeMovement, val=0)
 
 				if not self.animationThreadsActive:
 					return
 
-				time.sleep(random.uniform(0.5, 3))
+				time.sleep(random.uniform(0.25, 2.5))
 
 				bMoveLeft = not bMoveLeft
 
