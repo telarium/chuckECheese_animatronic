@@ -7,7 +7,7 @@ import time
 import io
 
 class AutomatedPuppeteering:
-	def __init__(self, pygame_instance, threshold=0.1, interval_ms=50):
+	def __init__(self, pygame_instance, threshold=0.15, interval_ms=25):
 		self.pygame = pygame_instance
 
 		# Ensure threshold is numeric
