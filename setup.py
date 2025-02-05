@@ -24,7 +24,7 @@ class Setup:
 
 		# Install Python dependencies via pip with --break-system-packages
 		self.install_python_packages([
-			"pvporcupine", "pvrhino", "openai", "google-cloud-speech", "elevenlabs", "piper-tts", "pywifi", "requests"
+			"pvporcupine", "pvrhino", "pydub", "scipy", "openai", "google-cloud-speech", "elevenlabs", "piper-tts", "pywifi", "requests"
 		])
 
 		# Set up Piper TTS models
@@ -49,23 +49,22 @@ class Setup:
 
 	def setup_piper_models(self):
 		try:
-			# Create directory for Piper models
-			piper_dir = os.path.join(os.getcwd(), "chuck_e_git", "piper")
-			os.makedirs(piper_dir, exist_ok=True)
+			# Get the directory of the current script
+			script_dir = os.path.dirname(os.path.abspath(__file__))
 
-			# Download Ryan Low voice model
+			# Download Ryan Low voice model into the script's directory
 			subprocess.check_call([
 				"wget",
-				"-O", os.path.join(piper_dir, "en_US-ryan-low.onnx"),
+				"-O", os.path.join(script_dir, "en_US-ryan-low.onnx"),
 				"https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/ryan/low/en_US-ryan-low.onnx?download=true"
 			])
 			subprocess.check_call([
 				"wget",
-				"-O", os.path.join(piper_dir, "en_US-ryan-low.json"),
+				"-O", os.path.join(script_dir, "en_US-ryan-low.json"),
 				"https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/ryan/low/en_US-ryan-low.onnx.json?download=true"
 			])
 
-			print("Piper TTS models are available in the chuck_e_git/piper directory.")
+			print(f"Piper TTS models are available in {script_dir}.")
 		except subprocess.CalledProcessError as e:
 			print(f"Failed to set up Piper models: {e}")
 			sys.exit(1)
