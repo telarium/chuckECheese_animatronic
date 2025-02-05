@@ -132,8 +132,17 @@ dhcp-range=192.168.4.2,192.168.4.20,255.255.255.0,24h
 		self.wifi = pywifi.PyWiFi()
 		self.iface = self._get_interface()
 
+	def ensure_hostapd_unmasked(self):
+		try:
+			subprocess.run(["systemctl", "unmask", "hostapd"], check=True)
+			print("hostapd service unmasked.")
+		except subprocess.CalledProcessError as e:
+			print(f"Error unmasking hostapd: {e}")
+
+
 	def activate_hotspot(self):
 		"""Activate the access point."""
+		self.ensure_hostapd_unmasked()
 		self.create_hostapd_conf()
 		self.create_dnsmasq_conf()
 		self.setup_interface()
