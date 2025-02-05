@@ -3,6 +3,7 @@ import subprocess
 import pygame
 from pydispatch import dispatcher
 from wifi_management import WifiManagement
+from system_info import SystemInfo
 from automated_puppeteering import AutomatedPuppeteering
 
 class VoiceEventHandler:
@@ -12,6 +13,7 @@ class VoiceEventHandler:
 		self.puppeteer = AutomatedPuppeteering(pygame_instance)
 
 		self.wifiManagement = WifiManagement()
+		self.systemInfo = SystemInfo(False)
 
 		self.audioPath = os.path.join(os.path.dirname(__file__), "miscAudioAssets")
 
@@ -97,4 +99,38 @@ class VoiceEventHandler:
 			self.voiceInputProcessor.generate_and_play_tts(ssid)
 
 	def psi(self):
-		self.playAudioSequence([self.audioPath+"/psi_prefix.ogg", self.audioPath+"/psi_postfix.ogg"])
+		# This function should read off the current PSI by creating a list of WAV audio files.
+		
+		# Start with the prefix audio
+		audioFiles = [self.audioPath + "/psi_prefix.ogg"]
+
+		# Get the current PSI value from the system.
+		psiValue = self.systemInfo.get_psi()
+
+		# Select the correct numero files based on psiValue.
+		if psiValue <= 20:
+			# For PSI 0 through 20, use the corresponding file.
+			audioFiles.append(self.audioPath + f"/numero_{psiValue}.wav")
+		else:
+			# For PSI values above 20:
+			# Special-case 100 if it exists.
+			if psiValue == 100:
+				audioFiles.append(self.audioPath + "/numero_100.wav")
+			else:
+				# Determine tens and ones digits.
+				tens = psiValue - (psiValue % 10)
+				ones = psiValue % 10
+
+				if ones == 0:
+					# If the ones digit is zero, just use the corresponding tens file.
+					audioFiles.append(self.audioPath + f"/numero_{psiValue}.wav")
+				else:
+					# Otherwise, append the tens file first and then the ones file.
+					audioFiles.append(self.audioPath + f"/numero_{tens}.wav")
+					audioFiles.append(self.audioPath + f"/numero_{ones}.wav")
+
+		# Append the postfix audio file.
+		audioFiles.append(self.audioPath + "/psi_postfix.wav")
+
+		# Play the complete audio sequence.
+		self.playAudioSequence(audioFiles)
