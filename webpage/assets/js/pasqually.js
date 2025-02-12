@@ -4,6 +4,8 @@
 const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
 const socketUrl = `${protocol}${document.domain}:${location.port}`;
 
+bInvertHeadNod = false;
+
 // Connect to the WebSocket
 const socket = io.connect(socketUrl);
 
@@ -242,19 +244,19 @@ socket.on('movementInfo', (data) => {
     }));
 });
 
-/**
- * Send a key event.
- * @param {string} key - The key pressed.
- * @param {number} value - The value associated with the key event (e.g., 1 for keydown, 0 for keyup).
- * @param {boolean} broadcast - Whether to broadcast this key event.
- * @param {boolean} muteMidi - Whether to mute MIDI playback for this key event.
- */
 function sendKey(key, value, broadcast, muteMidi) {
     const currentTime = window.performance.now();
 
     for (const movement of movements) {
         if (movement.key === key.toLowerCase() && (currentTime - movement.lastTime > 1)) {
             if (broadcast) {
+                if (bInvertHeadNod && movement.key == 's') {
+                    console.log("HEAD!")
+                    value = 1 - value
+                }
+
+                console.log(value)
+
                 socket.emit('onKeyPress', { keyVal: key, val: value });
             }
             if (!muteMidi) {
@@ -297,6 +299,15 @@ function doKeyUp(event) {
 
 document.addEventListener('keydown', doKeyDown);
 document.addEventListener('keyup', doKeyUp);
+
+// When we receive a gamepad event, play the appropriate MIDI note for that movement
+socket.on('gamepadKeyEvent', (data) => {
+    for (const movement of movements) {
+        if (movement.key === data[0].toLowerCase()) {
+            playMIDINote(movement.midiNote, data[1]);
+        }
+    }
+});
 
 // MIDI Handling
 let midiAccess = null;
@@ -407,6 +418,7 @@ function onMIDIFailure(e) {
 function setupModeCheckboxes() {
     const mirroredModeCheckbox = document.getElementById('mirroredModeCheckbox');
     const retroModeCheckbox = document.getElementById('retroModeCheckbox');
+    headNodInvertedCheckbox = document.getElementById('headNodInvertedCheckbox');
 
     if (mirroredModeCheckbox) {
         // Initialize Mirrored Mode based on saved preference
@@ -465,6 +477,25 @@ function setupModeCheckboxes() {
         });
     } else {
         console.warn('Retro Mode Checkbox not found!');
+    }
+
+    if (headNodInvertedCheckbox) {
+        // Initialize Mirrored Mode based on saved preference
+        bHeadInvertedEnabled = localStorage.getItem('headInvertedEnabled') === 'true';
+        headNodInvertedCheckbox.checked = bHeadInvertedEnabled;
+
+        // Add event listener for checkbox
+        headNodInvertedCheckbox.addEventListener('change', function () {
+            // Toggle the mirroredModeEnabled boolean
+            bHeadInvertedEnabled = this.checked;
+            // Save preference to localStorage
+            localStorage.setItem('headInvertedEnabled', this.checked);
+            socket.emit('onHeadNodInverted', this.checked);
+            bInvertHeadNod = this.checked
+            socket.emit('onKeyPress', { keyVal: 's', val: Number(bInvertHeadNod) });
+        });
+    } else {
+        console.warn('Head Inverted Checkbox not found!');
     }
 }
 
