@@ -247,9 +247,6 @@ socket.on('movementInfo', (data) => {
 function sendKey(key, value, broadcast, muteMidi) {
     const currentTime = window.performance.now();
 
-    console.log("EVAL: ")
-    console.log(key)
-
     for (const movement of movements) {
         if (movement.key === key.toLowerCase() && (currentTime - movement.lastTime > 1)) {
             if (broadcast) {
@@ -257,8 +254,6 @@ function sendKey(key, value, broadcast, muteMidi) {
                     value = 1 - value;
                 }
 
-                console.log("emit: ")
-                console.log(movement.key)
                 socket.emit('onKeyPress', { keyVal: movement.key, val: value });
             }
             if (!muteMidi) {
@@ -368,7 +363,6 @@ function onMIDIMessage(event) {
     // we do not need to filter by port name.
     const [statusByte, noteNumber, velocity] = event.data;
     const command = statusByte >> 4;
-    console.log(noteNumber)
     movements.forEach(movement => {
         if (movement.midiNote === noteNumber) {
             if (command === 9 && velocity > 0) {
