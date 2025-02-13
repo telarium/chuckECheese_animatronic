@@ -247,17 +247,19 @@ socket.on('movementInfo', (data) => {
 function sendKey(key, value, broadcast, muteMidi) {
     const currentTime = window.performance.now();
 
+    console.log("EVAL: ")
+    console.log(key)
+
     for (const movement of movements) {
         if (movement.key === key.toLowerCase() && (currentTime - movement.lastTime > 1)) {
             if (broadcast) {
                 if (bInvertHeadNod && movement.key == 's') {
-                    console.log("HEAD!")
-                    value = 1 - value
+                    value = 1 - value;
                 }
 
-                console.log(value)
-
-                socket.emit('onKeyPress', { keyVal: key, val: value });
+                console.log("emit: ")
+                console.log(movement.key)
+                socket.emit('onKeyPress', { keyVal: movement.key, val: value });
             }
             if (!muteMidi) {
                 playMIDINote(movement.midiNote, value);
@@ -347,7 +349,7 @@ function playMIDINote(midiNote, val) {
 
         const output = midiAccess.outputs.get(midiOutputPort);
         if (output) {
-            console.log(`Sending MIDI ${newState.toUpperCase()} event for note ${midiNote} to port: ${output.name} (ID: ${output.id})`);
+            //console.log(`Sending MIDI ${newState.toUpperCase()} event for note ${midiNote} to port: ${output.name} (ID: ${output.id})`);
             output.send([status, midiNote, velocity]);
         } else {
             console.warn(`MIDI output port with ID ${midiOutputPort} not found.`);
@@ -362,16 +364,11 @@ function playMIDINote(midiNote, val) {
  * @param {MIDIMessageEvent} event - The MIDI message event.
  */
 function onMIDIMessage(event) {
+    // Since we are attaching this handler only to the designated input port,
+    // we do not need to filter by port name.
     const [statusByte, noteNumber, velocity] = event.data;
     const command = statusByte >> 4;
-    const portName = event.target.name; // Name of the MIDI port
-
-    // When using LoopBe30, MIDI ports with "01" in the name are reserved only for output
-    if (portName.startsWith("01. ")) {
-        return;
-    }
-
-    // Find any keyboard value that is assigned to this MIDI note
+    console.log(noteNumber)
     movements.forEach(movement => {
         if (movement.midiNote === noteNumber) {
             if (command === 9 && velocity > 0) {
@@ -391,20 +388,53 @@ function onMIDIMessage(event) {
  */
 function onMIDISuccess(midi) {
     midiAccess = midi;
-    const outputs = Array.from(midiAccess.outputs.values());
-    console.log("Available MIDI Outputs:", outputs);
-
-    if (outputs.length > 0) {
-        midiOutputPort = outputs[0].id; // Select the first available MIDI output port
-        console.log(`Selected MIDI Output: ${outputs[0].name} (ID: ${outputs[0].id})`);
-    } else {
-        console.warn('No MIDI output ports available.');
+    
+    // Log available outputs and inputs for debugging:
+    console.log("Available MIDI Outputs:");
+    midiAccess.outputs.forEach(output => console.log(output.name));
+    console.log("Available MIDI Inputs:");
+    midiAccess.inputs.forEach(input => console.log(input.name));
+    
+    // Select the output port: Look for a port whose name starts with "01. Internal MIDI"
+    let chosenOutput = null;
+    for (const output of midiAccess.outputs.values()) {
+         if (output.name.trim().startsWith("01. Internal MIDI")) {
+              chosenOutput = output;
+              break;
+         }
     }
-
-    midiAccess.inputs.forEach(input => {
-        input.onmidimessage = onMIDIMessage;
-    });
+    if (chosenOutput) {
+         midiOutputPort = chosenOutput.id;
+         console.log(`Selected MIDI Output: ${chosenOutput.name} (ID: ${chosenOutput.id})`);
+    } else {
+         console.warn("MIDI output port '01. Internal MIDI' not found. Using default.");
+         const outputs = Array.from(midiAccess.outputs.values());
+         if (outputs.length > 0) {
+              midiOutputPort = outputs[0].id;
+              console.log(`Selected default MIDI Output: ${outputs[0].name} (ID: ${outputs[0].id})`);
+         }
+    }
+    
+    // Select the input port: Look for a port whose name starts with "02. Internal MIDI"
+    // (Change from "1-02. Internal MIDI" to "02. Internal MIDI" based on your available port names)
+    let chosenInput = null;
+    for (const input of midiAccess.inputs.values()) {
+         if (input.name.trim().startsWith("02. Internal MIDI")) {
+              chosenInput = input;
+              break;
+         }
+    }
+    if (chosenInput) {
+         chosenInput.onmidimessage = onMIDIMessage;
+         console.log(`Listening on MIDI Input: ${chosenInput.name} (ID: ${chosenInput.id})`);
+    } else {
+         console.warn("MIDI input port '02. Internal MIDI' not found. Attaching to all inputs.");
+         midiAccess.inputs.forEach(input => {
+             input.onmidimessage = onMIDIMessage;
+         });
+    }
 }
+
 
 /**
  * Handle MIDI access failure.
@@ -427,17 +457,14 @@ function setupModeCheckboxes() {
 
         // Add event listener for Mirrored Mode checkbox
         mirroredModeCheckbox.addEventListener('change', function () {
-            // Toggle the mirroredModeEnabled boolean
             bMirroredModeEnabled = this.checked;
-            // Save preference to localStorage
             localStorage.setItem('mirroredModeEnabled', this.checked);
             socket.emit('onMirroredMode', this.checked);
 
-            // Perform actions based on the new state
             if (this.checked) {
                 performFlipAnimation();
             } else {
-                reverseFlipAnimation(); // Define this function if needed
+                reverseFlipAnimation();
             }
 
             console.log(`Mirrored Mode is now ${this.checked ? 'Enabled' : 'Disabled'}`);
@@ -447,7 +474,6 @@ function setupModeCheckboxes() {
     }
 
     if (retroModeCheckbox) {
-        // Initialize Retro Mode based on saved preference
         const retroModeEnabled = localStorage.getItem('retroModeEnabled') === 'true';
         retroModeCheckbox.checked = retroModeEnabled;
 
@@ -458,7 +484,6 @@ function setupModeCheckboxes() {
             }
         }
 
-        // Add event listener for Retro Mode checkbox
         retroModeCheckbox.addEventListener('change', function () {
             const mainContent = document.getElementById('main');
             if (mainContent) {
@@ -468,8 +493,6 @@ function setupModeCheckboxes() {
                     mainContent.classList.remove('retro-mode-active');
                 }
                 socket.emit('onRetroMode', this.checked);
-
-                // Save preference to localStorage
                 localStorage.setItem('retroModeEnabled', this.checked);
             } else {
                 console.warn('Main content element not found!');
@@ -480,18 +503,14 @@ function setupModeCheckboxes() {
     }
 
     if (headNodInvertedCheckbox) {
-        // Initialize Mirrored Mode based on saved preference
         bHeadInvertedEnabled = localStorage.getItem('headInvertedEnabled') === 'true';
         headNodInvertedCheckbox.checked = bHeadInvertedEnabled;
 
-        // Add event listener for checkbox
         headNodInvertedCheckbox.addEventListener('change', function () {
-            // Toggle the mirroredModeEnabled boolean
             bHeadInvertedEnabled = this.checked;
-            // Save preference to localStorage
             localStorage.setItem('headInvertedEnabled', this.checked);
             socket.emit('onHeadNodInverted', this.checked);
-            bInvertHeadNod = this.checked
+            bInvertHeadNod = this.checked;
             socket.emit('onKeyPress', { keyVal: 's', val: Number(bInvertHeadNod) });
         });
     } else {
@@ -511,7 +530,6 @@ function performFlipAnimation() {
 
     mainContent.classList.add('flip-animation');
 
-    // Remove the class after animation completes to allow re-triggering
     const removeAnimation = () => {
         mainContent.classList.remove('flip-animation');
         mainContent.removeEventListener('animationend', removeAnimation);
@@ -522,14 +540,10 @@ function performFlipAnimation() {
 
 /**
  * Reverse the flip animation on the main content.
- * @note: You need to define this function based on your animation requirements.
  */
 function reverseFlipAnimation() {
     const mainContent = document.getElementById('main');
     if (mainContent) {
-        // If you have a specific reverse animation, trigger it here.
-        // For example, toggling a class or manipulating styles.
-        // This is a placeholder for your reverse animation logic.
         console.log('Reverse flip animation triggered.');
     } else {
         console.warn('Main content element not found!');
@@ -564,12 +578,11 @@ function setupSubmitTTS() {
  */
 function submitTTS() {
     const inputField = document.getElementById('ttsInput');
-    const submitButton = document.getElementById('submitTTSButton'); // Get the Submit button
+    const submitButton = document.getElementById('submitTTSButton');
     const inputText = inputField ? inputField.value.trim() : '';
 
     if (inputText) {
         console.log(`Submitted TTS Text: ${inputText}`);
-        // Disable the Submit button to prevent multiple submissions
         if (submitButton) {
             submitButton.disabled = true;
             submitButton.classList.add('disabled');
@@ -580,7 +593,6 @@ function submitTTS() {
         console.warn('No text entered for TTS submission.');
     }
 
-    // Clear the input field after submission
     if (inputField) {
         inputField.value = '';
     }
@@ -593,7 +605,7 @@ function submitTTS() {
 function populateTTSInput(text) {
     const inputField = document.getElementById('ttsInput');
     if (inputField) {
-        inputField.value = text; // Replace any existing text
+        inputField.value = text;
         console.log(`Populated TTS Input with: ${text}`);
     } else {
         console.warn('TTS Input field not found!');
@@ -606,14 +618,12 @@ function setupWifiPopupEvents() {
     const connectButton = document.getElementById('connectWifiButton');
     const popupOverlay = document.getElementById('wifiPopup');
 
-    // Close popup when close button is clicked
     if (closePopupButton) {
         closePopupButton.addEventListener('click', closeWifiPopup);
     } else {
         console.warn('Close WiFi Popup button not found!');
     }
 
-    // Handle Connect button click
     if (connectButton) {
         connectButton.addEventListener('click', () => {
             const passwordInput = document.getElementById('wifiPassword');
@@ -630,7 +640,6 @@ function setupWifiPopupEvents() {
         console.warn('Connect WiFi Button not found!');
     }
 
-    // Optional: Close popup when clicking outside the popup content
     if (popupOverlay) {
         popupOverlay.addEventListener('click', (e) => {
             if (e.target === popupOverlay) {
@@ -646,7 +655,7 @@ function setupWifiPopupEvents() {
  * Open the WiFi selection popup.
  */
 function openWifiPopup() {
-    populateWifiList(); // Populate the list before showing
+    populateWifiList();
     const popup = document.getElementById('wifiPopup');
     if (popup) {
         popup.style.display = 'flex';
@@ -677,7 +686,7 @@ function populateWifiList() {
         return;
     }
 
-    wifiListDiv.innerHTML = ''; // Clear existing list
+    wifiListDiv.innerHTML = '';
 
     if (wifiSSIDs.length === 0) {
         wifiListDiv.innerHTML = '<p style="color: #fff; text-align: center;">No WiFi networks found.</p>';
@@ -722,9 +731,6 @@ function connectToWifi(ssid, password) {
     alert('Attempting to connect to WiFi network. Please wait...');
 }
 
-// Second DOMContentLoaded Listener Removed
-// Removed the duplicate DOMContentLoaded listener to prevent multiple event listeners
-
 /**
  * Sets the text of the hotspot hyperlink.
  * @param {string} text - The text to display for the hotspot link.
@@ -742,7 +748,6 @@ function setHotspotLinkText(text) {
  * Handles the hotspot setup when the hyperlink is clicked.
  */
 function setHotspot() {
-    // Placeholder for hotspot setup logic
     bHotspotActive = !bHotspotActive;
 
     socket.emit('onSetHotspot', bHotspotActive);
@@ -753,7 +758,6 @@ function setHotspot() {
         alert("Hotspot deactivating. Attempting to reconnect to WiFi...");
     }
 
-    // Optionally, update the hotspot link text based on the new state
     if (bHotspotActive) {
         setHotspotLinkText("Deactivate Hotspot");
     } else {
@@ -768,9 +772,9 @@ function setupHotspotLink() {
     const hotspotLink = document.getElementById('hotspotLink');
     if (hotspotLink) {
         hotspotLink.addEventListener('click', (e) => {
-            e.preventDefault(); // Prevent default hyperlink behavior
-            setHotspot(); // Call the hotspot setup function
-            closeWifiPopup(); // Close the WiFi popup
+            e.preventDefault();
+            setHotspot();
+            closeWifiPopup();
         });
     } else {
         console.warn('Hotspot Link element not found!');
@@ -788,11 +792,9 @@ function setupPasswordEnterKey() {
     if (wifiPasswordInput && connectButton) {
         wifiPasswordInput.addEventListener('keydown', function (event) {
             if (event.key === 'Enter') {
-                event.preventDefault(); // Prevent form submission or default behavior
-
-                // Check if a WiFi network is selected and password is entered
+                event.preventDefault();
                 if (selectedSSID && wifiPasswordInput.value.trim() !== '') {
-                    connectButton.click(); // Trigger the Connect button click
+                    connectButton.click();
                 } else {
                     alert('Please select a WiFi network and enter the password.');
                 }
