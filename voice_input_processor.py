@@ -326,7 +326,8 @@ class VoiceInputProcessor:
 			self.setVoiceCommand("ttsComplete")
 
 		except Exception as e:
-			print(f"Elevenlabs not set up. Using Piper instead for tts.")
+			print(f"Elevenlabs not functional. Using Piper instead for tts.")
+			print(e)
 			# Get the directory of the current Python script
 			script_dir = os.path.dirname(os.path.realpath(__file__))
 
