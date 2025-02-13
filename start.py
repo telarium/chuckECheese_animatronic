@@ -3,6 +3,7 @@ import sys
 import signal
 import eventlet
 import pygame
+import threading
 from pydispatch import dispatcher
 from web_io import WebServer
 from system_info import SystemInfo
@@ -28,8 +29,10 @@ class Pasqually:
 			'value': None,
 		}
 
+		self.wifiAccessPoints = None
+		self.headNodInverted = False # Whether or not we're inverting the head up/down input event
+
 		# Initialize components
-		self.setDispatchEvents()
 		self.gpio = GPIO()
 		self.movements = Movement(self.gpio)
 		self.webServer = WebServer()
@@ -40,9 +43,13 @@ class Pasqually:
 		self.voiceInputProcessor = VoiceInputProcessor(pygame)
 		self.voiceEventHandler = VoiceEventHandler(pygame, self.voiceInputProcessor)
 
+		self.setDispatchEvents()
+
 		# Handle SIGINT and SIGTERM for graceful shutdown
 		signal.signal(signal.SIGINT, self.shutdown_signal_handler)
 		signal.signal(signal.SIGTERM, self.shutdown_signal_handler)
+
+		self.movements.setDefaultAnimation(True)
 
 	def setDispatchEvents(self):
 		dispatcher.connect(self.onKeyEvent, signal='keyEvent', sender=dispatcher.Any)
@@ -55,8 +62,10 @@ class Pasqually:
 		dispatcher.connect(self.onShowPlay, signal='showPlay', sender=dispatcher.Any)
 		dispatcher.connect(self.onShowPause, signal='showPause', sender=dispatcher.Any)
 		dispatcher.connect(self.onShowStop, signal='showStop', sender=dispatcher.Any)
+		dispatcher.connect(self.onShowEnd, signal='showEnd', sender=dispatcher.Any)
 		dispatcher.connect(self.onMirroredMode, signal='onMirroredMode', sender=dispatcher.Any)
 		dispatcher.connect(self.onRetroMode, signal='onRetroMode', sender=dispatcher.Any)
+		dispatcher.connect(self.onHeadNodInverted, signal='onHeadNodInverted', sender=dispatcher.Any)
 		dispatcher.connect(self.onShowPlaybackMidiEvent, signal='showPlaybackMidiEvent', sender=dispatcher.Any)
 		dispatcher.connect(self.onActivateWifiHotspot, signal='activateWifiHotspot', sender=dispatcher.Any)
 		dispatcher.connect(self.onConnectToWifiNetwork, signal='connectToWifi', sender=dispatcher.Any)
@@ -70,6 +79,11 @@ class Pasqually:
 					self.voiceEvent['id'] = None
 					self.voiceEvent['value'] = None
 
+				# Broadcast a new wifi scan result if it has changed.
+				if self.wifiManagement.get_wifi_access_points() != self.wifiAccessPoints:
+					self.wifiAccessPoints = self.wifiManagement.get_wifi_access_points()
+					self.webServer.broadcast('wifiScan', self.wifiAccessPoints)
+
 				eventlet.sleep(0.01)  # Eventlet-friendly sleep
 		except Exception as e:
 			print(f"Error in main loop: {e}")
@@ -82,7 +96,6 @@ class Pasqually:
 		eventlet.spawn(self.shutdown)  # Run shutdown asynchronously
 
 	def shutdown(self):
-		"""Clean up resources and terminate components."""
 		try:
 			# Shutdown child components
 			if self.voiceInputProcessor:
@@ -105,8 +118,6 @@ class Pasqually:
 		self.voiceEvent['id'] = id
 		self.voiceEvent['value'] = value
 
-		self.voiceEventHandler.triggerEvent(id, value)
-
 		# Play various animations to show Pasqually is listening and processing voice commands.
 		if id == "idle" or id == "ttsComplete":
 			# Don't do any animations while he's not doing any voice processing.
@@ -121,16 +132,23 @@ class Pasqually:
 		elif id == "command" or id == "ttsSubmitted":
 			# Add some eye left/right movement animation.
 			self.movements.playEyeLeftRightAnimation()
-			self.movements.playBlinkAnimation()		
+			self.movements.playBlinkAnimation()	
+
+		self.voiceEventHandler.triggerEvent(id, value)	
 
 	def onShowListLoad(self, showList):
 		self.webServer.broadcast('showListLoaded', showList)
 
 	def onShowPlay(self, showName):
 		self.showPlayer.loadShow(showName)
+		self.movements.setDefaultAnimation(False)
 
 	def onShowStop(self):
 		self.showPlayer.stopShow()
+		self.movements.setDefaultAnimation(True)
+
+	def onShowEnd(self):
+		self.movements.setDefaultAnimation(True)
 
 	def onShowPause(self):
 		self.showPlayer.togglePause()
@@ -149,9 +167,11 @@ class Pasqually:
 		self.onSystemInfoUpdate()
 		self.showPlayer.getShowList()
 		self.webServer.broadcast('movementInfo', self.movements.getAllMovementInfo())
-		self.webServer.broadcast('wifiScan', self.wifiManagement.get_wifi_access_points())
+		self.webServer.broadcast('wifiScan', self.wifiAccessPoints)
+		self.wifiManagement.scan_wifi_access_points()
 
 	def onKeyEvent(self, key, val):
+		print(str(key).lower())
 		# Receieve key events from the HTML front end and execute any specified movement
 		try:
 			self.movements.executeMovement(str(key).lower(), val)
@@ -160,6 +180,10 @@ class Pasqually:
 
 	def onGamepadKeyEvent(self, key, val):
 		# Tell the HTML front end that a gamepad event occured so that it can play the corresponding MIDI note
+
+		if key == self.movements.headNod.key and self.headNodInverted:
+			val = 1 - val
+
 		try:
 			if self.movements.executeMovement(str(key).lower(), val):
 				self.webServer.broadcast('gamepadKeyEvent', [str(key).lower(), val])
@@ -168,6 +192,11 @@ class Pasqually:
 
 	def onRetroMode(self, val):
 		self.movements.setRetroMode(val)
+
+	def onHeadNodInverted(self, val):
+		print("INVERT")
+		print(val)
+		self.headNodInverted = val
 
 	def onMirroredMode(self, val):
 		bNewMirrorMode = val
