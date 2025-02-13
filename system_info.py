@@ -28,8 +28,8 @@ class SystemInfo:
 				'wifi_signal': self.wifiManagement.get_signal_strength(),
 				'hotspot_status': self.wifiManagement.is_hotspot_active()
 			}
-		except:
-			print("Failed to get system info!")
+		except Exception as e:
+			print(f"Error getting system info: {e}")
 
 	def update(self):
 		# Broadcast the system info on a set interval
