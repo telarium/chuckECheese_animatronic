@@ -35,7 +35,7 @@ class ShowPlayer:
 			try:
 				for event in self.pygame.event.get():
 					if event.type == self.MUSIC_END and self.active_showName is not None:
-						print("Show has completed!")
+						dispatcher.send(signal="showEnd")
 						self.stopShow()
 
 				if self.pygame.mixer.music.get_busy():  # Check if music is playing
@@ -72,7 +72,6 @@ class ShowPlayer:
 			return
 
 		if showName == "":
-			print("Play random show...")
 			showName = random.choice(self.showList)
 
 		if self.active_showName != showName:
@@ -101,16 +100,13 @@ class ShowPlayer:
 			self.pygame.mixer.music.stop()
 			self.bPaused = False
 			self.active_showName = None
-			print("Stopped")
 
 	def togglePause(self):
 		if not self.bPaused:
 			self.bPaused = True
-			print("Paused")
 			self.pygame.mixer.music.pause()
 		else:
 			self.bPaused = False
-			print("Unpaused")
 			self.pygame.mixer.music.unpause()
 
 	def parseMidiFile(self, showName):
