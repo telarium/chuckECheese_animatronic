@@ -75,6 +75,10 @@ class WebServer:
 	def mirroredModeEvent(bEnable):
 		dispatcher.send(signal='onRetroMode', val=bEnable)
 
+	@socketio.on('onHeadNodInverted')
+	def headNodEvent(bEnable):
+		dispatcher.send(signal='onHeadNodInverted', val=bEnable)
+
 	@socketio.on('onKeyPress')
 	def webKeyEvent(data):
 		dispatcher.send(signal="keyEvent", key=data["keyVal"], val=int(data["val"]))
