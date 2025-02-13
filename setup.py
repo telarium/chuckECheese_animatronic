@@ -30,6 +30,9 @@ class Setup:
 		# Set up Piper TTS models
 		self.setup_piper_models()
 
+		# Set up /etc/rc.local for wlan1 auto-connection
+		self.setup_rc_local()
+
 	def install_packages(self, packages):
 		try:
 			# Install packages using apt-get
@@ -67,6 +70,37 @@ class Setup:
 			print(f"Piper TTS models are available in {script_dir}.")
 		except subprocess.CalledProcessError as e:
 			print(f"Failed to set up Piper models: {e}")
+			sys.exit(1)
+
+	def setup_rc_local(self):
+		"""Creates /etc/rc.local to automatically connect wlan1 to the same SSID as wlan0."""
+		rc_local_content = """#!/bin/bash
+# Wait until wlan1 appears
+for i in {1..10}; do
+	if ip link show wlan1 > /dev/null 2>&1; then
+		break
+	fi
+	sleep 1
+done
+
+# Get the SSID from wlan0 and connect wlan1
+SSID=$(iw dev wlan0 info | grep ssid | awk '{$1=""; print substr($0,2)}')
+if [ -n "$SSID" ]; then
+	sudo nmcli dev wifi connect "$SSID" ifname wlan1
+fi
+
+exit 0
+"""
+		try:
+			with open("/etc/rc.local", "w") as rc_file:
+				rc_file.write(rc_local_content)
+			
+			# Make rc.local executable
+			subprocess.check_call(["sudo", "chmod", "+x", "/etc/rc.local"])
+
+			print("/etc/rc.local has been successfully created and set up.")
+		except Exception as e:
+			print(f"Failed to set up /etc/rc.local: {e}")
 			sys.exit(1)
 
 	def run_command(self, command):
