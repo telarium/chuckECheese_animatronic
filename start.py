@@ -4,6 +4,7 @@ import signal
 import time
 import threading
 import pygame
+import ctypes
 from pydispatch import dispatcher
 from web_io import WebServer
 from system_info import SystemInfo
@@ -46,8 +47,8 @@ class Pasqually:
 		self.setDispatchEvents()
 
 		# Handle SIGINT and SIGTERM for graceful shutdown
-		signal.signal(signal.SIGINT, self.shutdown_signal_handler)
-		signal.signal(signal.SIGTERM, self.shutdown_signal_handler)
+		signal.signal(signal.SIGINT, self.shutdown)
+		signal.signal(signal.SIGTERM, self.shutdown)
 
 		self.movements.setDefaultAnimation(True)
 
@@ -83,32 +84,51 @@ class Pasqually:
 					self.wifiAccessPoints = self.wifiManagement.get_wifi_access_points()
 					self.webServer.broadcast('wifiScan', self.wifiAccessPoints)
 
-				time.sleep(0.005)  # Regular sleep
+				time.sleep(0.005)
+
 		except Exception as e:
 			print(f"Error in main loop: {e}")
 		finally:
+			print("Main loop exiting, calling shutdown...")
 			self.shutdown()
 
-	def shutdown_signal_handler(self, *args):
-		"""Handle SIGINT or SIGTERM signals."""
-		self.isRunning = False
-		# Call shutdown asynchronously in a new thread
-		threading.Thread(target=self.shutdown, daemon=True).start()
-
-	def shutdown(self):
+	def shutdown(self, *args):
 		try:
-			# Shutdown child components
+			self.isRunning = False  # Signal all loops to stop
+
+			# Stop all dependent components
 			if self.voiceInputProcessor:
 				self.voiceInputProcessor.shutdown()
+
 			if self.webServer:
 				self.webServer.shutdown()
+
 			if self.showPlayer:
 				self.showPlayer.stopShow()
 
+			# Ensure all non-main threads exit before quitting pygame
+			for thread in threading.enumerate():
+				if thread is not threading.main_thread():
+					# If thread is still alive, force kill it
+					if thread.is_alive():
+						try:
+							ctypes.pythonapi.PyThreadState_SetAsyncExc(
+								ctypes.c_long(thread.ident), ctypes.py_object(SystemExit)
+							)
+						except Exception as e:
+							print(f"Error stopping thread {thread.name}: {e}")
+
+			pygame.mixer.quit()
+			pygame.display.quit()
+			pygame.quit()
+
+			print("Shutdown complete. Exiting.")
 			sys.exit(0)
+
 		except Exception as e:
 			print(f"Error during shutdown: {e}")
 			sys.exit(1)
+
 
 	def onSystemInfoUpdate(self):
 		self.webServer.broadcast('systemInfo', self.systemInfo.get())
@@ -171,7 +191,6 @@ class Pasqually:
 		self.wifiManagement.scan_wifi_access_points()
 
 	def onKeyEvent(self, key, val):
-		print(str(key).lower())
 		# Receive key events from the HTML front end and execute any specified movement
 		try:
 			self.movements.executeMovement(str(key).lower(), val)

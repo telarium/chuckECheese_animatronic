@@ -23,7 +23,7 @@ class ShowPlayer:
 
 		if os.path.exists(self.show_dir):
 			self.getShowList()
-			self.update_thread = threading.Thread(target=self.update, daemon=True)
+			self.update_thread = threading.Thread(target=self.update)
 			self.update_thread.start()
 		else:
 			print(f"'show' directory does not exist at: {self.show_dir}")

@@ -12,7 +12,7 @@ class SystemInfo:
 		self.wifiManagement = WifiManagement()
 		self.latestInfo = None
 		if bStartThread:
-			self.update_thread = threading.Thread(target=self.update, daemon=True)
+			self.update_thread = threading.Thread(target=self.update)
 			self.update_thread.start()
 
 	def get(self):
