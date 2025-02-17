@@ -429,18 +429,18 @@ class Movement:
 		self.animationThreadsActive = False
 
 		def animShutdown():
-			self.executeMovement(self.self.headNod.key,0)
-			self.executeMovement(self.self.mustache.key,0)
-			self.executeMovement(self.self.mouth.key,0)
+			self.executeMovement(self.headNod.key,0)
+			self.executeMovement(self.mustache.key,0)
+			self.executeMovement(self.mouth.key,0)
 
 			if self.blinkAnimationThread and self.blinkAnimationThread.is_alive():
 				self.blinkAnimationThread.join()
 
 			if not self.animationThreadsActive:
 				# Reset animated movements back to their default state.
-				self.executeMovement(self.self.eyesBlinkFull.key,0)
-				self.executeMovement(self.self.eyesLeft.key,0)
-				self.executeMovement(self.self.eyesRight.key,0)
+				self.executeMovement(self.eyesBlinkFull.key,0)
+				self.executeMovement(self.eyesLeft.key,0)
+				self.executeMovement(self.eyesRight.key,0)
 				
 		animShutdownThread = threading.Thread(target=animShutdown, daemon=True)
 		animShutdownThread.start()
@@ -449,13 +449,13 @@ class Movement:
 	def playWakewordAcknowledgement(self):
 		def mustacheShake():
 			self.executeMovement(self.headNod.key,1)
-			self.executeMovement(self.self.mustache.key,1)
+			self.executeMovement(self.mustache.key,1)
 			time.sleep(0.2)
-			self.executeMovement(self.self.mustache.key,0)
+			self.executeMovement(self.mustache.key,0)
 			time.sleep(0.2)
-			self.executeMovement(self.self.mustache.key,1)
+			self.executeMovement(self.mustache.key,1)
 			time.sleep(0.2)
-			self.executeMovement(self.self.mustache.key,0)
+			self.executeMovement(self.mustache.key,0)
 			time.sleep(0.2)
 
 		self.mustacheAnimationThread = threading.Thread(target=mustacheShake, daemon=True)
