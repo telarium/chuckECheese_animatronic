@@ -1,6 +1,7 @@
 import os
 import subprocess
 import pygame
+import time
 from pydispatch import dispatcher
 from wifi_management import WifiManagement
 from system_info import SystemInfo
@@ -19,13 +20,16 @@ class VoiceEventHandler:
 
 		self.commands = {
 			"PlaySong": self.playSong,
+			"Encore": self.playEncore,
 			"WhoAreYou": self.whoAreYou,
 			"HowDoYouWork": self.howDoYouWork,
 			"IPAddress": self.ipAddress,
 			"HotspotStart": self.hotspotStart,
 			"HotspotEnd": self.hotspotEnd,
 			"WifiNetwork": self.wifiNetwork,
-			"PSI": self.psi
+			"PSI": self.psi,
+			"TryAI": self.ai,
+			"LookUpAndDown": self.lookUpAndDown
 		}
 
 	def triggerEvent(self, id, value):
@@ -59,6 +63,10 @@ class VoiceEventHandler:
 		self.playAudioSequence([self.audioPath+"/song_start.ogg"]) # Voice audio to announce playing a song.
 		dispatcher.send(signal="showPlay", showName="") # Empty show name means play something random
 
+	def playEncore(self):
+		self.playAudioSequence([self.audioPath+"/encore.ogg",self.audioPath+"/song_start.ogg"]) # Voice audio to announce playing a song.
+		dispatcher.send(signal="showPlay", showName="") # Empty show name means play something random
+
 	def whoAreYou(self):
 		self.playAudioSequence([self.audioPath+"/who_are_you.ogg"]) # Voice audio for a brief introduction.
 
@@ -79,6 +87,19 @@ class VoiceEventHandler:
 					audioFiles.append(self.audioPath+"/numero_" + char + ".wav")
 
 		self.playAudioSequence(audioFiles)
+
+	def lookUpAndDown(self):
+		print("LOOK UP AND DOWN!")
+		dispatcher.send(signal="keyEvent", key='s', val=0)
+		time.sleep(0.75)
+		dispatcher.send(signal="keyEvent", key='s', val=1)
+		time.sleep(0.75)
+		dispatcher.send(signal="keyEvent", key='s', val=0)
+		time.sleep(0.75)
+		dispatcher.send(signal="keyEvent", key='s', val=1)
+
+	def ai(self):
+		self.playAudioSequence([self.audioPath+"/ai.ogg"])
 
 	def hotspotStart(self):
 		self.playAudioSequence([self.audioPath+"/hotspot_activate.ogg"])
