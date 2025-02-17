@@ -1,4 +1,10 @@
 import os
+
+# Supress annoying Pygame messages
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "1"
+if 'XDG_RUNTIME_DIR' not in os.environ:
+	os.environ['XDG_RUNTIME_DIR'] = "/tmp"
+
 import sys
 import signal
 import time
