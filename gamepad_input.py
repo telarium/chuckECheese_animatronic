@@ -1,8 +1,7 @@
-import eventlet
+import threading
 from evdev import InputDevice, categorize, ecodes, list_devices
 from enum import Enum
 from dataclasses import dataclass
-from pydispatch import dispatcher
 
 class Button(Enum):
 	# Bumpers
@@ -24,20 +23,20 @@ class Button(Enum):
 	RIGHT_TRIGGER = 'x'             # mouth
 
 	# Face Buttons
-	BTN_A = 'j'                     # left arm down
-	BTN_B = 'l'                     # right arm down
-	BTN_NORTH = 'u'                 # left shoulder out
-	BTN_WEST = 'o'                  # right shoulder out
+	BTN_A = 'j'                   # left arm down
+	BTN_B = 'l'                   # right arm down
+	BTN_NORTH = 'u'               # left shoulder out
+	BTN_WEST = 'o'                # right shoulder out
 
 	# Hat (analog stick button)
-	BTN_THUMBL = 'w'                # blink
-	BTN_THUMBR = 'w'                # blink
+	BTN_THUMBL = 'w'              # blink
+	BTN_THUMBR = 'w'              # blink
 
 	# D-pad
-	DPAD_LEFT = 'a'                 # neck left
-	DPAD_RIGHT = 'd'                # neck right
-	DPAD_DOWN = 'w'                 # head up
-	DPAD_UP = 's'                   # blink
+	DPAD_LEFT = 'a'               # neck left
+	DPAD_RIGHT = 'd'              # neck right
+	DPAD_DOWN = 'w'              # head up
+	DPAD_UP = 's'                # blink
 
 	# Start and Select Buttons. Holding down both toggles mirrored mode
 	START = 'start'
@@ -61,7 +60,13 @@ class StickState:
 	y: int = 0
 
 class USBGamepadReader:
-	def __init__(self):
+	def __init__(self, movements, webServer):
+
+		self.movements = movements
+		self.webServer = webServer
+
+		self.headNodInverted = False
+
 		self.bStartButtonDown = False
 		self.bSelectButtonDown = False
 
@@ -98,8 +103,9 @@ class USBGamepadReader:
 			self.dpad_states = {'left': False, 'right': False, 'up': False, 'down': False}
 			# Retrieve axis ranges
 			self.abs_ranges = self._get_abs_ranges()
-			# Start the input reading thread
-			self.update_thread = eventlet.spawn(self.read_inputs)
+			# Start the input reading thread using standard threading
+			self.update_thread = threading.Thread(target=self.read_inputs, daemon=True)
+			self.update_thread.start()
 		else:
 			print("No gamepad detected.")
 
@@ -144,8 +150,16 @@ class USBGamepadReader:
 		except KeyboardInterrupt:
 			print("\nStopping gamepad input listener.")
 
-	def _dispatch_key_event(self, key: str, value: int):
-		dispatcher.send(signal="gamepadKeyEvent", key=key, val=value)
+	def _dispatch_key_event(self, key: str, val: int):
+		# Tell the HTML front end that a gamepad event occurred so that it can play the corresponding MIDI note
+		print(key)
+		if key == self.movements.headNod.key and self.headNodInverted:
+			val = 1 - val
+		try:
+			if self.movements.executeMovement(str(key).lower(), val):
+				self.webServer.broadcast('gamepadKeyEvent', [str(key).lower(), val])
+		except Exception as e:
+			print(f"Invalid key: {e}")
 
 	def _process_button_event(self, event):
 		keycode = event.code

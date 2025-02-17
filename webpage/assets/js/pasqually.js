@@ -6,8 +6,8 @@ const socketUrl = `${protocol}${document.domain}:${location.port}`;
 
 bInvertHeadNod = false;
 
-// Connect to the WebSocket
-const socket = io.connect(socketUrl);
+// Connect to the server using polling transport instead of WebSocket
+const socket = io.connect(socketUrl, { transports: ['polling'] });
 
 socket.on('connect', () => {
     socket.emit('onConnect', { data: "I'm connected!" });
@@ -299,6 +299,7 @@ document.addEventListener('keyup', doKeyUp);
 
 // When we receive a gamepad event, play the appropriate MIDI note for that movement
 socket.on('gamepadKeyEvent', (data) => {
+    console.log("hi!")
     for (const movement of movements) {
         if (movement.key === data[0].toLowerCase()) {
             playMIDINote(movement.midiNote, data[1]);
@@ -428,7 +429,6 @@ function onMIDISuccess(midi) {
          });
     }
 }
-
 
 /**
  * Handle MIDI access failure.

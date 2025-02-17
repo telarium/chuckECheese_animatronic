@@ -2,13 +2,12 @@ import os
 import mido
 import time
 import pygame
-import eventlet
 import random
 from pydispatch import dispatcher
+import threading
 
 class ShowPlayer:
 	def __init__(self, pygame_instance):
-		
 		self.pygame = pygame_instance
 		self.MUSIC_END = self.pygame.USEREVENT + 1
 		self.pygame.mixer.music.set_endevent(self.MUSIC_END)
@@ -17,14 +16,15 @@ class ShowPlayer:
 		self.active_showName = None
 		self.bPaused = False
 		self.midiFileData = []  # MSec timecode, midi note, on/off state
-		self.midiStates = {}  # Track current state of MIDI notes
-		
+		self.midiStates = {}    # Track current state of MIDI notes
+
 		script_dir = os.path.dirname(os.path.abspath(__file__))
 		self.show_dir = os.path.join(script_dir, "shows")
 
 		if os.path.exists(self.show_dir):
 			self.getShowList()
-			self.update_thread = eventlet.spawn(self.update)
+			self.update_thread = threading.Thread(target=self.update, daemon=True)
+			self.update_thread.start()
 		else:
 			print(f"'show' directory does not exist at: {self.show_dir}")
 			self.show_dir = None
@@ -46,7 +46,7 @@ class ShowPlayer:
 						self.processMidiStates(current_time_ms)
 						last_checked_time = current_time_ms
 
-				eventlet.sleep(0.01)
+				time.sleep(0.01)
 			except Exception as e:
 				print(f"Exception in update thread: {e}")
 
@@ -62,10 +62,9 @@ class ShowPlayer:
 					self.midiStates[midi_note] = state  # Update the state
 					# Send the event only for the specific note that changed
 					dispatcher.send(signal="showPlaybackMidiEvent", midiNote=midi_note, value=state)
-				
+
 		# Remove processed events
 		self.midiFileData = [entry for entry in self.midiFileData if entry[0] > current_time_ms]
-
 
 	def loadShow(self, showName):
 		if self.show_dir is None:
@@ -77,7 +76,7 @@ class ShowPlayer:
 		if self.active_showName != showName:
 			# Supported file extensions
 			supported_extensions = ['.mp3', '.wav', '.ogg']
-			
+
 			# Iterate through supported extensions to find the file
 			for ext in supported_extensions:
 				file_path = os.path.join(self.show_dir, showName + ext)
@@ -89,7 +88,7 @@ class ShowPlayer:
 						self.pygame.mixer.music.play()
 						print(f"Playing show: {file_path}")
 						return
-					
+
 			raise FileNotFoundError(f"No audio file named '{showName}' found in {self.show_dir} with supported extensions.")
 
 		if self.active_showName is not None and self.bPaused:
@@ -112,15 +111,15 @@ class ShowPlayer:
 	def parseMidiFile(self, showName):
 		if self.show_dir is None:
 			return False
-		
+
 		# Path to the MIDI file
 		midi_file_path = os.path.join(self.show_dir, showName + ".mid")
-		
+
 		# Check if the MIDI file exists
 		if not os.path.exists(midi_file_path):
 			print(f"Error: MIDI file not found at {midi_file_path}")
 			return False
-		
+
 		# Parse the MIDI file
 		try:
 			midi_file = mido.MidiFile(midi_file_path)
@@ -136,12 +135,7 @@ class ShowPlayer:
 					if message.velocity == 0:
 						self.midiFileData.append([current_time_ms, message.note, 0])  # Animation "off" event
 					else:
-						self.midiFileData.append([current_time_ms, message.note, 1])  # Animation "off" event
-			
-			
-			#print("Parsed MIDI data:")
-			#for row in self.midiFileData:
-			#	print(row)
+						self.midiFileData.append([current_time_ms, message.note, 1])  # Animation "on" event
 
 			return True
 
@@ -155,7 +149,7 @@ class ShowPlayer:
 		# Get all audio files and check for corresponding .mid files
 		audio_extensions = ('.mp3', '.wav', '.ogg')
 		files_in_directory = os.listdir(self.show_dir)
-		
+
 		self.showList = []
 		for file in files_in_directory:
 			if file.lower().endswith(audio_extensions):
@@ -165,6 +159,6 @@ class ShowPlayer:
 					self.showList.append(base_name)
 
 		if self.showList:
-			dispatcher.send(signal="showListLoad", showList = self.showList)
+			dispatcher.send(signal="showListLoad", showList=self.showList)
 		else:
 			print("No matching audio and .mid files found in the 'show' directory.")

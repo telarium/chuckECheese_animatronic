@@ -13,7 +13,7 @@ class Setup:
 			"git", "build-essential", "python3-dev", "flex", "bison", "mpv", "hostapd", "dnsmasq",
 			"python3-smbus", "python3-evdev", "python3-setuptools", "python3-mido",
 			"python3-flask", "python3-flask-socketio", "python3-flask-talisman", "python3-pip",
-			"python3-eventlet", "python3-psutil", "python3-pydispatch", "python3-pygame", "iw",
+			"python3-psutil", "python3-pydispatch", "python3-pygame", "iw",
 			"iproute2"
 		]
 
