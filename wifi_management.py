@@ -20,7 +20,6 @@ class WifiManagement:
 
 		# Automatically choose wlan1 if it exists and appears connected; otherwise, use wlan0.
 		self.interface = self._get_preferred_interface()
-		print(f"Using interface: {self.interface}")
 
 		self.hostapd_conf_path = "/etc/hostapd/hostapd.conf"
 		self.dnsmasq_conf_path = "/etc/dnsmasq.conf"
