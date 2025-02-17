@@ -442,7 +442,7 @@ class Movement:
 				self.executeMovement(self.eyesLeft.key,0)
 				self.executeMovement(self.eyesRight.key,0)
 				
-		animShutdownThread = threading.Thread(target=animShutdown, daemon=True)
+		animShutdownThread = threading.Thread(target=animShutdown)
 		animShutdownThread.start()
 		
 
@@ -458,7 +458,7 @@ class Movement:
 			self.executeMovement(self.mustache.key,0)
 			time.sleep(0.2)
 
-		self.mustacheAnimationThread = threading.Thread(target=mustacheShake, daemon=True)
+		self.mustacheAnimationThread = threading.Thread(target=mustacheShake)
 		self.mustacheAnimationThread.start()
 
 	def playBlinkAnimation(self):
@@ -475,7 +475,7 @@ class Movement:
 				time.sleep(random.uniform(0.25, maxTimeBetweenBlinks))
 			
 		# Use a thread for the blink animation
-		self.blinkAnimationThread = threading.Thread(target=blink, daemon=True)
+		self.blinkAnimationThread = threading.Thread(target=blink)
 		self.blinkAnimationThread.start()
 
 	def playEyeLeftRightAnimation(self):
@@ -508,7 +508,7 @@ class Movement:
 				bMoveLeft = not bMoveLeft
 
 		# Use a thread for the blink animation
-		self.eyeLeftRightAnimationThread = threading.Thread(target=eyes, daemon=True)
+		self.eyeLeftRightAnimationThread = threading.Thread(target=eyes)
 		self.eyeLeftRightAnimationThread.start()
 
 	def setDefaultAnimation(self, bEnd = False):
@@ -531,5 +531,5 @@ class Movement:
 				self.executeMovement(self.headLeft.key,0)
 
 		# Use a thread for the blink animation
-		thread = threading.Thread(target=default, daemon=True)
+		thread = threading.Thread(target=default)
 		thread.start()	
