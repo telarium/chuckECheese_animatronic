@@ -1,25 +1,14 @@
 import os
 import socket
-import sys
 import ssl
-import eventlet
-from eventlet import wsgi
+import threading
 import logging
-from flask import Flask, request  # Import 'request' here
+from flask import Flask, request
 from flask_socketio import SocketIO
 from flask_uploads import UploadSet, configure_uploads
 from pydispatch import dispatcher
 
-# Patch system modules to be greenthread-friendly
-eventlet.monkey_patch(socket=True, time=True, select=True, os=True)
-
-# Another monkey patch to avoid annoying (and useless?) socket pipe warnings when users disconnect
-import socketserver
-from wsgiref import handlers
-socketserver.BaseServer.handle_error = lambda *args, **kwargs: None
-handlers.BaseHandler.log_exception = lambda *args, **kwargs: None
-
-# Turn off more annoying log messages that aren't helpful.
+# Turn off extra log messages
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 
@@ -27,9 +16,9 @@ app = Flask(__name__, static_folder='webpage')
 app.config['SECRET_KEY'] = 'Big Whoop is an amusement park... or is it?!'
 app.config['UPLOADED_JSON_DEST'] = '/tmp/'
 
-socketio = SocketIO(app, async_mode='eventlet', ping_timeout=30, logger=False, engineio_logger=False)
+# Use threading mode for async
+socketio = SocketIO(app, async_mode='threading', ping_timeout=30, logger=False, engineio_logger=False)
 
-# Configure server to accept uploads of JSON files
 docs = UploadSet('json', ('json'))
 configure_uploads(app, docs)
 
@@ -51,7 +40,6 @@ class WebServer:
 
 	@socketio.on('onConnect')
 	def connectEvent(msg):
-		# Retrieve the client's IP address
 		ip = request.remote_addr
 		dispatcher.send(signal='connectEvent', client_ip=ip)
 
@@ -72,7 +60,7 @@ class WebServer:
 		dispatcher.send(signal='onMirroredMode', val=bEnable)
 
 	@socketio.on('onRetroMode')
-	def mirroredModeEvent(bEnable):
+	def retroModeEvent(bEnable):
 		dispatcher.send(signal='onRetroMode', val=bEnable)
 
 	@socketio.on('onHeadNodInverted')
@@ -89,7 +77,7 @@ class WebServer:
 
 	@socketio.on('onSetHotspot')
 	def setHotspot(bEnable):
-		print("LKJWLEKJER")
+		print("Hotspot event triggered")
 		dispatcher.send(signal="activateWifiHotspot", bActivate=bEnable)
 
 	@socketio.on('onWebTTSSubmit')
@@ -97,41 +85,38 @@ class WebServer:
 		dispatcher.send(signal="webTTSEvent", val=inputText)
 
 	def __init__(self):
-		self.server = eventlet.spawn(self.run_server)
+		# Create threads for HTTP and HTTPS servers
+		self.threads = []
+		http_thread = threading.Thread(target=self.run_http, daemon=True)
+		https_thread = threading.Thread(target=self.run_https, daemon=True)
+		self.threads.extend([http_thread, https_thread])
+		http_thread.start()
+		https_thread.start()
 
-	def run_server(self):
+	def run_http(self):
 		try:
-			# Start HTTP server on port 80 in a new green thread
 			print("Starting HTTP server on port 80...")
-			eventlet.spawn_n(socketio.run, app, host='0.0.0.0', port=80)
+			socketio.run(app, host='0.0.0.0', port=80)
+		except Exception as e:
+			print(f"Error running HTTP server: {e}")
 
-			# HTTPS setup
+	def run_https(self):
+		try:
 			print("Starting HTTPS server on port 443...")
-			
-			# Create an SSL context
 			ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
 			ssl_context.load_cert_chain(certfile='server.crt', keyfile='server.key')
-
-			# Create a new SSL socket for HTTPS
-			https_socket = eventlet.wrap_ssl(eventlet.listen(('0.0.0.0', 443)),
-											 certfile='server.crt',
-											 keyfile='server.key',
-											 server_side=True)
-
-			# Start HTTPS server using the SSL socket
-			eventlet.spawn_n(wsgi.server, https_socket, app)
-
-			# Keep the main thread alive to ensure the servers keep running
-			eventlet.sleep(10**6)
-
+			socketio.run(app, host='0.0.0.0', port=443, ssl_context=ssl_context)
 		except Exception as e:
-			print(f"Error running server: {e}")
+			print(f"Error running HTTPS server: {e}")
 
 	def shutdown(self):
 		print("Shutting down server...")
-		socketio.stop()
-		# Note: You might need to stop any running threads/processes here as well.
+		# Implement shutdown logic if needed.
 
-# To instantiate and run the server
 if __name__ == "__main__":
 	server = WebServer()
+	try:
+		while True:
+			pass
+	except KeyboardInterrupt:
+		server.shutdown()

@@ -1,9 +1,9 @@
 import os
 import sys
 import signal
-import eventlet
-import pygame
+import time
 import threading
+import pygame
 from pydispatch import dispatcher
 from web_io import WebServer
 from system_info import SystemInfo
@@ -30,7 +30,7 @@ class Pasqually:
 		}
 
 		self.wifiAccessPoints = None
-		self.headNodInverted = False # Whether or not we're inverting the head up/down input event
+		
 
 		# Initialize components
 		self.gpio = GPIO()
@@ -38,7 +38,7 @@ class Pasqually:
 		self.webServer = WebServer()
 		self.wifiManagement = WifiManagement()
 		self.systemInfo = SystemInfo()
-		self.gamepad = USBGamepadReader()
+		self.gamepad = USBGamepadReader(self.movements, self.webServer)
 		self.showPlayer = ShowPlayer(pygame)
 		self.voiceInputProcessor = VoiceInputProcessor(pygame)
 		self.voiceEventHandler = VoiceEventHandler(pygame, self.voiceInputProcessor)
@@ -55,7 +55,6 @@ class Pasqually:
 		dispatcher.connect(self.onKeyEvent, signal='keyEvent', sender=dispatcher.Any)
 		dispatcher.connect(self.onSystemInfoUpdate, signal='systemInfoUpdate', sender=dispatcher.Any)
 		dispatcher.connect(self.onVoiceInputEvent, signal='voiceInputEvent', sender=dispatcher.Any)
-		dispatcher.connect(self.onGamepadKeyEvent, signal='gamepadKeyEvent', sender=dispatcher.Any)
 		dispatcher.connect(self.onMirroredModeToggle, signal='mirrorModeToggle', sender=dispatcher.Any)
 		dispatcher.connect(self.onConnectEvent, signal='connectEvent', sender=dispatcher.Any)
 		dispatcher.connect(self.onShowListLoad, signal='showListLoad', sender=dispatcher.Any)
@@ -84,7 +83,7 @@ class Pasqually:
 					self.wifiAccessPoints = self.wifiManagement.get_wifi_access_points()
 					self.webServer.broadcast('wifiScan', self.wifiAccessPoints)
 
-				eventlet.sleep(0.01)  # Eventlet-friendly sleep
+				time.sleep(0.005)  # Regular sleep
 		except Exception as e:
 			print(f"Error in main loop: {e}")
 		finally:
@@ -93,7 +92,8 @@ class Pasqually:
 	def shutdown_signal_handler(self, *args):
 		"""Handle SIGINT or SIGTERM signals."""
 		self.isRunning = False
-		eventlet.spawn(self.shutdown)  # Run shutdown asynchronously
+		# Call shutdown asynchronously in a new thread
+		threading.Thread(target=self.shutdown, daemon=True).start()
 
 	def shutdown(self):
 		try:
@@ -125,16 +125,16 @@ class Pasqually:
 		elif id == "wakeWord":
 			# Twirls his mustache a bit to demonstrate wakeword acknowledgement.
 			self.movements.playWakewordAcknowledgement()
-			self.showPlayer.stopShow() # Stop any playing shows
+			self.showPlayer.stopShow()  # Stop any playing shows
 		elif id == "transcribing":
 			# Start random blinking animation.
 			self.movements.playBlinkAnimation()
 		elif id == "command" or id == "ttsSubmitted":
 			# Add some eye left/right movement animation.
 			self.movements.playEyeLeftRightAnimation()
-			self.movements.playBlinkAnimation()	
+			self.movements.playBlinkAnimation()
 
-		self.voiceEventHandler.triggerEvent(id, value)	
+		self.voiceEventHandler.triggerEvent(id, value)
 
 	def onShowListLoad(self, showList):
 		self.webServer.broadcast('showListLoaded', showList)
@@ -172,21 +172,9 @@ class Pasqually:
 
 	def onKeyEvent(self, key, val):
 		print(str(key).lower())
-		# Receieve key events from the HTML front end and execute any specified movement
+		# Receive key events from the HTML front end and execute any specified movement
 		try:
 			self.movements.executeMovement(str(key).lower(), val)
-		except Exception as e:
-			print(f"Invalid key: {e}")
-
-	def onGamepadKeyEvent(self, key, val):
-		# Tell the HTML front end that a gamepad event occured so that it can play the corresponding MIDI note
-
-		if key == self.movements.headNod.key and self.headNodInverted:
-			val = 1 - val
-
-		try:
-			if self.movements.executeMovement(str(key).lower(), val):
-				self.webServer.broadcast('gamepadKeyEvent', [str(key).lower(), val])
 		except Exception as e:
 			print(f"Invalid key: {e}")
 
@@ -194,12 +182,9 @@ class Pasqually:
 		self.movements.setRetroMode(val)
 
 	def onHeadNodInverted(self, val):
-		print("INVERT")
-		print(val)
-		self.headNodInverted = val
+		self.gamepad.headNodInverted = val
 
 	def onMirroredMode(self, val):
-		bNewMirrorMode = val
 		self.movements.setMirrored(val)
 
 	def onMirroredModeToggle(self):
@@ -214,7 +199,7 @@ class Pasqually:
 			self.wifiManagement.deactivate_hotspot_and_reconnect()
 
 	def onConnectToWifiNetwork(self, ssid, password=None):
-		self.wifiManagement.connect_to_wifi(ssid,password)
+		self.wifiManagement.connect_to_wifi(ssid, password)
 
 	def onWebTTSEvent(self, val):
 		print(val)

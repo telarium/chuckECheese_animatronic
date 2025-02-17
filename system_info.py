@@ -2,16 +2,18 @@ from wifi_management import WifiManagement
 from pydispatch import dispatcher
 import os
 import psutil
-import eventlet
 import subprocess
 import spidev
+import threading
+import time
 
 class SystemInfo:
 	def __init__(self, bStartThread=True):
 		self.wifiManagement = WifiManagement()
+		self.latestInfo = None
 		if bStartThread:
-			self.update_thread = eventlet.spawn(self.update)
-			self.latestInfo = None
+			self.update_thread = threading.Thread(target=self.update, daemon=True)
+			self.update_thread.start()
 
 	def get(self):
 		return self.latestInfo
@@ -36,30 +38,25 @@ class SystemInfo:
 		while True:
 			self.processInfo()
 			dispatcher.send(signal="systemInfoUpdate")
-			eventlet.sleep(2)
+			time.sleep(2)
 
 	def get_psi(self):
 		# Read PSI from the ABPDANV150PGSA3 sensor
 		try:
 			spi = spidev.SpiDev()
 			spi.open(0, 0)
-
 			spi.max_speed_hz = 500000      # Adjust the speed as needed
 			spi.mode = 0b00                # SPI mode (clock polarity and phase)
-
 			response = spi.xfer2([0x00, 0x00])
 			raw_value = (response[0] << 8) | response[1]
 			spi.close()
-
 			offset = 1600
 			span = 9339 - offset  # 9339 - 1600 = 7739 counts
 			scale = 90.0 / span   # ≈ 0.01163 PSI per count
-
 			psi = (raw_value - offset) * scale
-
 			return int(round(psi))
 		except Exception as e:
-			print(f"Exception getting temperature: {e}")
+			print(f"Exception getting PSI: {e}")
 			return "---"
 
 	def get_disk_usage(self):
@@ -78,4 +75,3 @@ class SystemInfo:
 		except Exception as e:
 			print(f"Exception getting temperature: {e}")
 		return None
-
