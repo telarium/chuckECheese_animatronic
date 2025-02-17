@@ -4,6 +4,9 @@ from elevenlabs.client import ElevenLabs
 from elevenlabs import Voice, VoiceSettings
 from pydispatch import dispatcher
 from automated_puppeteering import AutomatedPuppeteering
+from datetime import datetime
+import os
+import shutil
 import pygame
 import openai
 import pvporcupine
@@ -11,7 +14,6 @@ import pvrhino
 import struct
 import subprocess
 import configparser
-import os
 import wave
 import tempfile
 import signal
@@ -21,6 +23,9 @@ import requests
 
 class VoiceInputProcessor:
 	def __init__(self, pygame_instance, config_file="config.cfg"):
+
+		self.bSaveTTS = False # Save TTS files to a directory for examining later for debug purposes.
+
 		self.pygame = pygame_instance
 		self.puppeteer = AutomatedPuppeteering(pygame_instance)
 		self.config = self.load_config(config_file)
@@ -324,6 +329,22 @@ class VoiceInputProcessor:
 			# Use the AutomatedPuppeteering class to play the MP3 with puppeting
 			self.puppeteer.play_audio_with_puppeting(temp_audio_file)
 			self.setVoiceCommand("ttsComplete")
+
+			# Save the TTS audio file to exmaine later... if we wish to do so.
+			if self.bSaveTTS:
+				save_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tts_saved")
+				# Create the directory if it doesn't exist
+				os.makedirs(save_dir, exist_ok=True)
+
+				timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+				file_extension = os.path.splitext(temp_audio_file)[1]  # Preserve the original extension
+				new_filename = f"tts_{timestamp}{file_extension}"
+
+				# Destination path
+				dest_path = os.path.join(save_dir, new_filename)
+
+				# Copy and rename the file
+				shutil.copy(temp_audio_file, dest_path)
 
 		except Exception as e:
 			print(f"Elevenlabs not functional. Using Piper instead for tts.")
