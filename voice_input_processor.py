@@ -233,7 +233,7 @@ class VoiceInputProcessor:
 	def send_to_chatgpt(self, text):
 		"""Send text to ChatGPT and generate a response."""
 		print(f"Sending text to ChatGPT: {text}")
-		self.setVoiceCommand("chatGPTSend", text)
+		self.setVoiceCommand("llmSend", text)
 		try:
 			response = self.openai_client.chat.completions.create(
 				model="gpt-4",
@@ -243,7 +243,7 @@ class VoiceInputProcessor:
 				],
 			)
 			chat_response = response.choices[0].message.content
-			self.setVoiceCommand("chatGPTReceive", chat_response)
+			self.setVoiceCommand("llmReceive", chat_response)
 			print(f"ChatGPT Response: {chat_response}")
 
 			# Generate and play TTS audio
@@ -258,7 +258,7 @@ class VoiceInputProcessor:
 	def send_to_deepseek(self, text):
 		"""Send text to DeepSeek and generate a response."""
 		print(f"Sending text to DeepSeek: {text}")
-		self.setVoiceCommand("deepseekSend", text)
+		self.setVoiceCommand("llmSend", text)
 		try:
 			headers = {
 				"Authorization": f"Bearer {self.deepseek_api_key}",
@@ -280,7 +280,7 @@ class VoiceInputProcessor:
 			response.raise_for_status()
 
 			deepseek_response = response.json()["choices"][0]["message"]["content"]
-			self.setVoiceCommand("deepseekReceive", deepseek_response)
+			self.setVoiceCommand("llmReceive", deepseek_response)
 			print(f"DeepSeek Response: {deepseek_response}")
 
 			# Generate and play TTS audio
@@ -293,14 +293,13 @@ class VoiceInputProcessor:
 			return None
 
 	def generate_and_play_tts(self, text):
-		self.setVoiceCommand("ttsSubmitted")
 		"""Generate audio using ElevenLabs TTS API and play directly as MP3."""
 		try:
 			client = ElevenLabs(api_key=self.elevenlabs_key)
 
 			stability = 0.7
-			similarity_boost = 0.8
-			style_exaggeration = 0.5
+			similarity_boost = 0.4
+			style_exaggeration = 0.4
 
 			# Generate the audio (stream=True to receive a generator)
 			audio_generator = client.generate(
@@ -327,6 +326,7 @@ class VoiceInputProcessor:
 				f.write(audio_data)
 
 			# Use the AutomatedPuppeteering class to play the MP3 with puppeting
+			self.setVoiceCommand("speaking")
 			self.puppeteer.play_audio_with_puppeting(temp_audio_file)
 			self.setVoiceCommand("ttsComplete")
 
