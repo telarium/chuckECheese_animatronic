@@ -1,4 +1,5 @@
 import threading
+import time
 from evdev import InputDevice, categorize, ecodes, list_devices
 from enum import Enum
 from dataclasses import dataclass
@@ -135,24 +136,32 @@ class USBGamepadReader:
 		return ranges
 
 	def read_inputs(self):
-		if not self.device:
-			print("No gamepad device available to read inputs from.")
-			return
+		while True:
+			# If the device isn't set, try to find it again.
+			if not self.device:
+				print("No gamepad device available. Trying to reconnect...")
+				self.device = self._find_gamepad()
+				if self.device:
+					print(f"Reconnected to {self.device.name} ({self.device.path})")
+					self.abs_ranges = self._get_abs_ranges()
+				else:
+					time.sleep(2)
+					continue
 
-		print(f"Listening for inputs on {self.device.name}...")
-
-		try:
-			for event in self.device.read_loop():
-				if event.type == ecodes.EV_KEY:
-					self._process_button_event(event)
-				elif event.type == ecodes.EV_ABS:
-					self._process_abs_event(event)
-		except KeyboardInterrupt:
-			print("\nStopping gamepad input listener.")
+			print(f"Listening for inputs on {self.device.name}...")
+			try:
+				for event in self.device.read_loop():
+					if event.type == ecodes.EV_KEY:
+						self._process_button_event(event)
+					elif event.type == ecodes.EV_ABS:
+						self._process_abs_event(event)
+			except OSError as e:
+				print(f"Device error: {e}. Attempting to reconnect...")
+				self.device = None  # Invalidate the current device so we try to find it again
+				time.sleep(1)  # Brief pause before attempting reconnection
 
 	def _dispatch_key_event(self, key: str, val: int):
 		# Tell the HTML front end that a gamepad event occurred so that it can play the corresponding MIDI note
-		print(key)
 		if key == self.movements.headNod.key and self.headNodInverted:
 			val = 1 - val
 		try:
