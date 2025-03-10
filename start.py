@@ -31,13 +31,7 @@ class Pasqually:
 		pygame.display.init()
 		pygame.display.set_mode((1, 1))
 
-		self.voiceEvent = {
-			'id': None,
-			'value': None,
-		}
-
-		self.wifiAccessPoints = None
-		
+		self.wifiAccessPoints = None		
 
 		# Initialize components
 		self.gpio = GPIO()
@@ -80,11 +74,6 @@ class Pasqually:
 	def run(self):
 		try:
 			while self.isRunning:
-				if self.voiceEvent['id'] is not None:
-					self.webServer.broadcast('voiceCommandUpdate', self.voiceEvent)
-					self.voiceEvent['id'] = None
-					self.voiceEvent['value'] = None
-
 				# Broadcast a new wifi scan result if it has changed.
 				if self.wifiManagement.get_wifi_access_points() != self.wifiAccessPoints:
 					self.wifiAccessPoints = self.wifiManagement.get_wifi_access_points()
@@ -141,8 +130,7 @@ class Pasqually:
 
 	# Event handling methods
 	def onVoiceInputEvent(self, id, value=None):
-		self.voiceEvent['id'] = id
-		self.voiceEvent['value'] = value
+		self.webServer.broadcast('voiceCommandUpdate',  {"id": id, "value": value})
 
 		# Play various animations to show Pasqually is listening and processing voice commands.
 		if id == "idle" or id == "ttsComplete":
@@ -155,10 +143,18 @@ class Pasqually:
 		elif id == "transcribing":
 			# Start random blinking animation.
 			self.movements.playBlinkAnimation()
+		elif id == "llmSend":
+			self.movements.playBlinkAnimation()
+			self.movements.playEyeLeftRightAnimation()
+		elif id == "speaking":
+			self.movements.playNeckAnimation()
+			self.movements.playEyeLeftRightAnimation()
+			self.movements.playNeckAnimation()
 		elif id == "command" or id == "ttsSubmitted":
 			# Add some eye left/right movement animation.
 			self.movements.playEyeLeftRightAnimation()
 			self.movements.playBlinkAnimation()
+			self.movements.playNeckAnimation()
 
 		self.voiceEventHandler.triggerEvent(id, value)
 
@@ -187,8 +183,7 @@ class Pasqually:
 
 		# Tell the web frontend what the current voice command status is.
 		command = self.voiceInputProcessor.getLastVoiceCommand()
-		self.voiceEvent['id'] = command['id']
-		self.voiceEvent['value'] = command['value']
+		self.webServer.broadcast('voiceCommandUpdate', command)
 
 		self.onSystemInfoUpdate()
 		self.showPlayer.getShowList()
@@ -227,7 +222,7 @@ class Pasqually:
 		self.wifiManagement.connect_to_wifi(ssid, password)
 
 	def onWebTTSEvent(self, val):
-		print(val)
+		dispatcher.send(signal="voiceInputEvent", id="ttsSubmitted")
 		self.voiceInputProcessor.generate_and_play_tts(val)
 
 if __name__ == "__main__":
