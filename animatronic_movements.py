@@ -1,6 +1,7 @@
+from pydispatch import dispatcher
+from midi import MIDI
 import time
 import threading
-from pydispatch import dispatcher
 import random
 
 # Valve1  -> 0x20, GP0	-> Eye right
@@ -92,6 +93,7 @@ class Movement:
 		self.bRetroModeActive = False # Retro mode disables any movement not part of the original Pasqually
 
 		self.gpio = gpio
+		self.midi = MIDI()
 		self.bThreadStarted = False
 
 		# Define all of our movements here.
@@ -244,26 +246,20 @@ class Movement:
 		self.headNod.bEnableOnRetroMode = True
 		self.all.append( self.headNod )
 	   
-		self.bodyLeanForward = Struct()
-		self.bodyLeanForward.description = "Lean Forward"
-		self.bodyLeanForward.key = 'm'
-		self.bodyLeanForward.outputPin1 = [0x23, 4] # Lean forward
-		self.bodyLeanForward.outputInverted = True
-		self.bodyLeanForward.midiNote = 64
-		self.all.append( self.bodyLeanForward ) 
-
-		#self.bodyLeanDown = Struct()
-		#self.bodyLeanDown.description = "Lean Back"
-		#self.bodyLeanDown.key = 'n'
-		#self.bodyLeanDown.outputPin1 = [0x23, 4] # Lean backward
-		#self.bodyLeanDown.outputPin1MaxTime = 2
-		#self.bodyLeanDown.midiNote = 63
-		#self.all.append( self.bodyLeanDown )
+		self.bodyLeanBack = Struct()
+		self.bodyLeanBack.description = "Lean Back"
+		self.bodyLeanBack.key = 'm'
+		self.bodyLeanBack.outputPin1 = [0x23, 4] # Lean forward
+		self.bodyLeanBack.outputPin2 = [0x21, 1] # Lean backwards
+		self.bodyLeanBack.outputInverted = True
+		self.bodyLeanBack.midiNote = 64
+		self.all.append( self.bodyLeanBack ) 
 
 		self.animationThreadsActive = False
 		self.blinkAnimationThread = None # A thread that plays some random blinking
 		self.eyeLeftRightAnimationThread = None # A thread that moves Pasqually's eyes left/right as he's speaking
 		self.mustacheAnimationThread = None # A thread that moves Pasqually's mustache briefly
+		self.neckAnimationThread = None # A thread that moves Pasqually's head left and right
 
 		for i in self.all:
 			i.keyIsPressed = False
@@ -347,7 +343,7 @@ class Movement:
 	def setPin( self, pin, val, movement ):
 			self.gpio.set_pin_from_address(pin[0], pin[1], val)
 
-	def executeMovement( self, key, val ):
+	def executeMovement( self, key, val, bMuteMIDI=False ):
 		bDoCallback = False
 		for i in self.all:
 			if( i.key == key and key ):
@@ -361,9 +357,12 @@ class Movement:
 				if bDoCallback:
 					if len(i.linkedKeys) > 0:
 						for linkedKey in i.linkedKeys:
-							self.executeMovement(linkedKey, val)
+							self.executeMovement(linkedKey, val, bMuteMIDI)
 
 						return True
+
+					if not bMuteMIDI:
+						self.midi.send_message(i.midiNote, val)
 
 					# If RetroMode is active and this wasn't part of the original movement, don't set the pin.
 					if self.bRetroModeActive and not i.bIsOriginalMovement:
@@ -376,7 +375,7 @@ class Movement:
 					if i.outputInverted == True:
 						val = 1 - val
 
-					print(f"{i.description}: {val}")
+					#print(f"{i.description}: {val}")
 
 					self.setPin(i.outputPin1, val, i)
 
@@ -415,7 +414,7 @@ class Movement:
 	def executeMidiNote(self, midiNote, val):
 		for movement in self.all:
 			if movement.midiNote == midiNote:
-				self.executeMovement(movement.key, val)
+				self.executeMovement(movement.key, val, True)
 				break
 
 	def setRetroMode(self, bEnable):
@@ -429,7 +428,7 @@ class Movement:
 		self.animationThreadsActive = False
 
 		def animShutdown():
-			self.executeMovement(self.headNod.key,0)
+			self.executeMovement(self.headNod.key,1)
 			self.executeMovement(self.mustache.key,0)
 			self.executeMovement(self.mouth.key,0)
 
@@ -441,6 +440,9 @@ class Movement:
 				self.executeMovement(self.eyesBlinkFull.key,0)
 				self.executeMovement(self.eyesLeft.key,0)
 				self.executeMovement(self.eyesRight.key,0)
+				self.executeMovement(self.headLeft.key,1)
+				time.sleep(1)
+				self.executeMovement(self.headLeft.key,0)
 				
 		animShutdownThread = threading.Thread(target=animShutdown)
 		animShutdownThread.start()
@@ -448,7 +450,7 @@ class Movement:
 
 	def playWakewordAcknowledgement(self):
 		def mustacheShake():
-			self.executeMovement(self.headNod.key,1)
+			self.executeMovement(self.headNod.key,0)
 			self.executeMovement(self.mustache.key,1)
 			time.sleep(0.2)
 			self.executeMovement(self.mustache.key,0)
@@ -465,7 +467,7 @@ class Movement:
 		self.animationThreadsActive = True
 		maxTimeBetweenBlinks = 3  # Seconds
 
-		dispatcher.send(signal="keyEvent", key=self.headNod.key, val=1)
+		dispatcher.send(signal="keyEvent", key=self.headNod.key, val=0)
 
 		def blink():
 			while self.animationThreadsActive:
@@ -477,6 +479,35 @@ class Movement:
 		# Use a thread for the blink animation
 		self.blinkAnimationThread = threading.Thread(target=blink)
 		self.blinkAnimationThread.start()
+
+	def playNeckAnimation(self):
+		self.animationThreadsActive = True
+		
+		def headTurn():
+			while self.animationThreadsActive:
+				time.sleep(random.uniform(0.5, 1.5))
+				if self.animationThreadsActive:
+					self.executeMovement(self.headLeft.key,0)
+					self.executeMovement(self.headRight.key,1)
+					time.sleep(random.uniform(0.1, 0.4))
+
+				if self.animationThreadsActive:
+					self.executeMovement(self.headRight.key,0)
+					self.executeMovement(self.headLeft.key,0)
+					time.sleep(random.uniform(0.25, 1.5))
+
+				if self.animationThreadsActive:
+					self.executeMovement(self.headRight.key,0)
+					self.executeMovement(self.headLeft.key,1)
+					time.sleep(random.uniform(0.5, 1))
+
+				if self.animationThreadsActive:
+					self.executeMovement(self.headRight.key,0)
+					self.executeMovement(self.headLeft.key,0)
+			
+		# Use a thread for the blink animation
+		self.neckAnimationThread = threading.Thread(target=headTurn)
+		self.neckAnimationThread.start()
 
 	def playEyeLeftRightAnimation(self):
 		if self.eyeLeftRightAnimationThread and self.eyeLeftRightAnimationThread.is_alive():
@@ -491,19 +522,25 @@ class Movement:
 			while self.animationThreadsActive:
 				if bMoveLeft:
 					eyeMovement = self.eyesLeft
+				else:
+					eyeMovement = self.eyesRight
+
+				self.executeMovement(self.headLeft.key,1)
+				time.sleep(random.uniform(0.1, 0.3))
+				self.executeMovement(self.headLeft.key,0)
 
 				self.executeMovement(eyeMovement.key,1)
 
 				if not self.animationThreadsActive:
 					return
 
-				time.sleep(random.uniform(0.25, 2.5))
+				time.sleep(random.uniform(0, 2.5))
 				self.executeMovement(eyeMovement.key,0)
 
 				if not self.animationThreadsActive:
 					return
 
-				time.sleep(random.uniform(0.25, 2.5))
+				time.sleep(random.uniform(0, 2.5))
 
 				bMoveLeft = not bMoveLeft
 
@@ -518,12 +555,14 @@ class Movement:
 				time.sleep(0.5)
 
 			self.executeMovement(self.headNod.key,0)
-			self.executeMovement(self.mouthAndMustache.key,0)
+			self.executeMovement(self.mouth.key,0)
+			self.executeMovement(self.mustache.key,0)
 			self.executeMovement(self.eyesLeft.key,0)
 			self.executeMovement(self.eyesRight.key,0)
 			self.executeMovement(self.eyesBlinkFull.key,0)
 			self.executeMovement(self.leftAndRightArms.key,0)
 			self.executeMovement(self.leftAndRightElbows.key,0)
+			self.executeMovement(self.bodyLeanBack.key,0)
 
 			if bEnd:
 				self.executeMovement(self.headLeft.key,1)
