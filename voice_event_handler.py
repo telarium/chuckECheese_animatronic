@@ -89,14 +89,20 @@ class VoiceEventHandler:
 		self.playAudioSequence(audioFiles)
 
 	def lookUpAndDown(self):
-		print("LOOK UP AND DOWN!")
-		dispatcher.send(signal="keyEvent", key='s', val=0)
-		time.sleep(0.75)
+		dispatcher.send(signal="keyEvent", key='a', val=1) # Force head/body to turn right
+		time.sleep(0.1)
+		dispatcher.send(signal="voiceInputEvent", id="ttsComplete", value=None)
 		dispatcher.send(signal="keyEvent", key='s', val=1)
 		time.sleep(0.75)
 		dispatcher.send(signal="keyEvent", key='s', val=0)
 		time.sleep(0.75)
 		dispatcher.send(signal="keyEvent", key='s', val=1)
+		time.sleep(0.75)
+		dispatcher.send(signal="keyEvent", key='s', val=0)
+		time.sleep(0.75)
+		dispatcher.send(signal="keyEvent", key='s', val=1)
+		time.sleep(0.75)
+		dispatcher.send(signal="keyEvent", key='s', val=0)
 
 	def ai(self):
 		self.playAudioSequence([self.audioPath+"/ai.ogg"])
