@@ -62,7 +62,7 @@ class MIDI:
 			# Note off message with lowest velocity
 			msg = mido.Message('note_off', note=note, velocity=0)
 		self.outport.send(msg)
-		print(f"Sent MIDI message: {msg}")
+		#print(f"Sent MIDI message: {msg}")
 
 # Example usage:
 if __name__ == "__main__":
