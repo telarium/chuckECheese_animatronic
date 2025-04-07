@@ -1,9 +1,4 @@
 from collections import deque
-from google.cloud import speech
-from elevenlabs.client import ElevenLabs
-from elevenlabs import Voice, VoiceSettings
-from pydispatch import dispatcher
-from automated_puppeteering import AutomatedPuppeteering
 from datetime import datetime
 import os
 import shutil
@@ -21,90 +16,93 @@ import threading
 import time
 import requests
 
+from google.cloud import speech
+from elevenlabs.client import ElevenLabs
+from elevenlabs import Voice, VoiceSettings
+from pydispatch import dispatcher
+from automated_puppeteering import AutomatedPuppeteering
+from typing import Any, Optional
+
+
 class VoiceInputProcessor:
-	def __init__(self, pygame_instance, config_file="config.cfg"):
-
-		self.bSaveTTS = False # Save TTS files to a directory for examining later for debug purposes.
-
+	def __init__(self, pygame_instance: Any, config_file: str = "config.cfg") -> None:
+		self.b_save_tts: bool = False  # Save TTS files to a directory for examining later for debug purposes.
 		self.pygame = pygame_instance
 		self.puppeteer = AutomatedPuppeteering(pygame_instance)
 		self.config = self.load_config(config_file)
 
 		# PicoVoice and Google Speech-to-Text keys
-		self.pv_access_key = self.config["PicoVoice"]["AccessKey"]
-		self.wakeword_path = self.config["PicoVoice"]["WakewordPath"]
-		self.rhino_context_path = self.config["PicoVoice"]["RhinoContextPath"]
-		self.google_cloud_key_path = self.config["SpeechToText"]["GoogleCloudKeyPath"]
+		self.pv_access_key: str = self.config["PicoVoice"]["AccessKey"]
+		self.wakeword_path: str = self.config["PicoVoice"]["WakewordPath"]
+		self.rhino_context_path: str = self.config["PicoVoice"]["RhinoContextPath"]
+		self.google_cloud_key_path: str = self.config["SpeechToText"]["GoogleCloudKeyPath"]
 		os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = self.google_cloud_key_path
 
 		# OpenAI ChatGPT key
 		try:
-			self.openai_api_key = self.config["ChatGPT"]["OpenAIKey"]
+			self.openai_api_key: Optional[str] = self.config["ChatGPT"]["OpenAIKey"]
 			openai.api_key = self.openai_api_key
 			self.openai_client = openai.Client(api_key=self.openai_api_key)
-		except:
+		except Exception:
 			self.openai_api_key = None
 
 		try:
 			# DeepSeek API key and model
-			self.deepseek_api_key = self.config["DeepSeek"]["DeepSeekAPIKey"]
-			self.deepseek_model = self.config["DeepSeek"]["DeepSeekModel"]
-		except:
+			self.deepseek_api_key: Optional[str] = self.config["DeepSeek"]["DeepSeekAPIKey"]
+			self.deepseek_model: Optional[str] = self.config["DeepSeek"]["DeepSeekModel"]
+		except Exception:
 			self.deepseek_api_key = None
 
-		self.ai_context = self.config["AI"]["Context"]
+		self.ai_context: str = self.config["AI"]["Context"]
 
 		# ElevenLabs TTS keys
-		self.elevenlabs_key = self.config["TextToSpeech"]["ElevenLabsKey"]
-		self.elevenlabs_voice_id = self.config["TextToSpeech"]["ElevenLabsVoiceID"]
+		self.elevenlabs_key: str = self.config["TextToSpeech"]["ElevenLabsKey"]
+		self.elevenlabs_voice_id: str = self.config["TextToSpeech"]["ElevenLabsVoiceID"]
 
-		self.sample_rate = 16000
+		self.sample_rate: int = 16000
 
-		self.porcupine = None
-
+		self.porcupine: Optional[Any] = None
 		try:
 			self.porcupine = pvporcupine.create(
 				access_key=self.pv_access_key,
 				keyword_paths=[self.wakeword_path],
 			)
-		except:
+		except Exception:
 			print("Porcupine wakeword path not set correctly in config.cfg. Voice control disabled.")
 			return
 
-		self.rhino = None
-
+		self.rhino: Optional[Any] = None
 		try:
 			self.rhino = pvrhino.create(
 				access_key=self.pv_access_key,
 				context_path=self.rhino_context_path,
 			)
-		except:
+		except Exception:
 			print("Rhino access key or path not set in config.cfg")
 
-		self.pre_wakeword_buffer = deque(maxlen=10)  # Store ~1 second of pre-wakeword audio
-		self.frame_length = self.porcupine.frame_length
-		self.frame_size = self.frame_length * 2
-		self.speech_client = None
-
+		self.pre_wakeword_buffer: deque = deque(maxlen=10)  # Store ~1 second of pre-wakeword audio
+		self.frame_length: int = self.porcupine.frame_length
+		self.frame_size: int = self.frame_length * 2
+		self.speech_client: Optional[speech.SpeechClient] = None
 		try:
 			self.speech_client = speech.SpeechClient()
-		except:
+		except Exception:
 			print("Problem with GoogleCloudKeyPath in config.cfg")
 
 		# Create a temporary directory
-		self.temp_dir = tempfile.TemporaryDirectory()
+		self.temp_dir: tempfile.TemporaryDirectory = tempfile.TemporaryDirectory()
 
 		# Register signal handlers for graceful shutdown
 		signal.signal(signal.SIGTERM, self.shutdown)
 		signal.signal(signal.SIGINT, self.shutdown)
 
-		self.running = True  # Control flag for the main thread
+		self.running: bool = True  # Control flag for the main thread
 
 		# Start the assistant in its own thread
-		self.thread = threading.Thread(target=self.run_thread, daemon=True)
+		self.thread: threading.Thread = threading.Thread(target=self.run_thread, daemon=True)
 		self.thread.start()
 
-	def load_config(self, config_file):
+	def load_config(self, config_file: str) -> configparser.ConfigParser:
 		config_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), config_file)
 		if not os.path.exists(config_path):
 			raise FileNotFoundError(f"Configuration file not found: {config_path}")
@@ -112,17 +110,17 @@ class VoiceInputProcessor:
 		config.read(config_path)
 		return config
 
-	def setVoiceCommand(self, id, value=None):
+	def set_voice_command(self, command_id: str, value: Any = None) -> None:
 		self.voiceStatus = {
-			'id': id,
+			'id': command_id,
 			'value': value,
 		}
-		dispatcher.send(signal="voiceInputEvent", id=id, value=value)
+		dispatcher.send(signal="voiceInputEvent", id=command_id, val=value)
 
-	def getLastVoiceCommand(self):
+	def get_last_voice_command(self) -> Any:
 		return self.voiceStatus
 
-	def record_audio_stream(self):
+	def record_audio_stream(self) -> Optional[subprocess.Popen]:
 		"""Start an audio recording stream."""
 		command = [
 			"arecord",
@@ -144,13 +142,12 @@ class VoiceInputProcessor:
 			print(f"Error starting audio stream: {e}")
 			return None
 
-
-	def process_audio_stream(self, process):
+	def process_audio_stream(self, process: subprocess.Popen) -> Optional[bytearray]:
 		"""Process audio for wakeword detection and transition seamlessly to intent capture."""
 		wakeword_detected = False
 		intent_audio = bytearray()
 		silent_frames = 0
-		timeout_time = 5 # The initial default time (in seconds) inbetween the wakeword and when speaking starts
+		timeout_time = 5  # The initial default time (in seconds) between the wakeword and when speaking starts
 
 		while True:
 			chunk = process.stdout.read(self.frame_size)
@@ -162,7 +159,7 @@ class VoiceInputProcessor:
 
 			if not wakeword_detected and self.porcupine.process(audio_frame) >= 0:
 				print("Wakeword detected!")
-				self.setVoiceCommand("wakeWord")
+				self.set_voice_command("wakeWord")
 				timeout_time = 5
 				wakeword_detected = True
 				intent_audio.extend(b"".join(self.pre_wakeword_buffer))
@@ -192,19 +189,20 @@ class VoiceInputProcessor:
 					process.terminate()
 					process.wait()
 					return intent_audio
+		return None
 
-	def save_audio_to_file(self, audio_data, filename):
+	def save_audio_to_file(self, audio_data: bytes, filename: str) -> str:
 		"""Save audio data to a WAV file in the temporary directory."""
+		import wave  # Local import since wave is only used here
 		filepath = os.path.join(self.temp_dir.name, filename)
 		with wave.open(filepath, "wb") as wf:
 			wf.setnchannels(1)
 			wf.setsampwidth(2)
 			wf.setframerate(self.sample_rate)
 			wf.writeframes(audio_data)
-
 		return filepath
 
-	def transcribe_audio(self, audio_data):
+	def transcribe_audio(self, audio_data: bytes) -> Optional[str]:
 		"""Send audio to Google Speech-to-Text."""
 		if isinstance(audio_data, bytearray):
 			audio_data = bytes(audio_data)
@@ -222,18 +220,18 @@ class VoiceInputProcessor:
 				transcript = response.results[0].alternatives[0].transcript
 				return transcript
 			else:
-				self.setVoiceCommand("noTranscription")
+				self.set_voice_command("noTranscription")
 				print("No transcription result from Google.")
 				return None
 		except Exception as e:
 			print(f"Error during transcription: {e}")
-			self.setVoiceCommand("error")
+			self.set_voice_command("error")
 			return None
 
-	def send_to_chatgpt(self, text):
+	def send_to_chatgpt(self, text: str) -> Optional[str]:
 		"""Send text to ChatGPT and generate a response."""
 		print(f"Sending text to ChatGPT: {text}")
-		self.setVoiceCommand("llmSend", text)
+		self.set_voice_command("llmSend", text)
 		try:
 			response = self.openai_client.chat.completions.create(
 				model="gpt-4",
@@ -243,22 +241,20 @@ class VoiceInputProcessor:
 				],
 			)
 			chat_response = response.choices[0].message.content
-			self.setVoiceCommand("llmReceive", chat_response)
+			self.set_voice_command("llmReceive", chat_response)
 			print(f"ChatGPT Response: {chat_response}")
-
 			# Generate and play TTS audio
 			self.generate_and_play_tts(chat_response)
-
 			return chat_response
 		except Exception as e:
-			self.setVoiceCommand("error")
+			self.set_voice_command("error")
 			print(f"Failed to get response from ChatGPT: {e}")
 			return None
 
-	def send_to_deepseek(self, text):
+	def send_to_deepseek(self, text: str) -> Optional[str]:
 		"""Send text to DeepSeek and generate a response."""
 		print(f"Sending text to DeepSeek: {text}")
-		self.setVoiceCommand("llmSend", text)
+		self.set_voice_command("llmSend", text)
 		try:
 			headers = {
 				"Authorization": f"Bearer {self.deepseek_api_key}",
@@ -271,36 +267,30 @@ class VoiceInputProcessor:
 					{"role": "user", "content": text},
 				],
 			}
-			
 			response = requests.post(
 				"https://api.deepseek.com/v1/chat/completions",
 				headers=headers,
 				json=data,
 			)
 			response.raise_for_status()
-
 			deepseek_response = response.json()["choices"][0]["message"]["content"]
-			self.setVoiceCommand("llmReceive", deepseek_response)
+			self.set_voice_command("llmReceive", deepseek_response)
 			print(f"DeepSeek Response: {deepseek_response}")
-
 			# Generate and play TTS audio
 			self.generate_and_play_tts(deepseek_response)
-
 			return deepseek_response
 		except Exception as e:
-			self.setVoiceCommand("error")
+			self.set_voice_command("error")
 			print(f"Failed to get response from DeepSeek: {e}")
 			return None
 
-	def generate_and_play_tts(self, text):
+	def generate_and_play_tts(self, text: str) -> None:
 		"""Generate audio using ElevenLabs TTS API and play directly as MP3."""
 		try:
 			client = ElevenLabs(api_key=self.elevenlabs_key)
-
 			stability = 0.7
 			similarity_boost = 0.4
 			style_exaggeration = 0.4
-
 			# Generate the audio (stream=True to receive a generator)
 			audio_generator = client.generate(
 				text=text,
@@ -312,90 +302,69 @@ class VoiceInputProcessor:
 						stability=stability,
 						similarity_boost=similarity_boost,
 						style=style_exaggeration,
-						use_speaker_boost=True
-					)
-				)
+						use_speaker_boost=True,
+					),
+				),
 			)
-
 			# Collect the audio chunks into a byte array
-			audio_data = b''.join(audio_generator)
-
+			audio_data = b"".join(audio_generator)
 			# Save the audio as an MP3 file in the temporary directory
 			temp_audio_file = os.path.join(self.temp_dir.name, "tts_audio.mp3")
 			with open(temp_audio_file, "wb") as f:
 				f.write(audio_data)
-
 			# Use the AutomatedPuppeteering class to play the MP3 with puppeting
-			self.setVoiceCommand("speaking")
+			self.set_voice_command("speaking")
 			self.puppeteer.play_audio_with_puppeting(temp_audio_file)
-			self.setVoiceCommand("ttsComplete")
-
-			# Save the TTS audio file to exmaine later... if we wish to do so.
-			if self.bSaveTTS:
+			self.set_voice_command("ttsComplete")
+			# Save the TTS audio file for later examination if desired.
+			if self.b_save_tts:
 				save_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tts_saved")
-				# Create the directory if it doesn't exist
 				os.makedirs(save_dir, exist_ok=True)
-
 				timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-				file_extension = os.path.splitext(temp_audio_file)[1]  # Preserve the original extension
+				file_extension = os.path.splitext(temp_audio_file)[1]
 				new_filename = f"tts_{timestamp}{file_extension}"
-
-				# Destination path
 				dest_path = os.path.join(save_dir, new_filename)
-
-				# Copy and rename the file
 				shutil.copy(temp_audio_file, dest_path)
-
 		except Exception as e:
-			print(f"Elevenlabs not functional. Using Piper instead for tts.")
+			print("Elevenlabs not functional. Using Piper instead for tts.")
 			print(e)
-			# Get the directory of the current Python script
 			script_dir = os.path.dirname(os.path.realpath(__file__))
-
-			# Paths to Piper model and config files in the same directory as the script
 			piper_model = os.path.join(script_dir, "en_US-ryan-low.onnx")
 			piper_config = os.path.join(script_dir, "en_US-ryan-low.json")
-
-			# Temporary audio file for TTS output
 			temp_audio_file = os.path.join(self.temp_dir.name, "tts_audio.wav")
-
-			# Run Piper TTS using the pip-installed command
-			subprocess.run([
-				"piper",
-				"-m", piper_model,
-				"-c", piper_config,
-				"-f", temp_audio_file
-			], input=text, text=True, check=True)
-
-			# Play the generated audio
+			subprocess.run(
+				[
+					"piper",
+					"-m", piper_model,
+					"-c", piper_config,
+					"-f", temp_audio_file,
+				],
+				input=text,
+				text=True,
+				check=True,
+			)
 			self.puppeteer.play_audio_with_puppeting(temp_audio_file)
 
-	def shutdown(self, *args):
+	def shutdown(self, *args: Any) -> None:
 		"""Clean up resources and terminate gracefully."""
 		self.running = False  # Stop the thread's loop
-
 		try:
-			# Stop the arecord subprocess if it's running
 			if hasattr(self, 'process') and self.process is not None:
 				self.process.terminate()
 				for _ in range(50):  # Wait up to 5 seconds for termination
 					if self.process.poll() is not None:
 						break
-					time.sleep(0.1)  # Non-blocking wait
+					time.sleep(0.1)
 				else:
 					self.process.kill()
 				self.process = None
-
-			# Clean up PicoVoice resources
 			self.porcupine.delete()
 			self.rhino.delete()
-
-			# Clean up temporary directory
 			self.temp_dir.cleanup()
-		except:
+		except Exception:
 			pass
 
-	def run_thread(self):
+	def run_thread(self) -> None:
 		"""Run the assistant's main loop in a separate thread."""
 		while self.running:
 			try:
@@ -403,24 +372,28 @@ class VoiceInputProcessor:
 			except Exception as e:
 				print(f"Error in VoiceAssistant loop: {e}")
 
-	def run(self):
+	def run(self) -> None:
 		"""Main loop to handle wakeword detection and audio processing."""
-		# Check if a microphone is available
 		mic_check_command = ["arecord", "-l"]
 		try:
-			result = subprocess.run(mic_check_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+			result = subprocess.run(
+				mic_check_command,
+				stdout=subprocess.PIPE,
+				stderr=subprocess.PIPE,
+				text=True,
+			)
 			if "card" not in result.stdout.lower():
 				print("No microphone detected. Exiting voice assistant.")
-				self.setVoiceCommand("micNotFound")
+				self.set_voice_command("micNotFound")
 				self.running = False
 				return
 		except Exception as e:
 			print(f"Error checking microphone: {e}")
-			self.setVoiceCommand("micNotFound")
+			self.set_voice_command("micNotFound")
 			self.running = False
 			return
 
-		self.setVoiceCommand("idle")
+		self.set_voice_command("idle")
 		print("Waiting for 'Hey chef' wakeword...")
 		stream_process = self.record_audio_stream()
 		if not stream_process:
@@ -428,11 +401,9 @@ class VoiceInputProcessor:
 			return
 
 		intent_audio = self.process_audio_stream(stream_process)
-
 		if intent_audio is None:
 			return
 
-		# Trim a small portion (e.g., 100ms) from the start of the intent audio
 		trim_frames = int(self.sample_rate * 0.1 * 2)  # 100 ms worth of frames
 		if len(intent_audio) > trim_frames:
 			intent_audio = intent_audio[trim_frames:]
@@ -440,12 +411,10 @@ class VoiceInputProcessor:
 		filepath = self.save_audio_to_file(intent_audio, "speech_trimmed.wav")
 
 		if self.rhino is not None:
-			# Send intent audio to Rhino
 			frame_length = self.rhino.frame_length
 			frame_size = frame_length * 2
-
 			for i in range(0, len(intent_audio), frame_size):
-				frame = intent_audio[i:i + frame_size]
+				frame = intent_audio[i : i + frame_size]
 				if len(frame) == frame_size:
 					audio_frame = struct.unpack_from(f"{frame_length}h", frame)
 					if self.rhino.process(audio_frame):
@@ -453,36 +422,36 @@ class VoiceInputProcessor:
 						if inference.is_understood:
 							print(f"Intent detected: {inference.intent}")
 							print(f"Slots: {inference.slots}")
-							self.setVoiceCommand("command", inference.intent)
+							self.set_voice_command("command", inference.intent)
 							return
 
 		print("No intent detected. Transcribing audio...")
-		self.setVoiceCommand("transcribing")
+		self.set_voice_command("transcribing")
 		transcription = self.transcribe_audio(intent_audio)
 		if transcription:
-			# Rhino is supposed to catch these keywords, but just in case it doesn't, try to catch them here...
-			if "your ip address" in transcription.lower():
-				self.setVoiceCommand("command", "IPAddress")
-			elif "your Wi-Fi network" in transcription.lower():
-				self.setVoiceCommand("command", "WifiNetwork")
-			elif "activate hotspot" in transcription.lower():
-				self.setVoiceCommand("command", "HotspotStart")
-			elif "deactivate hotspot" in transcription.lower():
-				self.setVoiceCommand("command", "HotspotEnd")
-			elif transcription.lower() == "stop" or transcription.lower() == "stop singing" or transcription.lower() == "stop show":
+			lower_transcript = transcription.lower()
+			if "your ip address" in lower_transcript:
+				self.set_voice_command("command", "IPAddress")
+			elif "your wi-fi network" in lower_transcript:
+				self.set_voice_command("command", "WifiNetwork")
+			elif "activate hotspot" in lower_transcript:
+				self.set_voice_command("command", "HotspotStart")
+			elif "deactivate hotspot" in lower_transcript:
+				self.set_voice_command("command", "HotspotEnd")
+			elif lower_transcript in ["stop", "stop singing", "stop show"]:
 				dispatcher.send(signal="showStop")
 			else:
-				# If no command found, send to OpenAI or DeepSeek, depending on if either have been configured.
 				if self.openai_api_key and "your" not in self.openai_api_key:
 					self.send_to_chatgpt(transcription)
 				elif self.deepseek_api_key and "your" not in self.deepseek_api_key:
 					self.send_to_deepseek(transcription)
 		else:
-			self.setVoiceCommand("timeout")
+			self.set_voice_command("timeout")
+
 
 if __name__ == "__main__":
 	try:
-		assistant = VoiceControl()
+		assistant = VoiceInputProcessor(pygame_instance=pygame)
 		# Keep the main thread alive while the assistant runs
 		while assistant.thread.is_alive():
 			assistant.thread.join(0.1)

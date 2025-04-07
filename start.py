@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import os
 
 # Supress annoying Pygame messages
@@ -22,62 +24,64 @@ from voice_input_processor import VoiceInputProcessor
 from voice_event_handler import VoiceEventHandler
 from wifi_management import WifiManagement
 
+
 class Pasqually:
-	def __init__(self):
-		self.isRunning = True
+	def __init__(self) -> None:
+		self.is_running: bool = True
 
 		# Initialize pygame for managing audio playback
 		pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=2048)
 		pygame.display.init()
 		pygame.display.set_mode((1, 1))
 
-		self.wifiAccessPoints = None		
+		self.wifi_access_points = None
 
 		# Initialize components
 		self.gpio = GPIO()
 		self.movements = Movement(self.gpio)
-		self.webServer = WebServer()
-		self.wifiManagement = WifiManagement()
-		self.systemInfo = SystemInfo()
-		self.gamepad = USBGamepadReader(self.movements, self.webServer)
-		self.showPlayer = ShowPlayer(pygame)
-		self.voiceInputProcessor = VoiceInputProcessor(pygame)
-		self.voiceEventHandler = VoiceEventHandler(pygame, self.voiceInputProcessor)
+		self.web_server = WebServer()
+		self.wifi_management = WifiManagement()
+		self.system_info = SystemInfo()
+		self.gamepad = USBGamepadReader(self.movements, self.web_server)
+		self.show_player = ShowPlayer(pygame)
+		self.voice_input_processor = VoiceInputProcessor(pygame)
+		self.voice_event_handler = VoiceEventHandler(pygame, self.voice_input_processor)
 
-		self.setDispatchEvents()
+		self.set_dispatch_events()
 
 		# Handle SIGINT and SIGTERM for graceful shutdown
 		signal.signal(signal.SIGINT, self.shutdown)
 		signal.signal(signal.SIGTERM, self.shutdown)
 
-		self.movements.setDefaultAnimation(True)
+		self.movements.set_default_animation(True)
 
-	def setDispatchEvents(self):
-		dispatcher.connect(self.onKeyEvent, signal='keyEvent', sender=dispatcher.Any)
-		dispatcher.connect(self.onSystemInfoUpdate, signal='systemInfoUpdate', sender=dispatcher.Any)
-		dispatcher.connect(self.onVoiceInputEvent, signal='voiceInputEvent', sender=dispatcher.Any)
-		dispatcher.connect(self.onMirroredModeToggle, signal='mirrorModeToggle', sender=dispatcher.Any)
-		dispatcher.connect(self.onConnectEvent, signal='connectEvent', sender=dispatcher.Any)
-		dispatcher.connect(self.onShowListLoad, signal='showListLoad', sender=dispatcher.Any)
-		dispatcher.connect(self.onShowPlay, signal='showPlay', sender=dispatcher.Any)
-		dispatcher.connect(self.onShowPause, signal='showPause', sender=dispatcher.Any)
-		dispatcher.connect(self.onShowStop, signal='showStop', sender=dispatcher.Any)
-		dispatcher.connect(self.onShowEnd, signal='showEnd', sender=dispatcher.Any)
-		dispatcher.connect(self.onMirroredMode, signal='onMirroredMode', sender=dispatcher.Any)
-		dispatcher.connect(self.onRetroMode, signal='onRetroMode', sender=dispatcher.Any)
-		dispatcher.connect(self.onHeadNodInverted, signal='onHeadNodInverted', sender=dispatcher.Any)
-		dispatcher.connect(self.onShowPlaybackMidiEvent, signal='showPlaybackMidiEvent', sender=dispatcher.Any)
-		dispatcher.connect(self.onActivateWifiHotspot, signal='activateWifiHotspot', sender=dispatcher.Any)
-		dispatcher.connect(self.onConnectToWifiNetwork, signal='connectToWifi', sender=dispatcher.Any)
-		dispatcher.connect(self.onWebTTSEvent, signal='webTTSEvent', sender=dispatcher.Any)
+	def set_dispatch_events(self) -> None:
+		dispatcher.connect(self.on_key_event, signal='keyEvent', sender=dispatcher.Any)
+		dispatcher.connect(self.on_system_info_update, signal='systemInfoUpdate', sender=dispatcher.Any)
+		dispatcher.connect(self.on_voice_input_event, signal='voiceInputEvent', sender=dispatcher.Any)
+		dispatcher.connect(self.on_mirrored_mode_toggle, signal='mirrorModeToggle', sender=dispatcher.Any)
+		dispatcher.connect(self.on_connect_event, signal='connectEvent', sender=dispatcher.Any)
+		dispatcher.connect(self.on_show_list_load, signal='showListLoad', sender=dispatcher.Any)
+		dispatcher.connect(self.on_show_play, signal='showPlay', sender=dispatcher.Any)
+		dispatcher.connect(self.on_show_pause, signal='showPause', sender=dispatcher.Any)
+		dispatcher.connect(self.on_show_stop, signal='showStop', sender=dispatcher.Any)
+		dispatcher.connect(self.on_show_end, signal='showEnd', sender=dispatcher.Any)
+		dispatcher.connect(self.on_mirrored_mode, signal='onMirroredMode', sender=dispatcher.Any)
+		dispatcher.connect(self.on_retro_mode, signal='onRetroMode', sender=dispatcher.Any)
+		dispatcher.connect(self.on_head_nod_inverted, signal='onHeadNodInverted', sender=dispatcher.Any)
+		dispatcher.connect(self.on_show_playback_midi_event, signal='showPlaybackMidiEvent', sender=dispatcher.Any)
+		dispatcher.connect(self.on_activate_wifi_hotspot, signal='activateWifiHotspot', sender=dispatcher.Any)
+		dispatcher.connect(self.on_connect_to_wifi_network, signal='connectToWifi', sender=dispatcher.Any)
+		dispatcher.connect(self.on_web_tts_event, signal='webTTSEvent', sender=dispatcher.Any)
 
-	def run(self):
+	def run(self) -> None:
 		try:
-			while self.isRunning:
+			while self.is_running:
 				# Broadcast a new wifi scan result if it has changed.
-				if self.wifiManagement.get_wifi_access_points() != self.wifiAccessPoints:
-					self.wifiAccessPoints = self.wifiManagement.get_wifi_access_points()
-					self.webServer.broadcast('wifiScan', self.wifiAccessPoints)
+				current_wifi = self.wifi_management.get_wifi_access_points()
+				if current_wifi != self.wifi_access_points:
+					self.wifi_access_points = current_wifi
+					self.web_server.broadcast('wifiScan', self.wifi_access_points)
 
 				time.sleep(0.005)
 
@@ -87,19 +91,19 @@ class Pasqually:
 			print("Main loop exiting, calling shutdown...")
 			self.shutdown()
 
-	def shutdown(self, *args):
+	def shutdown(self, *args) -> None:
 		try:
-			self.isRunning = False  # Signal all loops to stop
+			self.is_running = False  # Signal all loops to stop
 
 			# Stop all dependent components
-			if self.voiceInputProcessor:
-				self.voiceInputProcessor.shutdown()
+			if self.voice_input_processor:
+				self.voice_input_processor.shutdown()
 
-			if self.webServer:
-				self.webServer.shutdown()
+			if self.web_server:
+				self.web_server.shutdown()
 
-			if self.showPlayer:
-				self.showPlayer.stopShow()
+			if self.show_player:
+				self.show_player.stop_show()
 
 			# Ensure all non-main threads exit before quitting pygame
 			for thread in threading.enumerate():
@@ -124,106 +128,106 @@ class Pasqually:
 			print(f"Error during shutdown: {e}")
 			sys.exit(1)
 
-
-	def onSystemInfoUpdate(self):
-		self.webServer.broadcast('systemInfo', self.systemInfo.get())
+	def on_system_info_update(self) -> None:
+		self.web_server.broadcast('systemInfo', self.system_info.get())
 
 	# Event handling methods
-	def onVoiceInputEvent(self, id, value=None):
-		self.webServer.broadcast('voiceCommandUpdate',  {"id": id, "value": value})
+	def on_voice_input_event(self, id: str, value: any = None) -> None:
+		self.web_server.broadcast('voiceCommandUpdate', {"id": id, "value": value})
 
 		# Play various animations to show Pasqually is listening and processing voice commands.
-		if id == "idle" or id == "ttsComplete":
+		if id in ("idle", "ttsComplete"):
 			# Don't do any animations while he's not doing any voice processing.
-			self.movements.stopAllAnimationThreads()
+			self.movements.stop_all_animation_threads()
 		elif id == "wakeWord":
 			# Twirls his mustache a bit to demonstrate wakeword acknowledgement.
-			self.movements.playWakewordAcknowledgement()
-			self.showPlayer.stopShow()  # Stop any playing shows
+			self.movements.play_wakeword_acknowledgement()
+			self.show_player.stop_show()  # Stop any playing shows
 		elif id == "transcribing":
 			# Start random blinking animation.
-			self.movements.playBlinkAnimation()
+			self.movements.play_blink_animation()
 		elif id == "llmSend":
-			self.movements.playBlinkAnimation()
-			self.movements.playEyeLeftRightAnimation()
+			self.movements.play_blink_animation()
+			self.movements.play_eye_left_right_animation()
 		elif id == "speaking":
-			self.movements.playNeckAnimation()
-			self.movements.playEyeLeftRightAnimation()
-			self.movements.playNeckAnimation()
-		elif id == "command" or id == "ttsSubmitted":
+			self.movements.play_neck_animation()
+			self.movements.play_eye_left_right_animation()
+			self.movements.play_neck_animation()
+		elif id in ("command", "ttsSubmitted"):
 			# Add some eye left/right movement animation.
-			self.movements.playEyeLeftRightAnimation()
-			self.movements.playBlinkAnimation()
-			self.movements.playNeckAnimation()
+			self.movements.play_eye_left_right_animation()
+			self.movements.play_blink_animation()
+			self.movements.play_neck_animation()
 
-		self.voiceEventHandler.triggerEvent(id, value)
+		self.voice_event_handler.trigger_event(id, value)
 
-	def onShowListLoad(self, showList):
-		self.webServer.broadcast('showListLoaded', showList)
+	def on_show_list_load(self, show_list: any) -> None:
+		self.web_server.broadcast('showListLoaded', show_list)
 
-	def onShowPlay(self, showName):
-		self.showPlayer.loadShow(showName)
-		self.movements.setDefaultAnimation(False)
+	def on_show_play(self, show_name: str) -> None:
+		self.show_player.load_show(show_name)
+		self.movements.set_default_animation(False)
 
-	def onShowStop(self):
-		self.showPlayer.stopShow()
-		self.movements.setDefaultAnimation(True)
+	def on_show_stop(self) -> None:
+		self.show_player.stop_show()
+		self.movements.set_default_animation(True)
 
-	def onShowEnd(self):
-		self.movements.setDefaultAnimation(True)
+	def on_show_end(self) -> None:
+		self.movements.set_default_animation(True)
 
-	def onShowPause(self):
-		self.showPlayer.togglePause()
+	def on_show_pause(self) -> None:
+		self.show_player.toggle_pause()
 
-	def onShowPlaybackMidiEvent(self, midiNote, value):
-		self.movements.executeMidiNote(midiNote, value)
+	def on_show_playback_midi_event(self, midi_note: any, val: any) -> None:
+		self.movements.execute_midi_note(midi_note, val)
 
-	def onConnectEvent(self, client_ip):
+	def on_connect_event(self, client_ip: str) -> None:
 		print(f"Web client connected from IP: {client_ip}")
 
 		# Tell the web frontend what the current voice command status is.
-		command = self.voiceInputProcessor.getLastVoiceCommand()
-		self.webServer.broadcast('voiceCommandUpdate', command)
+		command = self.voice_input_processor.get_last_voice_command()
+		self.web_server.broadcast('voiceCommandUpdate', command)
 
-		self.onSystemInfoUpdate()
-		self.showPlayer.getShowList()
-		self.webServer.broadcast('movementInfo', self.movements.getAllMovementInfo())
-		self.webServer.broadcast('wifiScan', self.wifiAccessPoints)
-		self.wifiManagement.scan_wifi_access_points()
+		self.on_system_info_update()
+		self.show_player.get_show_list()
+		self.web_server.broadcast('movementInfo', self.movements.get_all_movement_info())
+		self.web_server.broadcast('wifiScan', self.wifi_access_points)
+		self.wifi_management.scan_wifi_access_points()
 
-	def onKeyEvent(self, key, val):
+	def on_key_event(self, key: any, val: any) -> None:
 		# Receive key events from the HTML front end and execute any specified movement
 		try:
-			self.movements.executeMovement(str(key).lower(), val)
+			self.movements.execute_movement(str(key).lower(), val)
 		except Exception as e:
 			print(f"Invalid key: {e}")
 
-	def onRetroMode(self, val):
-		self.movements.setRetroMode(val)
+	def on_retro_mode(self, val: any) -> None:
+		self.movements.set_retro_mode(val)
 
-	def onHeadNodInverted(self, val):
-		self.gamepad.headNodInverted = val
+	def on_head_nod_inverted(self, val: any) -> None:
+		self.gamepad.head_nod_inverted = val
 
-	def onMirroredMode(self, val):
-		self.movements.setMirrored(val)
+	def on_mirrored_mode(self, val: any) -> None:
+		self.movements.set_mirrored(val)
 
-	def onMirroredModeToggle(self):
+	def on_mirrored_mode_toggle(self) -> None:
 		# Toggle animation mirrored mode (swapping left and right movements)
-		bNewMirrorMode = not self.movements.bMirrored
-		self.movements.setMirrored(bNewMirrorMode)
+		new_mirror_mode = not self.movements.b_mirrored
+		self.movements.set_mirrored(new_mirror_mode)
 
-	def onActivateWifiHotspot(self, bActivate):
-		if bActivate:
-			self.wifiManagement.activate_hotspot()
-		elif bActivate == False and self.wifiManagement.is_hotspot_active():
-			self.wifiManagement.deactivate_hotspot_and_reconnect()
+	def on_activate_wifi_hotspot(self, activate: bool) -> None:
+		if activate:
+			self.wifi_management.activate_hotspot()
+		elif not activate and self.wifi_management.is_hotspot_active():
+			self.wifi_management.deactivate_hotspot_and_reconnect()
 
-	def onConnectToWifiNetwork(self, ssid, password=None):
-		self.wifiManagement.connect_to_wifi(ssid, password)
+	def on_connect_to_wifi_network(self, ssid: str, password: any = None) -> None:
+		self.wifi_management.connect_to_wifi(ssid, password)
 
-	def onWebTTSEvent(self, val):
+	def on_web_tts_event(self, val: any) -> None:
 		dispatcher.send(signal="voiceInputEvent", id="ttsSubmitted")
-		self.voiceInputProcessor.generate_and_play_tts(val)
+		self.voice_input_processor.generate_and_play_tts(val)
+
 
 if __name__ == "__main__":
 	animatronic = Pasqually()

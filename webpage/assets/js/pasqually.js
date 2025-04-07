@@ -527,6 +527,11 @@ function populateWifiList() {
 let wifiSSIDs = [];
 let selectedSSID = null;
 
+
+socket.on('wifiScan', function(data){
+    wifiSSIDs = data
+});
+
 /**
  * Handle WiFi network selection.
  * @param {string} ssid - The SSID of the selected WiFi network.

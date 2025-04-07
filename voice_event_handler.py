@@ -6,92 +6,92 @@ from pydispatch import dispatcher
 from wifi_management import WifiManagement
 from system_info import SystemInfo
 from automated_puppeteering import AutomatedPuppeteering
+from typing import Any, List
 
 class VoiceEventHandler:
-	def __init__(self, pygame_instance, voice_input_instance):
+	def __init__(self, pygame_instance: Any, voice_input_instance: Any) -> None:
 		self.pygame = pygame_instance
-		self.voiceInputProcessor = voice_input_instance
+		self.voice_input_processor = voice_input_instance
 		self.puppeteer = AutomatedPuppeteering(pygame_instance)
 
-		self.wifiManagement = WifiManagement()
-		self.systemInfo = SystemInfo(False)
+		self.wifi_management = WifiManagement()
+		self.system_info = SystemInfo(False)
 
-		self.audioPath = os.path.join(os.path.dirname(__file__), "miscAudioAssets")
+		self.audio_path = os.path.join(os.path.dirname(__file__), "miscAudioAssets")
 
 		self.commands = {
-			"PlaySong": self.playSong,
-			"Encore": self.playEncore,
-			"WhoAreYou": self.whoAreYou,
-			"HowDoYouWork": self.howDoYouWork,
-			"IPAddress": self.ipAddress,
-			"HotspotStart": self.hotspotStart,
-			"HotspotEnd": self.hotspotEnd,
-			"WifiNetwork": self.wifiNetwork,
+			"PlaySong": self.play_song,
+			"Encore": self.play_encore,
+			"WhoAreYou": self.who_are_you,
+			"HowDoYouWork": self.how_do_you_work,
+			"IPAddress": self.ip_address,
+			"HotspotStart": self.hotspot_start,
+			"HotspotEnd": self.hotspot_end,
+			"WifiNetwork": self.wifi_network,
 			"PSI": self.psi,
 			"TryAI": self.ai,
-			"LookUpAndDown": self.lookUpAndDown
+			"LookUpAndDown": self.look_up_and_down
 		}
 
-	def triggerEvent(self, id, value):
-		print(f"VoiceEvent: {id}, {value}")
+	def trigger_event(self, event_id: str, value: Any) -> None:
+		print(f"VoiceEvent: {event_id}, {value}")
 
-		if id == "noTranscription":
-			self.playAudioSequence([self.audioPath+"/no_transcription.ogg"])
-		elif id == "error":
-			if not self.wifiManagement.is_internet_available():
-				self.playAudioSequence([self.audioPath+"/no_connection.ogg"])
+		if event_id == "noTranscription":
+			self.play_audio_sequence([f"{self.audio_path}/no_transcription.ogg"])
+		elif event_id == "error":
+			if not self.wifi_management.is_internet_available():
+				self.play_audio_sequence([f"{self.audio_path}/no_connection.ogg"])
 			else:
-				self.playAudioSequence([self.audioPath+"/no_ai.ogg"])
-		elif id == "command":
-			self.handleCommand(value)
+				self.play_audio_sequence([f"{self.audio_path}/no_ai.ogg"])
+		elif event_id == "command":
+			self.handle_command(value)
 
-	def handleCommand(self, command):
+	def handle_command(self, command: str) -> None:
 		action = self.commands.get(command)
 		if action:
 			action()  # Call the corresponding method
 		else:
 			print(f"Unknown command: '{command}'")
 
-	def playAudioSequence(self, audio_files):
+	def play_audio_sequence(self, audio_files: List[str]) -> None:
 		for file in audio_files:
 			try:
 				self.puppeteer.play_audio_with_puppeting(file)
-			except self.pygame.error as e:
+			except pygame.error as e:
 				print(f"Error playing {file}: {e}")
 
-	def playSong(self):
-		self.playAudioSequence([self.audioPath+"/song_start.ogg"]) # Voice audio to announce playing a song.
-		dispatcher.send(signal="showPlay", showName="") # Empty show name means play something random
+	def play_song(self) -> None:
+		self.play_audio_sequence([f"{self.audio_path}/song_start.ogg"])  # Voice audio to announce playing a song.
+		dispatcher.send(signal="showPlay", show_name="")  # Empty show name means play something random
 
-	def playEncore(self):
-		self.playAudioSequence([self.audioPath+"/encore.ogg",self.audioPath+"/song_start.ogg"]) # Voice audio to announce playing a song.
-		dispatcher.send(signal="showPlay", showName="") # Empty show name means play something random
+	def play_encore(self) -> None:
+		self.play_audio_sequence([f"{self.audio_path}/encore.ogg", f"{self.audio_path}/song_start.ogg"])
+		dispatcher.send(signal="showPlay", show_name="")  # Empty show name means play something random
 
-	def whoAreYou(self):
-		self.playAudioSequence([self.audioPath+"/who_are_you.ogg"]) # Voice audio for a brief introduction.
+	def who_are_you(self) -> None:
+		self.play_audio_sequence([f"{self.audio_path}/who_are_you.ogg"])  # Voice audio for a brief introduction.
 
-	def howDoYouWork(self):
-		self.playAudioSequence([self.audioPath+"/how_do_you_work.ogg"]) # Voice audio for a brief introduction.
+	def how_do_you_work(self) -> None:
+		self.play_audio_sequence([f"{self.audio_path}/how_do_you_work.ogg"])  # Voice audio for a brief introduction.
 
-	def ipAddress(self):
+	def ip_address(self) -> None:
 		# Play sequential audio to read out the current IP address.
-		ip = self.wifiManagement.get_current_ip()
+		ip = self.wifi_management.get_current_ip()
 		if ip is None:
-			audioFiles = [self.audioPath+"/no_connection.ogg"]
+			audio_files = [f"{self.audio_path}/no_connection.ogg"]
 		else:
-			audioFiles = [self.audioPath+"/ip_prefix.ogg"] # A voice intro
+			audio_files = [f"{self.audio_path}/ip_prefix.ogg"]  # A voice intro
 			for char in ip:
 				if char == ".":
-					audioFiles.append(self.audioPath+"/dot.wav")
+					audio_files.append(f"{self.audio_path}/dot.wav")
 				else:
-					audioFiles.append(self.audioPath+"/numero_" + char + ".wav")
+					audio_files.append(f"{self.audio_path}/numero_{char}.wav")
+		self.play_audio_sequence(audio_files)
 
-		self.playAudioSequence(audioFiles)
-
-	def lookUpAndDown(self):
-		dispatcher.send(signal="keyEvent", key='a', val=1) # Force head/body to turn right
+	def look_up_and_down(self) -> None:
+		dispatcher.send(signal="keyEvent", key='a', val=1)  # Force head/body to turn right
 		time.sleep(0.1)
-		dispatcher.send(signal="voiceInputEvent", id="ttsComplete", value=None)
+		dispatcher.send(signal="voiceInputEvent", id="ttsComplete", val=None)
 		dispatcher.send(signal="keyEvent", key='s', val=1)
 		time.sleep(0.75)
 		dispatcher.send(signal="keyEvent", key='s', val=0)
@@ -104,60 +104,59 @@ class VoiceEventHandler:
 		time.sleep(0.75)
 		dispatcher.send(signal="keyEvent", key='s', val=0)
 
-	def ai(self):
-		self.playAudioSequence([self.audioPath+"/ai.ogg"])
+	def ai(self) -> None:
+		self.play_audio_sequence([f"{self.audio_path}/ai.ogg"])
 
-	def hotspotStart(self):
-		self.playAudioSequence([self.audioPath+"/hotspot_activate.ogg"])
+	def hotspot_start(self) -> None:
+		self.play_audio_sequence([f"{self.audio_path}/hotspot_activate.ogg"])
 		dispatcher.send(signal="activateWifiHotspot", bActivate=True)
 
-	def hotspotEnd(self):
-		self.playAudioSequence([self.audioPath+"/hotspot_deactivate.ogg"])
+	def hotspot_end(self) -> None:
+		self.play_audio_sequence([f"{self.audio_path}/hotspot_deactivate.ogg"])
 		dispatcher.send(signal="activateWifiHotspot", bActivate=False)
 
-	def wifiNetwork(self):
-		ssid = self.wifiManagement.get_current_ssid()
+	def wifi_network(self) -> None:
+		ssid = self.wifi_management.get_current_ssid()
 		if ssid is None:
-			self.playAudioSequence([self.audioPath+"/no_connection.ogg"])
+			self.play_audio_sequence([f"{self.audio_path}/no_connection.ogg"])
 		else:
 			print(1)
-			self.playAudioSequence([self.audioPath+"/ssid.ogg"])
+			self.play_audio_sequence([f"{self.audio_path}/ssid.ogg"])
 			print(2)
-			self.voiceInputProcessor.generate_and_play_tts(ssid)
+			self.voice_input_processor.generate_and_play_tts(ssid)
 
-	def psi(self):
+	def psi(self) -> None:
 		# This function should read off the current PSI by creating a list of WAV audio files.
-		
-		# Start with the prefix audio
-		audioFiles = [self.audioPath + "/psi_prefix.ogg"]
+		# Start with the prefix audio.
+		audio_files = [f"{self.audio_path}/psi_prefix.ogg"]
 
 		# Get the current PSI value from the system.
-		psiValue = self.systemInfo.get_psi()
+		psi_value = self.system_info.get_psi()
 
-		# Select the correct numero files based on psiValue.
-		if psiValue <= 20:
+		# Select the correct numero files based on psi_value.
+		if psi_value <= 20:
 			# For PSI 0 through 20, use the corresponding file.
-			audioFiles.append(self.audioPath + f"/numero_{psiValue}.wav")
+			audio_files.append(f"{self.audio_path}/numero_{psi_value}.wav")
 		else:
 			# For PSI values above 20:
 			# Special-case 100 if it exists.
-			if psiValue == 100:
-				audioFiles.append(self.audioPath + "/numero_100.wav")
+			if psi_value == 100:
+				audio_files.append(f"{self.audio_path}/numero_100.wav")
 			else:
 				# Determine tens and ones digits.
-				tens = psiValue - (psiValue % 10)
-				ones = psiValue % 10
+				tens = psi_value - (psi_value % 10)
+				ones = psi_value % 10
 
 				if ones == 0:
 					# If the ones digit is zero, just use the corresponding tens file.
-					audioFiles.append(self.audioPath + f"/numero_{psiValue}.wav")
+					audio_files.append(f"{self.audio_path}/numero_{psi_value}.wav")
 				else:
 					# Otherwise, append the tens file first and then the ones file.
-					audioFiles.append(self.audioPath + f"/numero_{tens}.wav")
-					audioFiles.append(self.audioPath + f"/numero_{ones}.wav")
+					audio_files.append(f"{self.audio_path}/numero_{tens}.wav")
+					audio_files.append(f"{self.audio_path}/numero_{ones}.wav")
 
 		# Append the postfix audio file.
-		audioFiles.append(self.audioPath + "/psi_postfix.wav")
+		audio_files.append(f"{self.audio_path}/psi_postfix.wav")
 
 		# Play the complete audio sequence.
-		self.playAudioSequence(audioFiles)
+		self.play_audio_sequence(audio_files)
