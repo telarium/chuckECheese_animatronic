@@ -1,19 +1,21 @@
-# chuckECheese_animatronic
-A project to retrofit an old 1981 Chuck E Cheese animatronic character named Pasqually, using as Raspberry PI to control pneumatics through a web interface. You know, for fun.
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/1c94f4c2-fe96-43a8-b93e-8ccb9480af95" width="40%" alt="Pizza Time Theatre - Now with AI!">
+</p>
 
-# MIDI
-To use Chrome's MIDI capabilities (optional), you must access the HTTPS secure version of the web server.
+This project is for a retrofit of an old 1981 Cyberanimc Animatronic from Pizza Time Theatre, better known as Chuck E. Cheese's band. A Raspberry Pi was used with a custom circuit board to control the animatronic, adding voice recognition and AI capabilities. Features include:
 
-First, on the Linux device that runs the server, we need to create a certificate:
+* Wifi control through an HTML interface
+* Voice recognition with wakeword detection
+* Speech-to-text support
+* Intent detection for pre-defined commands
+* Integration with ChatGPT or DeepSeek
+* Text-to-speech for offline mode or online mode with Elevenlabs for natural sounding speech
+* Wireless gamepad support
+* Wifi management, including access point mode (hotspot)
+* MIDI support for animating new shows
 
-`openssl req -new -x509 -keyout server.key -out server.crt -days 365 -nodes`
+For more detailed information, [read the wiki](https://github.com/telarium/chuckECheese_animatronic/wiki)!
 
-Copy the server.crt to your client machine and import it into Chrome browser under settings.
-
-Make sure "Local Management via HTTPS" is enabled on your router.
-
-You'll also need to install a virtual MIDI device on Windows so that you can record the MIDI data in a sequencer and play it back later:
-
-https://www.nerds.de/en/loopbe30.html
-
-Set it up so that it runs at least two MIDI ports. By default, port 1 will be used to output MIDI from the web frontend to the MIDI sequencer of your choice. To play MIDI from your sequencer to the web server, set the sequencer's MIDI output to be port 2.
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/08a82bd0-61f8-4243-b20e-e76467d87dcc"alt="Meet Pasqually, the 1981 animatronic chef from Pizza Time Theatre who loves to sing opera and make pizza! How he has AI! God help us all.">
+</p>
