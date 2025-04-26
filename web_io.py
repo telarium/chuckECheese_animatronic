@@ -90,7 +90,7 @@ class WebServer:
 	def run_http(self) -> None:
 		try:
 			print("Starting HTTP server on port 80...")
-			socketio.run(app, host='0.0.0.0', port=80)
+			socketio.run(app, host='0.0.0.0', port=80, allow_unsafe_werkzeug=True)
 		except Exception as e:
 			print(f"Error running HTTP server: {e}")
 
