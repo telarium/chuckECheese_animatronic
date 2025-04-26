@@ -33,8 +33,9 @@ class WifiManagement:
 		config_path: str = os.path.join(os.path.dirname(os.path.realpath(__file__)), config_file)
 		if not os.path.exists(config_path):
 			raise FileNotFoundError(f"Configuration file not found: {config_path}")
+			
 		config = configparser.ConfigParser()
-		config.read(config_file)
+		config.read(config_path)
 		return config
 
 	def _get_preferred_interface(self) -> str:
