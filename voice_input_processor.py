@@ -36,6 +36,12 @@ class VoiceInputProcessor:
 		self.wakeword_path: str = self.config["PicoVoice"]["WakewordPath"]
 		self.rhino_context_path: str = self.config["PicoVoice"]["RhinoContextPath"]
 		self.google_cloud_key_path: str = self.config["SpeechToText"]["GoogleCloudKeyPath"]
+
+		base_path = os.path.dirname(os.path.realpath(__file__))
+		self.wakeword_path = os.path.join(base_path, self.wakeword_path)
+		self.rhino_context_path = os.path.join(base_path, self.rhino_context_path)
+		self.google_cloud_key_path = os.path.join(base_path, self.google_cloud_key_path)
+
 		os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = self.google_cloud_key_path
 
 		# OpenAI ChatGPT key
@@ -115,7 +121,7 @@ class VoiceInputProcessor:
 			'id': command_id,
 			'value': value,
 		}
-		dispatcher.send(signal="voiceInputEvent", id=command_id, val=value)
+		dispatcher.send(signal="voiceInputEvent", id=command_id, value=value)
 
 	def get_last_voice_command(self) -> Any:
 		return self.voiceStatus
