@@ -436,7 +436,12 @@ class VoiceInputProcessor:
 		transcription = self.transcribe_audio(intent_audio)
 		if transcription:
 			lower_transcript = transcription.lower()
-			if "your ip address" in lower_transcript:
+			parts = transcription.strip().split(maxsplit=1)
+			print(parts)
+			if parts and parts[0].lower() == "say" and len(parts) > 1:
+				# If the first word was "say", we just repeat the rest of the sentence.
+				dispatcher.send(signal="webTTSEvent", val=parts[1])
+			elif "your ip address" in lower_transcript:
 				self.set_voice_command("command", "IPAddress")
 			elif "your wi-fi network" in lower_transcript:
 				self.set_voice_command("command", "WifiNetwork")
