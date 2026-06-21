@@ -24,7 +24,7 @@ class Setup:
 
 		# Install Python dependencies via pip with --break-system-packages
 		self.install_python_packages([
-			"pvporcupine", "pvrhino", "pydub", "scipy", "openai", "google-cloud-speech", "elevenlabs", "piper-tts", "pywifi", "requests"
+			"pvporcupine", "pvrhino", "pydub", "scipy", "openai", "anthropic", "google-cloud-speech", "elevenlabs", "piper-tts", "pywifi", "requests"
 		])
 
 		# Set up Piper TTS models
