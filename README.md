@@ -8,7 +8,7 @@ This project is for a retrofit of an old 1981 Cyberanimc Animatronic from Pizza 
 * Voice recognition with wakeword detection
 * Speech-to-text support
 * Intent detection for pre-defined commands
-* Integration with ChatGPT or DeepSeek
+* Integration with Claude, ChatGPT, or DeepSeek
 * Text-to-speech for offline mode or online mode with Elevenlabs for natural sounding speech
 * Wireless gamepad support
 * Wifi management, including access point mode (hotspot)
