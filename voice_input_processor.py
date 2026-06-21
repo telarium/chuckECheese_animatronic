@@ -4,6 +4,7 @@ import os
 import shutil
 import pygame
 import openai
+import anthropic
 import pvporcupine
 import pvrhino
 import struct
@@ -58,6 +59,14 @@ class VoiceInputProcessor:
 			self.deepseek_model: Optional[str] = self.config["DeepSeek"]["DeepSeekModel"]
 		except Exception:
 			self.deepseek_api_key = None
+
+		try:
+			# Anthropic Claude API key and model
+			self.anthropic_api_key: Optional[str] = self.config["Claude"]["AnthropicKey"]
+			self.anthropic_model: str = self.config["Claude"].get("AnthropicModel", "claude-sonnet-4-6")
+			self.anthropic_client = anthropic.Anthropic(api_key=self.anthropic_api_key)
+		except Exception:
+			self.anthropic_api_key = None
 
 		self.ai_context: str = self.config["AI"]["Context"]
 
@@ -290,6 +299,46 @@ class VoiceInputProcessor:
 			print(f"Failed to get response from DeepSeek: {e}")
 			return None
 
+	def send_to_claude(self, text: str) -> Optional[str]:
+		"""Send text to Claude (Anthropic) and generate a response."""
+		print(f"Sending text to Claude: {text}")
+		self.set_voice_command("llmSend", text)
+		try:
+			response = self.anthropic_client.messages.create(
+				model=self.anthropic_model,
+				max_tokens=1024,
+				system=self.ai_context,
+				messages=[
+					{"role": "user", "content": text},
+				],
+			)
+			claude_response = response.content[0].text
+			self.set_voice_command("llmReceive", claude_response)
+			print(f"Claude Response: {claude_response}")
+			# Generate and play TTS audio
+			self.generate_and_play_tts(claude_response)
+			return claude_response
+		except Exception as e:
+			self.set_voice_command("error")
+			print(f"Failed to get response from Claude: {e}")
+			return None
+
+	def _is_key_valid(self, key: Optional[str]) -> bool:
+		"""Check whether an API key looks like a real key rather than a config placeholder."""
+		return bool(key) and "your" not in key
+
+	def send_to_ai(self, text: str) -> Optional[str]:
+		"""Route transcribed text to the first available AI provider: Claude, then OpenAI, then DeepSeek."""
+		if self._is_key_valid(self.anthropic_api_key):
+			return self.send_to_claude(text)
+		elif self._is_key_valid(self.openai_api_key):
+			return self.send_to_chatgpt(text)
+		elif self._is_key_valid(self.deepseek_api_key):
+			return self.send_to_deepseek(text)
+		print("No valid AI provider API key configured in config.cfg.")
+		self.set_voice_command("error")
+		return None
+
 	def generate_and_play_tts(self, text: str) -> None:
 		"""Generate audio using ElevenLabs TTS API and play directly as MP3."""
 		try:
@@ -452,10 +501,7 @@ class VoiceInputProcessor:
 			elif lower_transcript in ["stop", "stop singing", "stop show"]:
 				dispatcher.send(signal="showStop")
 			else:
-				if self.openai_api_key and "your" not in self.openai_api_key:
-					self.send_to_chatgpt(transcription)
-				elif self.deepseek_api_key and "your" not in self.deepseek_api_key:
-					self.send_to_deepseek(transcription)
+				self.send_to_ai(transcription)
 		else:
 			self.set_voice_command("timeout")
 
