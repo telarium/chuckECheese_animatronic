@@ -31,8 +31,8 @@ class MIDI:
 		# Open the MIDI input and output ports.
 		self.inport = mido.open_input(self.input_port_name, callback=self._midi_callback)
 		self.outport = mido.open_output(self.output_port_name)
-		# print(f"MIDI Input opened on: {self.input_port_name}")
-		# print(f"MIDI Output opened on: {self.output_port_name}")
+		print(f"MIDI Input opened on: {self.input_port_name}")
+		print(f"MIDI Output opened on: {self.output_port_name}")
 
 	def _find_default_port(self, port_list: List[str]) -> Optional[str]:
 		# Look for a port with 'uhost' (case insensitive)
