@@ -27,6 +27,13 @@ from typing import Any, Optional
 
 class VoiceInputProcessor:
 	def __init__(self, pygame_instance: Any, config_file: str = "config.cfg") -> None:
+		# Initialize this FIRST. __init__ can bail out early (missing Porcupine
+		# wakeword, bad config), and run_thread does not reach its first
+		# set_voice_command("idle") call for a while after startup. Without this,
+		# get_last_voice_command() raises AttributeError and takes down whichever
+		# handler called it.
+		self.voiceStatus: dict = {'id': 'idle', 'value': None}
+
 		self.b_save_tts: bool = False  # Save TTS files to a directory for examining later for debug purposes.
 		self.pygame = pygame_instance
 		self.puppeteer = AutomatedPuppeteering(pygame_instance)
