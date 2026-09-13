@@ -184,13 +184,33 @@ class Pasqually:
 	def on_connect_event(self, client_ip: str) -> None:
 		print(f"Web client connected from IP: {client_ip}")
 
+		# Each step is isolated. This handler populates every panel in the web UI,
+		# so an exception in any one of them used to leave the rest of the page
+		# empty with no indication of why -- a failure in the first step meant the
+		# show list, movement info and wifi list were never sent at all.
+		steps = [
+			("voiceCommandUpdate", self._send_voice_command_status),
+			("systemInfo", self.on_system_info_update),
+			("showList", self.show_player.get_show_list),
+			("movementInfo", self._send_movement_info),
+			("wifiScan", self._send_wifi_scan),
+		]
+
+		for name, step in steps:
+			try:
+				step()
+			except Exception as e:
+				print(f"on_connect_event: '{name}' step failed: {e}")
+
+	def _send_voice_command_status(self) -> None:
 		# Tell the web frontend what the current voice command status is.
 		command = self.voice_input_processor.get_last_voice_command()
 		self.web_server.broadcast('voiceCommandUpdate', command)
 
-		self.on_system_info_update()
-		self.show_player.get_show_list()
+	def _send_movement_info(self) -> None:
 		self.web_server.broadcast('movementInfo', self.movements.get_all_movement_info())
+
+	def _send_wifi_scan(self) -> None:
 		self.web_server.broadcast('wifiScan', self.wifi_access_points)
 		self.wifi_management.scan_wifi_access_points()
 
